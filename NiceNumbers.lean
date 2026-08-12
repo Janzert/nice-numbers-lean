@@ -2,7 +2,7 @@
   NiceNumbers.lean
   ================
 
-  Two theorems about nice / quasi-nice numbers, formalised in Lean 4.
+  Three theorems about nice / quasi-nice numbers, formalised in Lean 4.
 
   `n` is **(e₁,e₂)-nice in base b** when the base-`b` digits of `n^e₁` and `n^e₂`
   together are exactly {0,…,b-1}, each once.  `(2,3)` is the classical "nice
@@ -23,8 +23,14 @@
   **Theorem B** (`no_nice_of_mod_four`): for *every* pair with `e₁,e₂ ≥ 1`, if
   `b ≡ 3 (mod 4)` the digit-sum identity is unsatisfiable.
 
-  Together these replace an exhaustive machine check over `e₁ ≤ 8`, `e₂ ≤ 9`,
-  `b < 400` with proofs valid for all bases and all exponent pairs.
+  **Proposition D** (`base_unique`, `bands_disjoint`): the length identity holds
+  for at most one base, so distinct bases' candidate bands are disjoint and each
+  `n` is a candidate in at most one base.  Proved for arbitrary values, hence for
+  every exponent pair.
+
+  Together these replace exhaustive machine checks over `e₁ ≤ 8`, `e₂ ≤ 9`,
+  `b < 400` (A, B) and `b < 500`, five pairs, ~2700 values of `n` (D) with proofs
+  valid for all bases, all exponent pairs and all `n`.
 
   Lean 4.16-4.33, core only.  No Mathlib, no `sorry`.  `#print axioms` at the end
   shows only the three standard foundational axioms.
@@ -273,7 +279,113 @@ theorem no_nice_of_mod_four {b e₁ e₂ n : Nat}
   omega
 
 
-/-! ## §3  Non-vacuity
+/--
+**Theorem B, residue-set form.**  The same parity obstruction stated the way the
+sieve uses it: for `b ≡ 3 (mod 4)` the residue set
+`R_b = {ρ : ρ^e₁ + ρ^e₂ ≡ T (mod b-1)}`, `2T = b(b-1)`, is **empty**.
+
+`no_nice_of_mod_four` rules out an actual solution's digit sums; this rules out
+the congruence class it would have to live in, which is the statement
+`verify.py`'s gate B used to check over `e₁ ≤ 8`, `e₂ ≤ 9`, `b < 400`.
+-/
+theorem residues_empty_of_mod_four {b e₁ e₂ T ρ : Nat}
+    (hb : 1 < b) (he₁ : e₁ ≠ 0) (he₂ : e₂ ≠ 0) (hmod : b % 4 = 3)
+    (hT : 2 * T = b * (b - 1)) :
+    (ρ ^ e₁ + ρ ^ e₂) % (b - 1) ≠ T % (b - 1) := by
+  intro h
+  have h2m : 2 ∣ (b - 1) := by omega
+  have step : ∀ x y : Nat, x % (b-1) = y % (b-1) → x % 2 = y % 2 := by
+    intro x y hxy
+    rw [← Nat.mod_mod_of_dvd x h2m, ← Nat.mod_mod_of_dvd y h2m, hxy]
+  have hpar : (ρ ^ e₁ + ρ ^ e₂) % 2 = T % 2 := step _ _ h
+  -- ρ^e ≡ ρ (mod 2) for e ≥ 1, so the left side is ρ + ρ: even
+  have hl : (ρ ^ e₁ + ρ ^ e₂) % 2 = 0 := by
+    have h1 := pow_mod_two (n := ρ) e₁ he₁
+    have h2 := pow_mod_two (n := ρ) e₂ he₂
+    have hadd := Nat.add_mod (ρ ^ e₁) (ρ ^ e₂) 2
+    rw [h1, h2] at hadd
+    have hn : ρ % 2 = 0 ∨ ρ % 2 = 1 := by omega
+    rcases hn with hq | hq <;> rw [hq] at hadd <;> omega
+  -- b odd and (b-1)/2 odd make T = b·(b-1)/2 odd
+  obtain ⟨u, hu⟩ : ∃ u, b - 1 = 2 * u := ⟨(b-1)/2, by omega⟩
+  have hodd_u : u % 2 = 1 := by omega
+  have hodd_b : b % 2 = 1 := by omega
+  have hbu2 : b * (2 * u) = 2 * (b * u) := by
+    rw [Nat.mul_comm b (2*u), Nat.mul_assoc, Nat.mul_comm u b]
+  rw [hu, hbu2] at hT
+  have hTbu : T = b * u := by omega
+  have hodd_T : (b * u) % 2 = 1 := by rw [Nat.mul_mod, hodd_b, hodd_u]
+  omega
+
+/-- Theorem B's residue form firing: base 7 has no `(2,3)` residue at all
+(`T = 21`, `2·21 = 7·6`). -/
+theorem base_seven_no_residue (ρ : Nat) : (ρ ^ 2 + ρ ^ 3) % 6 ≠ 21 % 6 :=
+  residues_empty_of_mod_four (b := 7) (by decide) (by decide) (by decide) (by decide)
+    (by decide)
+
+/-! ## §3  Proposition D — one base per `n`, and the bands are disjoint
+
+The candidate band of base `b` is `{n : numDigits b (n^e₁) + numDigits b (n^e₂) = b}`.
+Distinct bases have **disjoint** bands, so each `n` is a candidate in at most one
+base and "search more bases" and "search more numbers" are the same axis.
+
+The proof needs nothing about exponents at all: `numDigits b x` is *antitone* in
+`b`, so `numDigits b x + numDigits b y - b` is strictly decreasing in `b` and can
+vanish once.  What is formalised is therefore the general two-value statement,
+with the exponent form as a corollary. -/
+
+/-- `b^k ≤ x` forces `x` to have at least `k+1` digits — the converse direction
+of `bounds_of_numDigits`, and all that antitonicity needs. -/
+theorem le_numDigits_of_pow_le {b x k : Nat} (hb : 1 < b) (h : b ^ k ≤ x) :
+    k + 1 ≤ numDigits b x := by
+  have hx : 0 < x := Nat.lt_of_lt_of_le (Nat.pow_pos (a := b) (n := k) (by omega)) h
+  obtain ⟨j, hj⟩ : ∃ j, numDigits b x = j + 1 :=
+    ⟨numDigits b x - 1, by have := numDigits_pos hb hx; omega⟩
+  obtain ⟨-, g2⟩ := bounds_of_numDigits hb x j hj
+  have hpow : b ^ k < b ^ (j + 1) := Nat.lt_of_le_of_lt h g2
+  have := (Nat.pow_lt_pow_iff_right hb).mp hpow
+  omega
+
+/-- A bigger base never needs more digits. -/
+theorem numDigits_antitone {b b' : Nat} (hb : 1 < b) (hbb : b ≤ b') (x : Nat) :
+    numDigits b' x ≤ numDigits b x := by
+  rcases Nat.eq_zero_or_pos (numDigits b' x) with h | h
+  · omega
+  obtain ⟨k, hk⟩ : ∃ k, numDigits b' x = k + 1 := ⟨numDigits b' x - 1, by omega⟩
+  have hb' : 1 < b' := by omega
+  obtain ⟨g1, -⟩ := bounds_of_numDigits hb' x k hk
+  have hle : b ^ k ≤ x := Nat.le_trans (Nat.pow_le_pow_left hbb k) g1
+  rw [hk]
+  exact le_numDigits_of_pow_le hb hle
+
+/--
+**Proposition D.**  For any two values `x, y`, at most one base `b` satisfies the
+length identity `numDigits b x + numDigits b y = b`.
+-/
+theorem base_unique {b b' x y : Nat} (hb : 1 < b) (hb' : 1 < b')
+    (h : numDigits b x + numDigits b y = b)
+    (h' : numDigits b' x + numDigits b' y = b') : b = b' := by
+  rcases Nat.lt_trichotomy b b' with hlt | heq | hgt
+  · have h1 := numDigits_antitone hb (Nat.le_of_lt hlt) x
+    have h2 := numDigits_antitone hb (Nat.le_of_lt hlt) y
+    omega
+  · exact heq
+  · have h1 := numDigits_antitone hb' (Nat.le_of_lt hgt) x
+    have h2 := numDigits_antitone hb' (Nat.le_of_lt hgt) y
+    omega
+
+/-- `n` lies in the base-`b` candidate band for the pair `(e₁,e₂)`. -/
+def InBand (b e₁ e₂ n : Nat) : Prop :=
+  numDigits b (n ^ e₁) + numDigits b (n ^ e₂) = b
+
+/-- **Prop D, band form.**  The bands of two distinct bases are disjoint: no `n`
+is a candidate in both.  Holds for every exponent pair, `n` included `0`. -/
+theorem bands_disjoint {b b' e₁ e₂ n : Nat} (hb : 1 < b) (hb' : 1 < b')
+    (hne : b ≠ b') : ¬(InBand b e₁ e₂ n ∧ InBand b' e₁ e₂ n) := by
+  rintro ⟨h, h'⟩
+  exact hne (base_unique hb hb' h h')
+
+/-! ## §4  Non-vacuity
 
 An impossibility theorem is worthless if its hypotheses are secretly
 contradictory.  They are not: **69 in base 10** satisfies both of them, and it
@@ -339,6 +451,15 @@ theorem base_seven_dead (n : Nat) :
     2 * (digitSum 7 (n ^ 2) + digitSum 7 (n ^ 3)) ≠ 7 * (7 - 1) :=
   fun h => no_nice_of_mod_four (by decide) (by decide) (by decide) (by decide) h
 
+/-- Prop D needs a witness too, or "at most one base" could mean "no base": 69 is
+in the base-10 `(2,3)` band. -/
+theorem sixtynine_in_band : InBand 10 2 3 69 := length_identity_holds
+
+/-- Prop D firing on that witness: base 10 is the *only* base 69 is a candidate
+in — no finite search, and no appeal to the exponents being `(2,3)`. -/
+theorem sixtynine_only_base_ten {b : Nat} (hb : 1 < b) (h : InBand b 2 3 69) : b = 10 :=
+  base_unique hb (by decide) h sixtynine_in_band
+
 /-- Theorem B is genuinely pair-independent: same base, exponents (3,8). -/
 theorem base_seven_dead' (n : Nat) :
     2 * (digitSum 7 (n ^ 3) + digitSum 7 (n ^ 8)) ≠ 7 * (7 - 1) :=
@@ -351,7 +472,12 @@ end Nice
 #print axioms Nice.one_three_no_solution
 #print axioms Nice.two_four_no_solution
 #print axioms Nice.no_nice_of_mod_four
+#print axioms Nice.residues_empty_of_mod_four
+#print axioms Nice.base_seven_no_residue
 #print axioms Nice.length_identity_holds
 #print axioms Nice.digitsum_identity_holds
 #print axioms Nice.base_eleven_dead
 #print axioms Nice.base_seven_dead
+#print axioms Nice.base_unique
+#print axioms Nice.bands_disjoint
+#print axioms Nice.sixtynine_only_base_ten

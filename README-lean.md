@@ -1,11 +1,12 @@
 # Formalising the nice-number theorems in Lean 4
 
 **Answer to "can any of the proofs be written in Lean?": yes — Theorems A and B
-are done, they compile in under a second against Lean core with no Mathlib, and
-they are strictly stronger than the exhaustive checks they replace.**
+and Proposition D are done, they compile in under a second against Lean core with
+no Mathlib, and they are strictly stronger than the exhaustive checks they
+replace.**
 
 ```bash
-lean NiceNumbers.lean      # <1 s, 356 lines, no errors, no sorry
+lean NiceNumbers.lean      # <1 s, 483 lines, no errors, no sorry
 ```
 
 Written against 4.16, verified on **4.33**; see "Toolchain drift" below for the
@@ -21,13 +22,26 @@ axioms. No `sorryAx`, and no `native_decide` (which would add
 
 | Lean name | statement | replaces |
 |---|---|---|
-| `no_nice_of_dvd` | `(e₁+e₂) ∣ e₁*(b-1)` ⟹ `numDigits b (n^e₁) + numDigits b (n^e₂) ≠ b` | `verify.py` gate A, which checked `e₁ ≤ 8, e₂ ≤ 9, b < 120` |
+| `no_nice_of_dvd` | `(e₁+e₂) ∣ e₁*(b-1)` ⟹ `numDigits b (n^e₁) + numDigits b (n^e₂) ≠ b` | `verify.py` gate A's *dead* direction, which checked `e₁ ≤ 8, e₂ ≤ 9, b < 120`. Its converse is not proved and stays in the script |
 | `nice_no_solution` | base `b ≡ 1 (mod 5)` has no square/cube candidate | the `(2,3)` instance |
 | `one_three_no_solution` | base `b ≡ 1 (mod 4)` has no `(1,3)` candidate | the `(1,3)` instance |
 | `two_four_no_solution` | base `b ≡ 1 (mod 3)` has no `(2,4)` candidate | the `gcd > 1` instance |
-| `no_nice_of_mod_four` | for **every** pair `e₁,e₂ ≥ 1`, base `b ≡ 3 (mod 4)` fails the digit-sum identity | `verify.py` gate B, which checked `e₁ ≤ 8, e₂ ≤ 9, b < 400` |
+| `no_nice_of_mod_four` | for **every** pair `e₁,e₂ ≥ 1`, base `b ≡ 3 (mod 4)` fails the digit-sum identity | — |
+| `residues_empty_of_mod_four` | same obstruction as the sieve states it: `R_b = ∅` for `b ≡ 3 (mod 4)`, every pair | `verify.py` gate B, which checked `e₁ ≤ 8, e₂ ≤ 9, b < 400` |
+| `base_unique` / `bands_disjoint` | **Prop D** — the length identity holds for at most one base, so distinct bases' bands are disjoint | `verify.py` gate D, which checked five pairs, `b < 500`, ~2700 values of `n` |
 
-Both now hold for **all** naturals, so those two exhaustive gates can be deleted.
+All of these hold for **all** naturals, and the three gates named above **have been
+deleted** from `verify.py` (which is now ~34 s rather than ~44 s).
+
+**`residues_empty_of_mod_four` exists because of that deletion.** Gate B did not
+check the digit-sum identity that `no_nice_of_mod_four` refutes — it checked that
+the *residue set* `R_b = {ρ : ρ^e₁+ρ^e₂ ≡ T (mod b-1)}` is empty, which is the
+form the sieve actually uses and which the digit-sum theorem does not literally
+imply (it assumes a solution's digit sums, not a bare congruence class). Same
+two-line parity argument, stated over the congruence instead. **When deleting a
+finite check in favour of a proof, compare the two statements, not the two
+section headings** — the check is usually of some *proxy* for the theorem, and the
+proxy is what the rest of the code depends on.
 
 `numDigits` and `digitSum` are defined from scratch by repeated division
 (60 lines, including `bounds_of_numDigits`: `numDigits b x = k+1 ↔ b^k ≤ x < b^(k+1)`,
@@ -35,7 +49,7 @@ and `digitSum_mod`: casting out `b-1`s). Nothing about digits is assumed.
 
 ## Non-vacuity — the check that matters most
 
-An impossibility theorem with contradictory hypotheses proves itself. §3 of the
+An impossibility theorem with contradictory hypotheses proves itself. §4 of the
 file rules that out, kernel-checked:
 
 * `length_identity_holds : numDigits 10 (69^2) + numDigits 10 (69^3) = 10`
@@ -46,6 +60,12 @@ families. Then two theorems shown *firing*: `base_eleven_dead` (Theorem A at
 `b = 11`) and `base_seven_dead` (Theorem B at `b = 7`, where Theorem A says
 nothing because `7 ≢ 1 mod 5`), plus `base_seven_dead'` at exponents `(3,8)` to
 show B really is pair-independent.
+
+Prop D needs the same guard for the opposite reason — "at most one base" is
+trivially true of an `n` that has none. `sixtynine_in_band : InBand 10 2 3 69`
+supplies the witness, and `sixtynine_only_base_ten` then reads off that base 10 is
+the *only* base 69 is a candidate in, over all bases at once and with no finite
+search.
 
 ## The formalisation improved the mathematics
 
@@ -66,11 +86,29 @@ single divisibility `(e₁+e₂) ∣ e₁*(b-1)`, which is *sharper to state* th
 `b ≡ 1 mod (e₁+e₂)/gcd(e₁,e₂)` and equivalent to it. §2 of the main report
 should be rewritten to use this argument.
 
+**Prop D went the same way, and further.** §7 of the report calls it "a routine
+exercise from the exact endpoints `b^{j/e1}`, `b^{i/e2}`", and the estimate above
+said "same window technique as A, ~1 day". Neither the endpoints nor the window
+are needed, and it took an afternoon. `numDigits b x` is *antitone in `b`*
+(`b^k ≤ b'^k`, so a length bound in the larger base is one in the smaller), hence
+`numDigits b x + numDigits b y − b` is **strictly decreasing in `b`** and vanishes
+at most once. That is the whole proof — three short lemmas, `omega` closing each
+branch of a trichotomy.
+
+Two consequences of proving it that way. It never mentions `e₁`, `e₂` or `n`, so
+the theorem is about *any two values* `x, y`: `base_unique` covers every exponent
+pair, including ones nobody has tabulated, and `InBand`/`bands_disjoint` are the
+`(e₁,e₂)` corollary rather than the content. And it is strictly stronger than the
+crude interval argument the report contrasts it with, which only ever gave `≤ 2`
+bases. **The lesson repeats A's: the informal proof reached for the sharp
+endpoints because they were already derived and sitting there, and the sharp
+endpoints were the reason it looked like a day's work.**
+
 ## What else is formalisable, and what it would cost
 
 | result | verdict | notes |
 |---|---|---|
-| **Prop D** — bands for distinct bases are disjoint | **easy, ~1 day** | Same window technique as A. Best next target: it is the last *fully general* claim in the report still resting on a finite check (`b < 200`, six pairs). |
+| ~~**Prop D**~~ — bands for distinct bases are disjoint | **done** (`base_unique`, `bands_disjoint`) | Estimated at ~1 day by the window technique; cost an afternoon by antitonicity of `numDigits` in the base, and came out pair-independent. See above. |
 | **Theorem C** — classification of `R_b = ∅`, per pair | **easy per pair, hard in general** | For one pair and one modulus it is a `Decidable` proposition over `ZMod`; `decide` closes it. The general statement needs solvability of `x^{e₁}+x^{e₂} ≡ T (mod p^k)`, i.e. Hensel plus the structure of `(ℤ/p^k)ˣ`. Mathlib-scale, ~1 week per family. |
 | **Theorem G** — `q₁(b)=0 ⟺ b ∣ N(e₁,e₂)` | **medium, ~1 week** | Needs Carmichael `λ`. Mathlib has `Monoid.exponent (ZMod n)ˣ` but the explicit value at `p^a` would likely have to be proved. The *sufficiency* half — `b ∣ N` ⟹ base dead — is easy and is the half that does work. |
 | **Theorem F** — the `2/E` greedy bound | **medium-hard, ~2 weeks** | Needs the digit ladder `(r + x·bⁱ)^e ≡ r^e + e·r^{e-1}·x·bⁱ (mod b^{i+1})` (binomial theorem plus a vanishing argument) and a greedy pigeonhole induction. Both are standard; the bookkeeping is not small. |
@@ -79,10 +117,13 @@ should be rewritten to use this argument.
 | Part II's yield and cost numbers | **not theorems** | They are heuristic expectations under a random-digit model. Lean has nothing to say about them, and pretending otherwise would be the worst kind of false precision. |
 | The exhaustive counts (`(1,3)` has exactly one solution in bases ≤ 44) | **out of the question** | Would need a verified DFS and kernel-level evaluation of ~10¹⁶ candidates. |
 
-**Net effect.** Of the nine gates in `verify.py`, two are now theorems for all
-inputs rather than checks over a finite range — and they were the two most
-general ones. Prop D is a cheap third. Everything past that is a real
-formalisation project rather than a weekend.
+**Net effect.** Three of `verify.py`'s gates are now theorems for all inputs
+rather than checks over a finite range — and they were the three most general
+ones, so they are gone from the script rather than merely superseded. One caveat
+worth keeping in view: Theorem A's *converse* (every base outside the dead class
+really does have candidates) is **not** proved and stays an empirical check. Everything left in the table is a real formalisation project rather
+than a weekend; **Theorem G's sufficiency half (`b ∣ N` ⟹ base dead) is the only
+remaining piece that is cheap on its own**, the rest of G needing Carmichael `λ`.
 
 ## Toolchain drift: 4.16 → 4.33 (2026-08-12)
 
