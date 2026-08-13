@@ -2,7 +2,7 @@
   NiceNumbers.lean
   ================
 
-  Five theorems about nice / quasi-nice numbers, formalised in Lean 4.
+  Six theorems about nice / quasi-nice numbers, formalised in Lean 4.
 
   `n` is **(e₁,e₂)-nice in base b** when the base-`b` digits of `n^e₁` and `n^e₂`
   together are exactly {0,…,b-1}, each once.  `(2,3)` is the classical "nice
@@ -48,6 +48,13 @@
   `p^a ∣ N` iff `a ≤ e₁` and every unit mod `p` has order dividing `e₂-e₁`, which
   is `λ(p^a) ∣ e₂-e₁` once the unit group's exponent is known.  Evaluating that
   exponent is the one step of Theorem G left unformalised.
+
+  **Theorem F** (`greedy_distinct_slots`, `theorem_F`): the one *constructive*
+  result here rather than an impossibility.  With `gcd(e₁e₂, b) = 1`, a starting
+  digit `ρ` and a unit `β` separating the two progressions, if `4(d-1) + 2 < b`
+  then some `d`-digit `n` has `2d` pairwise-distinct low slots, hence combined
+  digit deficiency at most `b - 2d`.  Since `d ≈ b/E` that is `b(1 - 2/E)`: the
+  same `2/E` as the DFS prune, reached from the constructive side.
 
   Together these replace exhaustive machine checks over `e₁ ≤ 8`, `e₂ ≤ 9`,
   `b < 400` (A, B, C), `b < 500`, five pairs, ~2700 values of `n` (D), and
@@ -1725,6 +1732,716 @@ theorem single_four_base_twentynine_dead (ρ : Nat) : ρ ^ 4 % 28 ≠ 406 % 28 :
 `v₂(32) = 5` and `4 ∣ 4`. -/
 theorem single_four_base_thirtythree_live : (2:Nat) ^ 4 % 32 = 528 % 32 := by decide
 
+/-! ## §8  Theorem F — the `2/E` greedy construction
+
+`n mod b^(i+1)` pins digit `i` of `n^e₁` *and* digit `i` of `n^e₂`: two slots per
+digit of `n`, the conservation law the whole repository runs on.  Theorem F turns
+that budget into a construction.  Build `n` from the bottom; at level `i` the new
+digit `x` moves each of the two slots along an arithmetic progression, and if the
+common differences are units the progressions are bijections, so each already-used
+value kills at most one `x` and the two progressions collide at most once.  With
+`|Used| = 2i` that is `4i + 2` losses out of `b` choices, and `i ≤ d-1 ≈ b/E - 1`.
+
+The output is a `d`-digit `n` whose `2d` low slots are pairwise distinct, hence a
+digit deficiency of at most `b - 2d ≈ b(1 - 2/E)`. -/
+
+/-! ### §8.0  Digit slots -/
+
+/-- Digit `i` of `x` in base `b`, counting from the least significant. -/
+def slot (b i x : Nat) : Nat := x / b ^ i % b
+
+theorem slot_lt {b : Nat} (hb : 0 < b) (i x : Nat) : slot b i x < b := Nat.mod_lt _ hb
+
+theorem slot_zero (b x : Nat) : slot b 0 x = x % b := by
+  show x / b ^ 0 % b = x % b
+  rw [Nat.pow_zero, Nat.div_one]
+
+/-- A slot sees only the low `i+1` digits: this is the p-adic boundary, stated. -/
+theorem slot_of_mod {b i x y : Nat} (h : x % b ^ (i + 1) = y % b ^ (i + 1)) :
+    slot b i x = slot b i y := by
+  have hp : b ^ (i + 1) = b ^ i * b := Nat.pow_succ b i
+  show x / b ^ i % b = y / b ^ i % b
+  rw [← Nat.mod_mul_right_div_self x (b ^ i) b, ← Nat.mod_mul_right_div_self y (b ^ i) b,
+      ← hp, h]
+
+/-- Hence `n mod b^(i+1)` pins slot `i` of `n^e` — two slots per digit of `n`. -/
+theorem slot_pow_of_mod {b i x y e : Nat} (h : x % b ^ (i + 1) = y % b ^ (i + 1)) :
+    slot b i (x ^ e) = slot b i (y ^ e) := by
+  refine slot_of_mod ?_
+  rw [Nat.pow_mod, h, ← Nat.pow_mod]
+
+/-- Every slot below the digit count really is one of the digits. -/
+theorem slot_mem_digits {b : Nat} (hb : 1 < b) :
+    ∀ x i, i < numDigits b x → slot b i x ∈ digits b x := by
+  intro x
+  induction x using Nat.strongRecOn with
+  | _ x ih =>
+    intro i hi
+    have hx : 0 < x := by
+      rcases Nat.eq_zero_or_pos x with rfl | h
+      · rw [numDigits_zero] at hi; omega
+      · exact h
+    have hnum : numDigits b x = numDigits b (x / b) + 1 := by
+      rw [numDigits, dif_pos ⟨hb, hx⟩]
+    rw [digits_step hb hx]
+    match i with
+    | 0 => rw [slot_zero]; exact List.Mem.head _
+    | (j + 1) =>
+      have hd : slot b (j + 1) x = slot b j (x / b) := by
+        show x / b ^ (j + 1) % b = x / b / b ^ j % b
+        rw [Nat.div_div_eq_div_mul, Nat.pow_succ, Nat.mul_comm (b ^ j) b]
+      rw [hd]
+      exact List.Mem.tail _ (ih (x / b) (Nat.div_lt_self hx hb) j (by omega))
+
+/-! ### §8.1  The digit ladder
+
+`(r + x·bⁱ)^e ≡ r^e + e·r^(e-1)·x·bⁱ (mod b^(i+1))` for `i ≥ 1`: every binomial
+term from `x²b^{2i}` up is divisible by `b^(i+1)`, because `2i ≥ i+1`.  This is the
+same recurrence the CUDA and Vulkan kernels advance the digit with. -/
+
+theorem add_pow_ladder {b i : Nat} (hi : 1 ≤ i) (r x : Nat) : ∀ e,
+    (r + x * b ^ i) ^ e % b ^ (i + 1)
+      = (r ^ e + e * r ^ (e - 1) * x * b ^ i) % b ^ (i + 1) := by
+  obtain ⟨c, hc⟩ : ∃ c, b ^ i * b ^ i = b ^ (i + 1) * c := by
+    refine ⟨b ^ (i - 1), ?_⟩
+    rw [← Nat.pow_add, ← Nat.pow_add]
+    congr 1
+    omega
+  intro e
+  induction e with
+  | zero => simp
+  | succ e ih =>
+    match e with
+    | 0 => simp
+    | (e' + 1) =>
+      -- `E = e'+1 ≥ 1`, so `r^(E-1) * r = r^E` and the cross term is a genuine
+      -- multiple of `bⁱ·bⁱ`.
+      have key : (r ^ (e' + 1) + (e' + 1) * r ^ e' * x * b ^ i) * (r + x * b ^ i)
+          = (r ^ (e' + 2) + (e' + 2) * r ^ (e' + 1) * x * b ^ i)
+            + ((e' + 1) * r ^ e' * x * x) * (b ^ i * b ^ i) := by
+        have hr : r ^ (e' + 2) = r ^ (e' + 1) * r := by rw [Nat.pow_succ]
+        have hr' : r ^ (e' + 1) = r ^ e' * r := by rw [Nat.pow_succ]
+        rw [hr, hr']
+        simp only [Nat.add_mul, Nat.mul_add, Nat.succ_mul]
+        simp [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc, Nat.add_comm,
+          Nat.add_left_comm, Nat.add_assoc]
+      have hmul : (e' + 1) * r ^ e' * x * x * (b ^ i * b ^ i)
+          = b ^ (i + 1) * ((e' + 1) * r ^ e' * x * x * c) := by
+        rw [hc]; exact Nat.mul_left_comm _ _ _
+      calc (r + x * b ^ i) ^ (e' + 2) % b ^ (i + 1)
+          = (r + x * b ^ i) ^ (e' + 1) % b ^ (i + 1) * ((r + x * b ^ i) % b ^ (i + 1))
+              % b ^ (i + 1) := by rw [Nat.pow_succ, Nat.mul_mod]
+        _ = (r ^ (e' + 1) + (e' + 1) * r ^ e' * x * b ^ i) % b ^ (i + 1)
+              * ((r + x * b ^ i) % b ^ (i + 1)) % b ^ (i + 1) := by
+              rw [show (e' + 1) - 1 = e' from rfl] at ih; rw [ih]
+        _ = (r ^ (e' + 1) + (e' + 1) * r ^ e' * x * b ^ i) * (r + x * b ^ i)
+              % b ^ (i + 1) := by rw [← Nat.mul_mod]
+        _ = ((r ^ (e' + 2) + (e' + 2) * r ^ (e' + 1) * x * b ^ i)
+              + b ^ (i + 1) * ((e' + 1) * r ^ e' * x * x * c)) % b ^ (i + 1) := by
+              rw [key, hmul]
+        _ = (r ^ (e' + 2) + (e' + 2) * r ^ (e' + 1) * x * b ^ i) % b ^ (i + 1) :=
+              Nat.add_mul_mod_self_left _ _ _
+
+/-- The ladder as the greedy uses it: adding digit `x` at level `i` moves slot `i`
+of `n^e` along the progression with common difference `e·r^(e-1) (mod b)`. -/
+theorem slot_step {b i : Nat} (hb : 0 < b) (hi : 1 ≤ i) (r x e : Nat) :
+    slot b i ((r + x * b ^ i) ^ e) = (slot b i (r ^ e) + e * r ^ (e - 1) * x) % b := by
+  have hstep : slot b i ((r + x * b ^ i) ^ e)
+      = slot b i (r ^ e + e * r ^ (e - 1) * x * b ^ i) := slot_of_mod (add_pow_ladder hi r x e)
+  have hbi : 0 < b ^ i := Nat.pow_pos hb
+  rw [hstep]
+  show (r ^ e + e * r ^ (e - 1) * x * b ^ i) / b ^ i % b = (r ^ e / b ^ i % b + _) % b
+  rw [Nat.mul_comm (e * r ^ (e - 1) * x) (b ^ i), Nat.add_mul_div_left _ _ hbi,
+      Nat.mod_add_mod]
+
+/-! ### §8.2  Two injectivity lemmas
+
+The progressions are bijections when their common differences are units, and the
+*difference* of the two progressions is a bijection when `α₁ - α₂` is — which is
+the side condition Theorem F carries, here supplied as an explicit unit `β`. -/
+
+/-- Cancelling a common summand under `%`. -/
+theorem mod_add_cancel {b c u v : Nat} (hb : 0 < b) (h : (u + c) % b = (v + c) % b) :
+    u % b = v % b := by
+  rcases Nat.le_total u v with hle | hle
+  · have h1 : u + c ≤ v + c := by omega
+    have hd : b ∣ v + c - (u + c) := (dvd_sub_iff_mod_eq hb h1).mpr h.symm
+    have he : v + c - (u + c) = v - u := by omega
+    rw [he] at hd
+    exact ((dvd_sub_iff_mod_eq hb hle).mp hd).symm
+  · have h1 : v + c ≤ u + c := by omega
+    have hd : b ∣ u + c - (v + c) := (dvd_sub_iff_mod_eq hb h1).mpr h
+    have he : u + c - (v + c) = u - v := by omega
+    rw [he] at hd
+    exact (dvd_sub_iff_mod_eq hb hle).mp hd
+
+/-- `x ↦ (A + α·x) mod b` is injective on `{0,…,b-1}` when `α` is a unit. -/
+theorem lin_inj {b α A x y : Nat} (hb : 0 < b) (hα : Nat.Coprime b α)
+    (hx : x < b) (hy : y < b) (h : (A + α * x) % b = (A + α * y) % b) : x = y := by
+  rcases Nat.le_total x y with hle | hle
+  · obtain ⟨t, rfl⟩ : ∃ t, y = x + t := ⟨y - x, by omega⟩
+    have hmul : α * (x + t) = α * x + α * t := Nat.mul_add α x t
+    have h1 : A + α * x ≤ A + α * (x + t) := by omega
+    have hd : b ∣ A + α * (x + t) - (A + α * x) :=
+      (dvd_sub_iff_mod_eq hb h1).mpr h.symm
+    have he : A + α * (x + t) - (A + α * x) = α * t := by omega
+    rw [he] at hd
+    have ht : t = 0 := Nat.eq_zero_of_dvd_of_lt (hα.dvd_of_dvd_mul_left hd) (by omega)
+    omega
+  · obtain ⟨t, rfl⟩ : ∃ t, x = y + t := ⟨x - y, by omega⟩
+    have hmul : α * (y + t) = α * y + α * t := Nat.mul_add α y t
+    have h1 : A + α * y ≤ A + α * (y + t) := by omega
+    have hd : b ∣ A + α * (y + t) - (A + α * y) :=
+      (dvd_sub_iff_mod_eq hb h1).mpr h
+    have he : A + α * (y + t) - (A + α * y) = α * t := by omega
+    rw [he] at hd
+    have ht : t = 0 := Nat.eq_zero_of_dvd_of_lt (hα.dvd_of_dvd_mul_left hd) (by omega)
+    omega
+
+/-- The two progressions collide for at most one digit `x`.  This is the side
+condition of Theorem F: `α₁ - α₂` must be a unit, supplied as `β` with
+`α₂ + β ≡ α₁`. -/
+theorem clash_inj {b α₁ α₂ β A₁ A₂ x y : Nat} (hb : 0 < b) (hβ : Nat.Coprime b β)
+    (hsep : (α₂ + β) % b = α₁ % b) (hx : x < b) (hy : y < b)
+    (h₁ : (A₁ + α₁ * x) % b = (A₂ + α₂ * x) % b)
+    (h₂ : (A₁ + α₁ * y) % b = (A₂ + α₂ * y) % b) : x = y := by
+  -- add the two collision equations, so that `A₁`, `A₂` cancel
+  have hsum : (A₁ + α₁ * x + (A₂ + α₂ * y)) % b = (A₂ + α₂ * x + (A₁ + α₁ * y)) % b := by
+    rw [Nat.add_mod, h₁, ← h₂, ← Nat.add_mod]
+  have hcomm₁ : A₁ + α₁ * x + (A₂ + α₂ * y) = α₁ * x + α₂ * y + (A₁ + A₂) := by omega
+  have hcomm₂ : A₂ + α₂ * x + (A₁ + α₁ * y) = α₂ * x + α₁ * y + (A₁ + A₂) := by omega
+  rw [hcomm₁, hcomm₂] at hsum
+  have hcancel : (α₁ * x + α₂ * y) % b = (α₂ * x + α₁ * y) % b := mod_add_cancel hb hsum
+  -- replace `α₁` by `α₂ + β`
+  have hsub : ∀ z, (α₁ * z) % b = (α₂ * z + β * z) % b := by
+    intro z
+    rw [Nat.mul_mod, ← hsep, ← Nat.mul_mod, Nat.add_mul]
+  have hL : (α₁ * x + α₂ * y) % b = (α₂ * x + α₂ * y + β * x) % b := by
+    rw [Nat.add_mod, hsub x, ← Nat.add_mod]
+    congr 1
+    omega
+  have hR : (α₂ * x + α₁ * y) % b = (α₂ * x + α₂ * y + β * y) % b := by
+    rw [Nat.add_mod, hsub y, ← Nat.add_mod]
+    congr 1
+    omega
+  rw [hL, hR] at hcancel
+  have hL' : α₂ * x + α₂ * y + β * x = β * x + (α₂ * x + α₂ * y) := by omega
+  have hR' : α₂ * x + α₂ * y + β * y = β * y + (α₂ * x + α₂ * y) := by omega
+  rw [hL', hR'] at hcancel
+  have hfin : (β * x) % b = (β * y) % b := mod_add_cancel hb hcancel
+  exact lin_inj (A := 0) hb hβ hx hy (by rw [Nat.zero_add, Nat.zero_add]; exact hfin)
+
+/-! ### §8.3  Counting
+
+Core has `List.countP` but not the four facts the pigeonhole needs, so they are
+proved here.  `memb` is a decidable membership test that reduces in the kernel,
+in the style of `occ` in §5. -/
+
+/-- Membership as a `Bool`, so it can be counted. -/
+def memb (v : Nat) : List Nat → Bool
+  | [] => false
+  | a :: l => (a == v) || memb v l
+
+theorem memb_nil (v : Nat) : memb v [] = false := rfl
+
+theorem memb_cons (v a : Nat) (l : List Nat) :
+    memb v (a :: l) = ((a == v) || memb v l) := rfl
+
+theorem memb_iff (v : Nat) : ∀ l : List Nat, memb v l = true ↔ v ∈ l := by
+  intro l
+  induction l with
+  | nil => rw [memb_nil]; simp
+  | cons a t ih =>
+    rw [memb_cons, List.mem_cons, Bool.or_eq_true, beq_iff_eq, ih]
+    constructor
+    · rintro (h | h)
+      · exact Or.inl h.symm
+      · exact Or.inr h
+    · rintro (h | h)
+      · exact Or.inl h.symm
+      · exact Or.inr h
+
+theorem countP_or_le (p q : Nat → Bool) : ∀ l : List Nat,
+    List.countP (fun a => p a || q a) l ≤ List.countP p l + List.countP q l := by
+  intro l
+  induction l with
+  | nil => simp
+  | cons a t ih =>
+    rw [List.countP_cons, List.countP_cons, List.countP_cons]
+    by_cases hp : p a = true <;> by_cases hq : q a = true <;> simp [hp, hq] <;> omega
+
+/-- A predicate that can hold at only one element of a duplicate-free list is
+counted at most once. -/
+theorem countP_le_one {p : Nat → Bool} : ∀ l : List Nat, l.Nodup →
+    (∀ x ∈ l, ∀ y ∈ l, p x = true → p y = true → x = y) → List.countP p l ≤ 1 := by
+  intro l
+  induction l with
+  | nil => intro _ _; simp
+  | cons a t ih =>
+    intro hnd huniq
+    rw [List.nodup_cons] at hnd
+    rw [List.countP_cons]
+    by_cases hpa : p a = true
+    · have hzero : List.countP p t = 0 := by
+        refine List.countP_eq_zero.mpr ?_
+        intro y hy hpy
+        have : y = a := huniq y (List.Mem.tail _ hy) a (List.Mem.head _) hpy hpa
+        exact hnd.1 (this ▸ hy)
+      simp [hpa, hzero]
+    · have := ih hnd.2 (fun x hx y hy => huniq x (List.Mem.tail _ hx) y (List.Mem.tail _ hy))
+      simp [hpa]
+      omega
+
+/-- If `f` is injective on `l`, at most `U.length` of `l`'s elements land in `U`. -/
+theorem countP_memb_le {f : Nat → Nat} {l : List Nat} (hl : l.Nodup)
+    (hinj : ∀ x ∈ l, ∀ y ∈ l, f x = f y → x = y) :
+    ∀ U : List Nat, List.countP (fun x => memb (f x) U) l ≤ U.length := by
+  intro U
+  induction U with
+  | nil =>
+    have : List.countP (fun x => memb (f x) ([] : List Nat)) l = 0 :=
+      List.countP_eq_zero.mpr (fun a _ h => by simp [memb] at h)
+    omega
+  | cons u U' ih =>
+    have hsplit : ∀ x : Nat, memb (f x) (u :: U') = ((f x == u) || memb (f x) U') := by
+      intro x
+      rw [memb_cons]
+      by_cases h : u = f x
+      · rw [h]
+      · rw [beq_eq_false_iff_ne.mpr h, beq_eq_false_iff_ne.mpr (Ne.symm h)]
+    have hrw : List.countP (fun x => memb (f x) (u :: U')) l
+        = List.countP (fun x => (f x == u) || memb (f x) U') l := by
+      refine List.countP_congr ?_
+      intro x _
+      rw [hsplit x]
+    have hone : List.countP (fun x => f x == u) l ≤ 1 := by
+      refine countP_le_one l hl ?_
+      intro x hx y hy hpx hpy
+      exact hinj x hx y hy (by simp at hpx hpy; rw [hpx, hpy])
+    have := countP_or_le (fun x => f x == u) (fun x => memb (f x) U') l
+    simp only [List.length_cons]
+    omega
+
+theorem countP_split (p : Nat → Bool) : ∀ l : List Nat,
+    List.countP p l + List.countP (fun a => !p a) l = l.length := by
+  intro l
+  induction l with
+  | nil => simp
+  | cons a t ih =>
+    rw [List.countP_cons, List.countP_cons, List.length_cons]
+    by_cases hp : p a = true <;> simp [hp] <;> omega
+
+theorem exists_of_countP_pos {p : Nat → Bool} : ∀ l : List Nat, 0 < List.countP p l →
+    ∃ a, a ∈ l ∧ p a = true := by
+  intro l
+  induction l with
+  | nil => intro h; simp at h
+  | cons a t ih =>
+    intro h
+    rw [List.countP_cons] at h
+    by_cases hp : p a = true
+    · exact ⟨a, List.Mem.head _, hp⟩
+    · simp only [hp] at h
+      obtain ⟨y, hy, hpy⟩ := ih h
+      exact ⟨y, List.Mem.tail _ hy, hpy⟩
+
+theorem countP_eq_length_filter (p : Nat → Bool) : ∀ l : List Nat,
+    List.countP p l = (l.filter p).length := by
+  intro l
+  induction l with
+  | nil => simp
+  | cons a t ih =>
+    rw [List.countP_cons, List.filter_cons]
+    by_cases hp : p a = true <;> simp [hp, ih]
+
+/-! ### §8.4  One greedy step
+
+At most `2|U| + 2` of the `b` digits are lost: `|U|` to each progression hitting an
+already-used value, one to the two progressions colliding, and one to the leading
+digit having to be nonzero. -/
+
+/-- The pigeonhole, over abstract slot maps: two maps injective on `{0,…,b-1}`
+whose coincidence set has at most one element leave a nonzero digit avoiding `U`
+in both, as soon as `2|U| + 2 < b`. -/
+theorem exists_good_digit {b : Nat} (hb : 0 < b) (s₁ s₂ : Nat → Nat)
+    (hinj₁ : ∀ x, x < b → ∀ y, y < b → s₁ x = s₁ y → x = y)
+    (hinj₂ : ∀ x, x < b → ∀ y, y < b → s₂ x = s₂ y → x = y)
+    (hclash : ∀ x, x < b → ∀ y, y < b → s₁ x = s₂ x → s₁ y = s₂ y → x = y)
+    (U : List Nat) (hcount : 2 * U.length + 2 < b) :
+    ∃ x, 0 < x ∧ x < b ∧ s₁ x ∉ U ∧ s₂ x ∉ U ∧ s₁ x ≠ s₂ x := by
+  have hrange : ∀ x ∈ List.range b, x < b := fun x hx => List.mem_range.mp hx
+  -- each of the four losses is bounded
+  have hz : List.countP (fun x => x == 0) (List.range b) ≤ 1 := by
+    refine countP_le_one _ List.nodup_range ?_
+    intro x _ y _ hx hy
+    simp only [beq_iff_eq] at hx hy
+    omega
+  have hm₁ : List.countP (fun x => memb (s₁ x) U) (List.range b) ≤ U.length :=
+    countP_memb_le List.nodup_range
+      (fun x hx y hy h => hinj₁ x (hrange x hx) y (hrange y hy) h) U
+  have hm₂ : List.countP (fun x => memb (s₂ x) U) (List.range b) ≤ U.length :=
+    countP_memb_le List.nodup_range
+      (fun x hx y hy h => hinj₂ x (hrange x hx) y (hrange y hy) h) U
+  have hc : List.countP (fun x => s₁ x == s₂ x) (List.range b) ≤ 1 := by
+    refine countP_le_one _ List.nodup_range ?_
+    intro x hx y hy hpx hpy
+    simp only [beq_iff_eq] at hpx hpy
+    exact hclash x (hrange x hx) y (hrange y hy) hpx hpy
+  -- so the bad digits do not exhaust the base
+  have hsum₁ := countP_or_le (fun x => (x == 0) || memb (s₁ x) U)
+      (fun x => memb (s₂ x) U || (s₁ x == s₂ x)) (List.range b)
+  have hsum₂ := countP_or_le (fun x => x == 0) (fun x => memb (s₁ x) U) (List.range b)
+  have hsum₃ := countP_or_le (fun x => memb (s₂ x) U) (fun x => s₁ x == s₂ x) (List.range b)
+  have hlen : (List.range b).length = b := List.length_range
+  have hsplit := countP_split
+    (fun x => ((x == 0) || memb (s₁ x) U) || (memb (s₂ x) U || (s₁ x == s₂ x)))
+    (List.range b)
+  have hpos : 0 < List.countP
+      (fun x => !(((x == 0) || memb (s₁ x) U) || (memb (s₂ x) U || (s₁ x == s₂ x))))
+      (List.range b) := by omega
+  obtain ⟨x, hxmem, hxbad⟩ := exists_of_countP_pos _ hpos
+  have hxb : x < b := hrange x hxmem
+  simp only [Bool.not_or, Bool.and_eq_true, Bool.not_eq_true', beq_eq_false_iff_ne] at hxbad
+  obtain ⟨⟨hx0, hu₁⟩, hu₂, hne⟩ := hxbad
+  refine ⟨x, Nat.pos_of_ne_zero hx0, hxb, ?_, ?_, hne⟩
+  · intro hmem
+    rw [(memb_iff _ U).mpr hmem] at hu₁
+    exact Bool.noConfusion hu₁
+  · intro hmem
+    rw [(memb_iff _ U).mpr hmem] at hu₂
+    exact Bool.noConfusion hu₂
+
+/-! ### §8.5  The greedy induction
+
+The invariant carried up the levels: `r` has exactly `i` digits, its last digit is
+the chosen unit `ρ` (so every progression's common difference stays the same), and
+`U` is the list of the `2i` slot values already placed — pairwise distinct, all
+`< b`, and each genuinely a slot of `r^e₁` or of `r^e₂`. -/
+
+/-- The greedy state after `i` levels. -/
+def GreedyInv (b e₁ e₂ ρ i r : Nat) (U : List Nat) : Prop :=
+  b ^ (i - 1) ≤ r ∧ r < b ^ i ∧ r % b = ρ ∧
+  U.length = 2 * i ∧ U.Nodup ∧ (∀ v ∈ U, v < b) ∧
+  (∀ v ∈ U, ∃ j, j < i ∧ (v = slot b j (r ^ e₁) ∨ v = slot b j (r ^ e₂)))
+
+/-- Level 0: the starting digit `ρ`, whose two slots already differ. -/
+theorem greedy_base {b e₁ e₂ ρ : Nat} (hb : 1 < b) (hρ : 0 < ρ) (hρb : ρ < b)
+    (hstart : ρ ^ e₁ % b ≠ ρ ^ e₂ % b) :
+    GreedyInv b e₁ e₂ ρ 1 ρ [ρ ^ e₁ % b, ρ ^ e₂ % b] := by
+  refine ⟨?_, ?_, Nat.mod_eq_of_lt hρb, rfl, ?_, ?_, ?_⟩
+  · rw [show (1 : Nat) - 1 = 0 from rfl, Nat.pow_zero]; omega
+  · rw [Nat.pow_one]; exact hρb
+  · rw [List.nodup_cons, List.nodup_cons]
+    refine ⟨?_, ?_, List.nodup_nil⟩
+    · intro h
+      rcases List.mem_singleton.mp h with h'
+      exact hstart h'
+    · intro h; cases h
+  · intro v hv
+    rcases List.mem_cons.mp hv with rfl | hv'
+    · exact Nat.mod_lt _ (by omega)
+    · rcases List.mem_singleton.mp hv' with rfl
+      exact Nat.mod_lt _ (by omega)
+  · intro v hv
+    refine ⟨0, by omega, ?_⟩
+    rw [slot_zero, slot_zero]
+    rcases List.mem_cons.mp hv with rfl | hv'
+    · exact Or.inl rfl
+    · rcases List.mem_singleton.mp hv' with rfl
+      exact Or.inr rfl
+
+/-- One level of the greedy.  `4i + 2 < b` is the whole content: `2i` used values,
+each killing at most one digit in each of the two progressions, plus the one digit
+where the progressions collide and the one that would make the leading digit `0`. -/
+theorem greedy_step {b e₁ e₂ ρ β i r : Nat} (hb : 1 < b)
+    (hce₁ : Nat.Coprime b e₁) (hce₂ : Nat.Coprime b e₂) (hcρ : Nat.Coprime b ρ)
+    (hβ : Nat.Coprime b β)
+    (hsep : (e₂ * ρ ^ (e₂ - 1) + β) % b = e₁ * ρ ^ (e₁ - 1) % b)
+    (hi : 1 ≤ i) (hcount : 4 * i + 2 < b)
+    (U : List Nat) (hinv : GreedyInv b e₁ e₂ ρ i r U) :
+    ∃ r' U', GreedyInv b e₁ e₂ ρ (i + 1) r' U' := by
+  obtain ⟨hlo, hhi, hmod, hlen, hnd, hltb, hslot⟩ := hinv
+  have hb0 : 0 < b := by omega
+  have hbi : 0 < b ^ i := Nat.pow_pos hb0
+  -- the last digit of `r` is `ρ`, so `r` is a unit and the two common differences
+  -- are the ones `hsep` speaks about
+  have hcr : Nat.Coprime b r := by
+    have hg : Nat.gcd b r = Nat.gcd ρ b := by rw [Nat.gcd_rec b r, hmod]
+    show Nat.gcd b r = 1
+    rw [hg]
+    exact Nat.coprime_comm.mp hcρ
+  have hα : ∀ e : Nat, (e * r ^ (e - 1)) % b = (e * ρ ^ (e - 1)) % b := by
+    intro e
+    rw [Nat.mul_mod, Nat.pow_mod, hmod, ← Nat.mul_mod]
+  have hcα₁ : Nat.Coprime b (e₁ * r ^ (e₁ - 1)) := hce₁.mul_right (hcr.pow_right _)
+  have hcα₂ : Nat.Coprime b (e₂ * r ^ (e₂ - 1)) := hce₂.mul_right (hcr.pow_right _)
+  have hsep' : (e₂ * r ^ (e₂ - 1) + β) % b = e₁ * r ^ (e₁ - 1) % b := by
+    rw [Nat.add_mod, hα e₂, ← Nat.add_mod, hsep, ← hα e₁]
+  -- the pigeonhole picks the next digit
+  obtain ⟨x, hx0, hxb, hxu₁, hxu₂, hxne⟩ :=
+    exists_good_digit hb0
+      (fun x => (slot b i (r ^ e₁) + e₁ * r ^ (e₁ - 1) * x) % b)
+      (fun x => (slot b i (r ^ e₂) + e₂ * r ^ (e₂ - 1) * x) % b)
+      (fun x hx y hy h => lin_inj hb0 hcα₁ hx hy h)
+      (fun x hx y hy h => lin_inj hb0 hcα₂ hx hy h)
+      (fun x hx y hy h₁ h₂ => clash_inj hb0 hβ hsep' hx hy h₁ h₂)
+      U (by omega)
+  refine ⟨r + x * b ^ i,
+    slot b i ((r + x * b ^ i) ^ e₁) :: slot b i ((r + x * b ^ i) ^ e₂) :: U, ?_⟩
+  -- the two new slots are exactly the two progression values
+  have hs₁ : slot b i ((r + x * b ^ i) ^ e₁)
+      = (slot b i (r ^ e₁) + e₁ * r ^ (e₁ - 1) * x) % b := slot_step hb0 hi r x e₁
+  have hs₂ : slot b i ((r + x * b ^ i) ^ e₂)
+      = (slot b i (r ^ e₂) + e₂ * r ^ (e₂ - 1) * x) % b := slot_step hb0 hi r x e₂
+  -- the earlier slots are untouched: `r' ≡ r (mod b^(j+1))` for every `j < i`
+  have hlow : ∀ j, j < i → ∀ e, slot b j ((r + x * b ^ i) ^ e) = slot b j (r ^ e) := by
+    intro j hj e
+    refine slot_pow_of_mod ?_
+    obtain ⟨c, hc⟩ : ∃ c, b ^ i = b ^ (j + 1) * c :=
+      ⟨b ^ (i - (j + 1)), by rw [← Nat.pow_add]; congr 1; omega⟩
+    rw [hc, Nat.mul_left_comm]
+    exact Nat.add_mul_mod_self_left _ _ _
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · have : b ^ i = 1 * b ^ i := (Nat.one_mul _).symm
+    rw [show i + 1 - 1 = i from rfl]
+    calc b ^ i = 1 * b ^ i := this
+      _ ≤ x * b ^ i := Nat.mul_le_mul_right _ hx0
+      _ ≤ r + x * b ^ i := Nat.le_add_left _ _
+  · calc r + x * b ^ i < b ^ i + x * b ^ i := by omega
+      _ = (1 + x) * b ^ i := by rw [Nat.add_mul, Nat.one_mul]
+      _ ≤ b * b ^ i := Nat.mul_le_mul_right _ (by omega)
+      _ = b ^ (i + 1) := by rw [Nat.pow_succ, Nat.mul_comm]
+  · obtain ⟨c, hc⟩ : ∃ c, b ^ i = b * c := ⟨b ^ (i - 1), by rw [← Nat.pow_succ']; congr 1; omega⟩
+    rw [hc, Nat.mul_left_comm, Nat.add_mul_mod_self_left, hmod]
+  · rw [List.length_cons, List.length_cons, hlen]; omega
+  · rw [List.nodup_cons, List.nodup_cons]
+    refine ⟨?_, ?_, hnd⟩
+    · intro h
+      rcases List.mem_cons.mp h with heq | hmem
+      · rw [hs₁, hs₂] at heq; exact hxne heq
+      · rw [hs₁] at hmem; exact hxu₁ hmem
+    · rw [hs₂]; exact hxu₂
+  · intro v hv
+    rcases List.mem_cons.mp hv with rfl | hv'
+    · rw [hs₁]; exact Nat.mod_lt _ hb0
+    · rcases List.mem_cons.mp hv' with rfl | hv''
+      · rw [hs₂]; exact Nat.mod_lt _ hb0
+      · exact hltb v hv''
+  · intro v hv
+    rcases List.mem_cons.mp hv with rfl | hv'
+    · exact ⟨i, by omega, Or.inl rfl⟩
+    · rcases List.mem_cons.mp hv' with rfl | hv''
+      · exact ⟨i, by omega, Or.inr rfl⟩
+      · obtain ⟨j, hj, hval⟩ := hslot v hv''
+        exact ⟨j, by omega, by rw [hlow j hj e₁, hlow j hj e₂]; exact hval⟩
+
+/-- The greedy runs to depth `d`. -/
+theorem greedy_reaches {b e₁ e₂ ρ β d : Nat} (hb : 1 < b)
+    (hce₁ : Nat.Coprime b e₁) (hce₂ : Nat.Coprime b e₂)
+    (hρ : 0 < ρ) (hρb : ρ < b) (hcρ : Nat.Coprime b ρ)
+    (hstart : ρ ^ e₁ % b ≠ ρ ^ e₂ % b) (hβ : Nat.Coprime b β)
+    (hsep : (e₂ * ρ ^ (e₂ - 1) + β) % b = e₁ * ρ ^ (e₁ - 1) % b)
+    (hd : 1 ≤ d) (hcount : 4 * (d - 1) + 2 < b) :
+    ∃ r U, GreedyInv b e₁ e₂ ρ d r U := by
+  have main : ∀ i, 1 ≤ i → i ≤ d → ∃ r U, GreedyInv b e₁ e₂ ρ i r U := by
+    intro i
+    induction i with
+    | zero => intro h; omega
+    | succ i ih =>
+      intro _ hle
+      rcases Nat.eq_zero_or_pos i with rfl | hi
+      · exact ⟨ρ, _, greedy_base hb hρ hρb hstart⟩
+      · obtain ⟨r, U, hinv⟩ := ih hi (by omega)
+        exact greedy_step hb hce₁ hce₂ hcρ hβ hsep hi (by omega) U hinv
+  exact main d hd (Nat.le_refl d)
+
+/-! ### §8.6  Theorem F
+
+The `2d` distinct slots are `2d` distinct *digit values*, so at most `b - 2d` of
+the `b` values can be missing.  With `d ≈ b/E` that is the `b(1 - 2/E)` of the
+report — less than a random candidate's `≈ b/e`, which is the point: this is what
+a *constructive* argument can reach, not what is typical. -/
+
+/--
+**Theorem F, slot form** — the statement the `2/E` accounting is really about:
+some `d`-digit `n` has `2d` *pairwise distinct* values among the low `d` slots of
+`n^e₁` and of `n^e₂`.  The deficiency bound below is its corollary.
+-/
+theorem greedy_distinct_slots {b e₁ e₂ ρ β d : Nat} (hb : 1 < b)
+    (hce₁ : Nat.Coprime b e₁) (hce₂ : Nat.Coprime b e₂)
+    (hρ : 0 < ρ) (hρb : ρ < b) (hcρ : Nat.Coprime b ρ)
+    (hstart : ρ ^ e₁ % b ≠ ρ ^ e₂ % b) (hβ : Nat.Coprime b β)
+    (hsep : (e₂ * ρ ^ (e₂ - 1) + β) % b = e₁ * ρ ^ (e₁ - 1) % b)
+    (hd : 1 ≤ d) (hcount : 4 * (d - 1) + 2 < b) :
+    ∃ n, ∃ U : List Nat, b ^ (d - 1) ≤ n ∧ n < b ^ d ∧ U.length = 2 * d ∧ U.Nodup ∧
+      ∀ v ∈ U, ∃ j, j < d ∧ (v = slot b j (n ^ e₁) ∨ v = slot b j (n ^ e₂)) := by
+  obtain ⟨r, U, hlo, hhi, hmod, hlen, hnd, hltb, hslot⟩ :=
+    greedy_reaches hb hce₁ hce₂ hρ hρb hcρ hstart hβ hsep hd hcount
+  exact ⟨r, U, hlo, hhi, hlen, hnd, hslot⟩
+
+/-- How many of the `b` digit values appear nowhere in `n^e₁` or `n^e₂`. -/
+def deficiency (b e₁ e₂ n : Nat) : Nat :=
+  List.countP (fun v => !memb v (digits b (n ^ e₁) ++ digits b (n ^ e₂))) (List.range b)
+
+/--
+**Theorem F.**  Fix a base `b` and exponents `e₁, e₂` with `gcd(e₁e₂, b) = 1`, a
+starting digit `ρ` — a unit whose two last digits already differ — and a unit `β`
+witnessing that the two progressions have invertible difference
+(`e₂ρ^(e₂-1) + β ≡ e₁ρ^(e₁-1)`).  If `4(d-1) + 2 < b`, then some `d`-digit `n`
+has combined digit deficiency at most `b - 2d`.
+
+Since `d ≈ b/E` with `E = e₁+e₂`, the counting condition is `4b/E < b`, i.e.
+`E ≥ 5` up to the rounding, and the bound is `b(1 - 2/E) + O(1)`.
+-/
+theorem theorem_F {b e₁ e₂ ρ β d : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (he₂ : 1 ≤ e₂)
+    (hce₁ : Nat.Coprime b e₁) (hce₂ : Nat.Coprime b e₂)
+    (hρ : 0 < ρ) (hρb : ρ < b) (hcρ : Nat.Coprime b ρ)
+    (hstart : ρ ^ e₁ % b ≠ ρ ^ e₂ % b) (hβ : Nat.Coprime b β)
+    (hsep : (e₂ * ρ ^ (e₂ - 1) + β) % b = e₁ * ρ ^ (e₁ - 1) % b)
+    (hd : 1 ≤ d) (hcount : 4 * (d - 1) + 2 < b) :
+    ∃ n, b ^ (d - 1) ≤ n ∧ n < b ^ d ∧ deficiency b e₁ e₂ n + 2 * d ≤ b := by
+  obtain ⟨r, U, hlo, hhi, hmod, hlen, hnd, hltb, hslot⟩ :=
+    greedy_reaches hb hce₁ hce₂ hρ hρb hcρ hstart hβ hsep hd hcount
+  refine ⟨r, hlo, hhi, ?_⟩
+  have hb0 : 0 < b := by omega
+  have hr1 : 1 ≤ r := Nat.le_trans (Nat.pow_pos hb0) hlo
+  -- `r^e` has at least `d` digits, so slots `0 .. d-1` really are digits of it
+  have hnum : ∀ e, 1 ≤ e → d ≤ numDigits b (r ^ e) := by
+    intro e he
+    have : b ^ (d - 1) ≤ r ^ e :=
+      Nat.le_trans hlo (by simpa using Nat.pow_le_pow_right hr1 he)
+    have := le_numDigits_of_pow_le hb this
+    omega
+  -- every used value is a digit of `r^e₁` or of `r^e₂`
+  have hmem : ∀ v ∈ U, v ∈ digits b (r ^ e₁) ++ digits b (r ^ e₂) := by
+    intro v hv
+    obtain ⟨j, hj, hval⟩ := hslot v hv
+    refine List.mem_append.mpr ?_
+    rcases hval with rfl | rfl
+    · exact Or.inl (slot_mem_digits hb _ j (by have := hnum e₁ he₁; omega))
+    · exact Or.inr (slot_mem_digits hb _ j (by have := hnum e₂ he₂; omega))
+  -- so `U` embeds in the digits-that-occur sublist of `range b`
+  have hsub : U ⊆ (List.range b).filter
+      (fun v => memb v (digits b (r ^ e₁) ++ digits b (r ^ e₂))) := by
+    intro v hv
+    refine List.mem_filter.mpr ⟨List.mem_range.mpr (hltb v hv), ?_⟩
+    exact (memb_iff v _).mpr (hmem v hv)
+  have hle : U.length ≤ ((List.range b).filter
+      (fun v => memb v (digits b (r ^ e₁) ++ digits b (r ^ e₂)))).length :=
+    List.Nodup.length_le_of_subset hnd hsub
+  have hcount' := countP_eq_length_filter
+    (fun v => memb v (digits b (r ^ e₁) ++ digits b (r ^ e₂))) (List.range b)
+  have hsplit := countP_split
+    (fun v => memb v (digits b (r ^ e₁) ++ digits b (r ^ e₂))) (List.range b)
+  have hlenr : (List.range b).length = b := List.length_range
+  show List.countP (fun v => !memb v (digits b (r ^ e₁) ++ digits b (r ^ e₂)))
+    (List.range b) + 2 * d ≤ b
+  omega
+
+/-! ### §8.7  Non-vacuity
+
+The hypotheses are satisfiable, the conclusion is a real restriction, and the
+theorem fires at a pair the report says the counting bound cannot reach. -/
+
+/-- `deficiency` says what it should: 69 in base 10 misses nothing.  (`digits` is
+defined by well-founded recursion and does not reduce in the kernel, so the two
+digit lists are supplied by §5's evaluations rather than by `decide` alone.) -/
+theorem deficiency_sixtynine : deficiency 10 2 3 69 = 0 := by
+  show List.countP (fun v => !memb v (digits 10 (69 ^ 2) ++ digits 10 (69 ^ 3)))
+    (List.range 10) = 0
+  rw [digits_69sq, digits_69cb]
+  decide
+
+/-- Theorem F at base 13, `(2,3)`: a 3-digit `n` whose six low slots are distinct. -/
+theorem F_base_thirteen :
+    ∃ n, 13 ^ 2 ≤ n ∧ n < 13 ^ 3 ∧ deficiency 13 2 3 n + 6 ≤ 13 :=
+  theorem_F (b := 13) (e₁ := 2) (e₂ := 3) (ρ := 2) (β := 5) (d := 3)
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+
+/-- Theorem F at base 65, `(2,3)`: 26 of the 65 digit values are forced to occur. -/
+theorem F_base_sixtyfive :
+    ∃ n, 65 ^ 12 ≤ n ∧ n < 65 ^ 13 ∧ deficiency 65 2 3 n + 26 ≤ 65 :=
+  theorem_F (b := 65) (e₁ := 2) (e₂ := 3) (ρ := 2) (β := 57) (d := 13)
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+
+/-- And at `(1,3)`, where `E = 4` — the report's §8 says the counting bound fails
+for `E = 3, 4`, but `4(d-1) + 2 < b` is sharper than `4b/E < b` and `E = 4` clears
+it at every base where the arithmetic side conditions hold. `E = 3` never does. -/
+theorem F_base_fortyseven :
+    ∃ n, 47 ^ 11 ≤ n ∧ n < 47 ^ 12 ∧ deficiency 47 1 3 n + 24 ≤ 47 :=
+  theorem_F (b := 47) (e₁ := 1) (e₂ := 3) (ρ := 2) (β := 36) (d := 12)
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+
+/-- The conclusion is a genuine selection, not a property of the range: `169 = 13²`
+lies in the very interval `F_base_thirteen` quantifies over, and it fails the
+bound.  `169² = 13⁴` and `169³ = 13⁶`, so between them they show two digit values
+and miss eleven. -/
+theorem digits_169sq : digits 13 (169 ^ 2) = [0, 0, 0, 0, 1] := by
+  show digits 13 28561 = [0, 0, 0, 0, 1]
+  rw [digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_step (by decide) (by decide), digits_zero]
+
+theorem digits_169cb : digits 13 (169 ^ 3) = [0, 0, 0, 0, 0, 0, 1] := by
+  show digits 13 4826809 = [0, 0, 0, 0, 0, 0, 1]
+  rw [digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_step (by decide) (by decide), digits_zero]
+
+theorem F_conclusion_not_automatic :
+    13 ^ 2 ≤ 169 ∧ 169 < 13 ^ 3 ∧ ¬ (deficiency 13 2 3 169 + 6 ≤ 13) := by
+  refine ⟨by decide, by decide, ?_⟩
+  show ¬ (List.countP (fun v => !memb v (digits 13 (169 ^ 2) ++ digits 13 (169 ^ 3)))
+    (List.range 13) + 6 ≤ 13)
+  rw [digits_169sq, digits_169cb]
+  decide
+
+/-- Odd naturals, as the coprimality hypotheses deliver them. -/
+theorem odd_of_coprime_two {x : Nat} (hx : Nat.Coprime 2 x) : x % 2 = 1 := by
+  rcases (by omega : x % 2 = 0 ∨ x % 2 = 1) with h | h
+  · exfalso
+    have hd : (2 : Nat) ∣ Nat.gcd 2 x := Nat.dvd_gcd (Nat.dvd_refl 2) (Nat.dvd_of_mod_eq_zero h)
+    rw [show Nat.gcd 2 x = 1 from hx] at hd
+    exact absurd hd (by decide)
+  · exact h
+
+/--
+**Where Theorem F stops, and it is a theorem rather than the edge of a scan: no
+even base is ever covered.**  If `b` is even then `gcd(e₁e₂, b) = 1` forces both
+exponents odd and `gcd(ρ, b) = 1` forces `ρ` odd, so both progression differences
+`e·ρ^(e-1)` are odd and their gap is even — no unit `β` can separate them.
+
+This is the honest limitation: the whole `(1,3)` family the repository actually
+searches (bases 38, 40, 42, 46) is even, and so is `(2,3)` base 34.  `(2,3)` base
+57 is odd but loses the coprimality instead, `3 ∣ 57`.
+-/
+theorem no_even_base {b e₁ e₂ ρ β : Nat} (hbe : b % 2 = 0)
+    (hce₁ : Nat.Coprime b e₁) (hce₂ : Nat.Coprime b e₂) (hcρ : Nat.Coprime b ρ)
+    (hβ : Nat.Coprime b β)
+    (hsep : (e₂ * ρ ^ (e₂ - 1) + β) % b = e₁ * ρ ^ (e₁ - 1) % b) : False := by
+  have hdvd : (2 : Nat) ∣ b := Nat.dvd_of_mod_eq_zero hbe
+  have ho : ∀ e : Nat, Nat.Coprime b e → (e * ρ ^ (e - 1)) % 2 = 1 := by
+    intro e hce
+    have he : e % 2 = 1 := odd_of_coprime_two (hce.coprime_dvd_left hdvd)
+    have hr : ρ % 2 = 1 := odd_of_coprime_two (hcρ.coprime_dvd_left hdvd)
+    rw [Nat.mul_mod, he, odd_pow hr]
+  -- reduce the separation identity mod 2, where both differences are odd
+  have h2 : (e₂ * ρ ^ (e₂ - 1) + β) % 2 = e₁ * ρ ^ (e₁ - 1) % 2 := by
+    rw [← Nat.mod_mod_of_dvd _ hdvd, hsep, Nat.mod_mod_of_dvd _ hdvd]
+  rw [Nat.add_mod, ho e₂ hce₂, ho e₁ hce₁] at h2
+  have hβodd : β % 2 = 1 := odd_of_coprime_two (hβ.coprime_dvd_left hdvd)
+  rw [hβodd] at h2
+  exact absurd h2 (by decide)
+
+/-- The two `(2,3)` bases this repository benchmarks, and why each is outside. -/
+theorem base_thirtyfour_is_even : 34 % 2 = 0 := by decide
+
+theorem base_fiftyseven_not_coprime : ¬ Nat.Coprime 57 3 := by decide
+
 end Nice
 
 #print axioms Nice.no_nice_of_dvd
@@ -1770,3 +2487,14 @@ end Nice
 #print axioms Nice.residues_empty_of_mod_four_of_C
 #print axioms Nice.residues_single_nonempty_iff
 #print axioms Nice.single_four_base_twentynine_dead
+#print axioms Nice.add_pow_ladder
+#print axioms Nice.slot_step
+#print axioms Nice.exists_good_digit
+#print axioms Nice.greedy_distinct_slots
+#print axioms Nice.theorem_F
+#print axioms Nice.deficiency_sixtynine
+#print axioms Nice.F_base_thirteen
+#print axioms Nice.F_base_sixtyfive
+#print axioms Nice.F_base_fortyseven
+#print axioms Nice.F_conclusion_not_automatic
+#print axioms Nice.no_even_base

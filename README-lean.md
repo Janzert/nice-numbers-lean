@@ -1,15 +1,20 @@
 # Formalising the nice-number theorems in Lean 4
 
-**Answer to "can any of the proofs be written in Lean?": yes — Theorems A, B, C
-and G and Proposition D are done, they compile in about three seconds against
+**Answer to "can any of the proofs be written in Lean?": yes — Theorems A, B, C,
+F and G and Proposition D are done, they compile in about four seconds against
 Lean core with no Mathlib, and they are strictly stronger than the exhaustive
-checks they replace.** Proposition C′ is a partial sixth: its *soundness* half is
+checks they replace.** Proposition C′ is a partial seventh: its *soundness* half is
 proved for all bases and all `j`, and its completeness half is **disproved** —
 the counterexample is in the file.
 
 ```bash
-lean NiceNumbers.lean      # 3.2 s, 1772 lines, no errors, no sorry
+lean NiceNumbers.lean      # 4.1 s, 2500 lines, no errors, no sorry
 ```
+
+**Theorem F (2026-08-13) is the first *constructive* theorem here**; everything
+else is an impossibility. That changes what has to be guarded — see "Non-vacuity"
+— and it is the one theorem that did **not** retire or narrow a gate, because
+none of the five cases `verify.py`'s gate F runs satisfies its hypotheses.
 
 Written against 4.16, verified on **4.33**; see "Toolchain drift" below for the
 two core renames that cost, and why an `elan`-shimmed `lean` appears to take 20 s
@@ -41,6 +46,11 @@ axioms. No `sorryAx`, and no `native_decide` (which would add
 | `residues_single_nonempty_iff` | **Theorem C**, single exponent — `R_b ≠ ∅` iff `a = 0` or `e ∣ a-1`. This is the family §13 recommends searching | the base list §13 quoted from a scan |
 | `no_nice_of_two_adic` | **Theorem C**, operative form — a base in a dead 2-adic class admits no `n` satisfying the digit-sum identity | — |
 | `residues_empty_of_mod_four_of_C` | **Theorem B is the `a = 1` case of C**: `b ≡ 3 (mod 4)` is exactly `v₂(b-1) = 1`. Not a replacement — C assumes `e₁ < e₂`, B does not, so the degenerate `e₁ = e₂` stays B's alone | — |
+| `add_pow_ladder` / `slot_step` | **Theorem F**, the engine — `(r + x·bⁱ)^e ≡ r^e + e·r^{e-1}·x·bⁱ (mod b^{i+1})` for `i ≥ 1`, and hence that adding digit `x` at level `i` moves slot `i` of `n^e` along an arithmetic progression with difference `e·r^{e-1} (mod b)`. This is the recurrence the CUDA and Vulkan kernels advance the digit with, and the "2 slots per digit" law itself | nothing; the repo asserted the ladder in comments and in three kernels |
+| `exists_good_digit` | **Theorem F**, the pigeonhole — two maps injective on `{0,…,b-1}` colliding at most once leave a nonzero digit avoiding a list `U` in both, once `2\|U\| + 2 < b` | — |
+| `greedy_distinct_slots` | **Theorem F**, slot form — some `d`-digit `n` has `2d` pairwise-distinct values among the low `d` slots of `n^{e₁}` and `n^{e₂}` | — |
+| `theorem_F` | **Theorem F** — hence combined digit deficiency `≤ b - 2d`, i.e. `b(1 - 2/E)` since `d ≈ b/E` | nothing; gate F stays, see below |
+| `no_even_base` | **Theorem F**, its limit — an even base admits no `β`, so Theorem F covers only odd bases. All the repo's `(1,3)` targets are even | a scan that had found only the boundary |
 
 All of these hold for **all** naturals, and the three gates named above **have been
 deleted** from `verify.py` (which is now ~34 s rather than ~44 s). Gate G was
@@ -117,6 +127,36 @@ Six statement-level mutations were checked and all six are rejected: declaring
 base 33 dead the way base 17 is, weakening `a ≥ 3` to `a ≥ 2`, dropping the
 `e₂-e₁` odd clause, widening `a ≤ 2` to `a ≤ 3`, moving the odd-gap witness from
 `(b-1)/2 - 1` to `(b-1)/2 + 1`, and (single exponent) `e ∣ a` for `e ∣ a-1`.
+
+**Theorem F needs a guard the other five do not, because it is the only
+constructive one.** An impossibility theorem is worthless if its hypotheses are
+contradictory; a *construction* is worthless if its conclusion is free. Both are
+checked:
+
+* `F_base_thirteen`, `F_base_sixtyfive`, `F_base_fortyseven` — the hypotheses are
+  satisfiable, at `(2,3)` bases 13 and 65 and at `(1,3)` base 47, each with the
+  `ρ` and `β` the theorem asks for supplied as numerals and every side condition
+  closed by `decide`. Base 65 forces 26 of its 65 digit values to occur.
+* `F_conclusion_not_automatic` — `169 = 13²` lies inside the very interval
+  `F_base_thirteen` quantifies over and **fails** the bound: `169² = 13⁴` and
+  `169³ = 13⁶`, so between them they show two digit values and miss eleven. The
+  conclusion is a selection, not a property of the range.
+* `deficiency_sixtynine : deficiency 10 2 3 69 = 0` — the definition means what
+  it says, checked against the one number in the repo that is known to miss
+  nothing.
+* `no_even_base`, `base_thirtyfour_is_even`, `base_fiftyseven_not_coprime` — the
+  two `(2,3)` bases this repository benchmarks are **outside** the theorem, and
+  the file says so rather than leaving it to be discovered. The first of those is
+  a theorem about every even base, not a remark about 34.
+
+Fourteen mutations were checked and all fourteen are rejected. The four that
+matter: weakening any of the three counting budgets (`4(d-1)+2 < b` in the
+theorem, `4i+2 < b` in the step, `2|U|+2 < b` in the pigeonhole) from `<` to `≤`;
+dropping the leading-digit guard from the bad set; dropping the collision term
+from the bad set; and dropping the factor `e` from the ladder's slope. Also
+rejected: each of `hstart`, `hβ`, `hce₁`, `hcρ` replaced by a triviality, the
+conclusion strengthened to `2d+1`, a perturbed `β` in a witness, and a witness
+pushed one level past its counting bound.
 
 ## The formalisation improved the mathematics
 
@@ -207,6 +247,66 @@ The gcd form is also the better *definition* outside Lean: `verify.py`'s
 wrong once `e₂ - e₁ ≥ 47`, while the gcd form has no such parameter. Gate G now
 checks the two against each other, which is exactly the step Lean routes around.
 
+**Theorem F was priced at "~2 weeks, the bookkeeping is not small", and cost an
+afternoon — but for the opposite reason to A, C, D and G.** Those four were
+overpriced because the informal proof reached for machinery it did not need.
+Theorem F was overpriced because the informal *statement* was not yet a theorem,
+and once it was made into one the proof was short. Three things came out of
+making it precise, and two of them are corrections to §8 of the report:
+
+1. **The side condition is a hypothesis about one number, not an `O(db)` check.**
+   The report says at most `2·|Used|` digits are killed "plus the `x` for which
+   the two new digits coincide" — *the* `x`, singular, which is true only when
+   `α_{e₁} - α_{e₂}` is a unit mod `b`, and the report flags this as a side
+   condition "which is `O(db)`". But `α_e = e·r^{e-1} (mod b)` depends on `r` only
+   through `r mod b`, and `r mod b` is the **starting digit `ρ`, fixed at level 0
+   and never touched again**. So the condition is one check per candidate `ρ`,
+   `O(b)` in total, not one per level. In Lean it becomes a unit `β` with
+   `e₂ρ^{e₂-1} + β ≡ e₁ρ^{e₁-1}`, carried as a hypothesis and discharged by
+   `decide` at each witness base.
+2. **The counting bound is `E ≥ 4`, not `E ≥ 5`.** The report gets `4b/E < b` by
+   rounding `d ≈ b/E` and concludes the bound "fails for `E = 3, 4`". The exact
+   condition is `4(d-1) + 2 < b`; at `E = 4` that is `≈ b - 2 < b` and it
+   **holds**. `(1,3)` clears it at bases 7, 11, 19, 23, 31, 35, 43, 47, 55, 59
+   and 67 — `F_base_fortyseven` is base 47 — and misses at base 46 by exactly
+   zero (`4·11 + 2 = 46`). `E = 3` never clears it. So the honest statement is
+   that `E = 4` is marginal and base-dependent, not dead.
+3. **`gcd(e₁e₂, b) = 1` is where the theorem actually stops, and it is worse than
+   the report suggests: no even base is ever covered.** That is
+   `no_even_base`, proved rather than observed — an even `b` forces both
+   exponents and `ρ` odd, hence both `α_e = e·ρ^{e-1}` odd, hence an even gap,
+   hence no unit `β`. So the whole `(1,3)` family this repo searches (bases 38,
+   40, 42, 46) is out, and so is `(2,3)` base 34; `(2,3)` base 57 is odd but
+   loses the coprimality instead. Over all ten pairs with `e₂ ≤ 5` and bases
+   `< 70` the theorem fires at 174 (pair, base) instances, **every one at an odd
+   base**. This is why gate F survives where gates A, B and D did not: it is not
+   a weaker version of the theorem, it is the *only* evidence for the cases the
+   theorem cannot reach. Scanning found the boundary; proving it is what turned
+   "34 and 57 happen to be out" into "every even base is out, necessarily".
+
+**Why not Mathlib, when it was on the table.** The offer was taken seriously and
+declined on measurement, not principle. What Mathlib would have supplied is
+`Finset` counting; what the proof actually needs is six list lemmas
+(`countP` subadditivity, `countP ≤ 1` under a uniqueness hypothesis, `countP` of
+a membership test bounded by the list's length, `countP p + countP ¬p = length`,
+`countP > 0 → ∃`, and `countP = (filter).length`) totalling about 60 lines — and
+the one lemma that would have been genuinely painful to redo,
+`List.Nodup.length_le_of_subset`, is **already in core**. Against that: a
+lakefile, a multi-gigabyte pinned dependency, and a compile going from 4 s to
+minutes, for a file whose stated value is having nothing that can rot. Two core
+gaps are worth knowing about if this is revisited: **`by_contra` and `set` are
+Mathlib tactics** (`rcases`, `obtain` and `rintro` are core), and there is no
+`ring` — the ladder's polynomial identity is closed by `simp` with the
+associativity/commutativity lemmas after generalising `r^{e-1}` out.
+
+**One kernel trap, and it is `digits`' fault, not Theorem F's.** `digits` is
+defined by well-founded recursion, so it does not reduce in the kernel and
+`decide` cannot evaluate anything built on it. `deficiency_sixtynine` and
+`F_conclusion_not_automatic` therefore route through explicit `digits_step`
+chains, exactly as §5's `digits_69sq` already did. The error is legible
+(`reduction got stuck at the Decidable instance`), but it appears only at the
+`decide`, a long way from the definition that caused it.
+
 ## What else is formalisable, and what it would cost
 
 | result | verdict | notes |
@@ -214,7 +314,7 @@ checks the two against each other, which is exactly the step Lean routes around.
 | ~~**Prop D**~~ — bands for distinct bases are disjoint | **done** (`base_unique`, `bands_disjoint`) | Estimated at ~1 day by the window technique; cost an afternoon by antitonicity of `numDigits` in the base, and came out pair-independent. See above. |
 | ~~**Theorem C**~~ — classification of `R_b = ∅` | **done** (`residues_nonempty_iff`, `residues_empty_iff`, `residues_single_nonempty_iff`) | Costed here as "easy per pair, hard in general — needs Hensel plus the structure of `(ℤ/p^k)ˣ`, Mathlib-scale, ~1 week per family". Wrong on every count: it is a closed form in `v₂(b-1)`, no odd prime enters, and it cost an afternoon core-only. See below. |
 | ~~**Theorem G**~~ — `q₁(b)=0 ⟺ b ∣ N(e₁,e₂)` | **done** (`no_nice_of_universal_clash`, `clash_iff_dvd_clashMod`, `clash_prime_pow_iff`) | Estimated at ~1 week "needs Carmichael `λ`"; cost an afternoon once `λ` was pushed out of the statement. See above. **What is left is one classical evaluation**: `exponent((ℤ/p^aℤ)ˣ) = λ(p^a)`, i.e. the structure theorem for that group. Mathlib has `Monoid.exponent`; the value at `p^a` would still have to be proved, and only the *closed form* for `N` depends on it. |
-| **Theorem F** — the `2/E` greedy bound | **medium-hard, ~2 weeks** | Needs the digit ladder `(r + x·bⁱ)^e ≡ r^e + e·r^{e-1}·x·bⁱ (mod b^{i+1})` (binomial theorem plus a vanishing argument) and a greedy pigeonhole induction. Both are standard; the bookkeeping is not small. |
+| ~~**Theorem F**~~ — the `2/E` greedy bound | **done** (`greedy_distinct_slots`, `theorem_F`) | Estimated at "medium-hard, ~2 weeks" for the digit ladder plus a greedy pigeonhole induction; cost an afternoon, and the ladder and the pigeonhole were both short. What the estimate missed is that the *statement* needed two repairs first — the side condition is `O(b)` not `O(db)`, and the counting bound reaches `E = 4`. See above. |
 | ~~**Prop C′**, soundness~~ — the sieve never sees more than `Σ_t b^t S_t` | **done** (`valOf_mod_wsum`, `sieve_sound`) | Estimated inside a "~1 month" for the whole proposition; the soundness half cost an hour, because it is an induction on a list and needs no combinatorics at all. |
 | ~~**Prop C′**, completeness~~ — no modulus adds density | **done: it is FALSE** (`base_four_sieve_is_incomplete`) | 256-case kernel `decide` on base 4, lengths `(2,2)`. Both natural mutations of the check are rejected, and `base_four_attained` supplies the three witnesses, so it is neither vacuous nor slack. |
 | **Prop C′**, the conditional theorem (REPORT §6.3) | **hard, ~1 month** | Needs the arena construction as an *explicit permutation* of `{0,…,b-1}` — subset-sum contiguity plus list surgery, and core has no `Finset`/`Multiset`. The two arithmetic engines (the block congruence, and the base-`b` no-gap covering) are the easy parts and the first is already done. |
@@ -236,6 +336,11 @@ check, and neither is the closed form for `N`, for want of `λ(p^a)`. Theorem C
 arrived with a gate rather than replacing one, and that gate checks §4.1's
 *decoding* — which of C's dead classes Theorem A did not already have — which is
 a statement about two theorems at once and so not something either one proves.
+**Theorem F changes none of that.** It is the first theorem here that leaves its
+gate exactly where it found it, and the gate now *asserts* the disjointness —
+sub-gate (b) checks that all five of its cases fail a hypothesis of `theorem_F`,
+so the day someone tightens the theorem, the gate says so rather than silently
+duplicating it.
 
 **The "no cheap piece left on the shelf" claim in the previous revision was
 wrong, and wrong in an instructive way.** C′ was costed at ~1 month as a single
