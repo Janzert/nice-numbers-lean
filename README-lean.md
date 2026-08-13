@@ -1,14 +1,14 @@
 # Formalising the nice-number theorems in Lean 4
 
-**Answer to "can any of the proofs be written in Lean?": yes — Theorems A, B and
-G and Proposition D are done, they compile in about a second against Lean core
-with no Mathlib, and they are strictly stronger than the exhaustive checks they
-replace.** Proposition C′ is a partial fifth: its *soundness* half is proved for
-all bases and all `j`, and its completeness half is **disproved** — the
-counterexample is in the file.
+**Answer to "can any of the proofs be written in Lean?": yes — Theorems A, B, C
+and G and Proposition D are done, they compile in about three seconds against
+Lean core with no Mathlib, and they are strictly stronger than the exhaustive
+checks they replace.** Proposition C′ is a partial sixth: its *soundness* half is
+proved for all bases and all `j`, and its completeness half is **disproved** —
+the counterexample is in the file.
 
 ```bash
-lean NiceNumbers.lean      # 1.5 s, 1190 lines, no errors, no sorry
+lean NiceNumbers.lean      # 3.2 s, 1772 lines, no errors, no sorry
 ```
 
 Written against 4.16, verified on **4.33**; see "Toolchain drift" below for the
@@ -37,6 +37,10 @@ axioms. No `sorryAx`, and no `native_decide` (which would add
 | `valOf_mod_wsum` / `valOf_mod_pow_sub_one` | **Prop C′**, the engine — mod `b^j - 1` a digit list is worth `Σ_t b^t S_t`, the totals of its positions `≡ t (mod j)`. All `b`, all `j`, all lists | the block-sum half of `verify.py` gate C′, which sampled 200 000 shuffles at `j = 2,3` |
 | `valOf_mod_pred` / `sieve_sound` | **Prop C′**, soundness — casting out `b-1`s, hence `I(m) ⊆ {z ≡ T mod gcd(m,b-1)}` for every modulus | — |
 | `base_four_sieve_is_incomplete` | **Prop C′ is false** — base 4, lengths `(2,2)`: no pandigital pair has `x+y ≡ 2 (mod 5)`, though `gcd(5,3) = 1` means the digit sum permits it | nothing; this one *refutes* a claim the report used to make |
+| `residues_nonempty_iff` / `residues_empty_iff` | **Theorem C** — `R_b = ∅` iff `a = 1`, or (`a ≥ 3` and `e₂-e₁` even and `e₁ ∤ a-1`), where `a = v₂(b-1)`. All bases, all pairs | nothing; §4 of the report had no gate, and now needs none |
+| `residues_single_nonempty_iff` | **Theorem C**, single exponent — `R_b ≠ ∅` iff `a = 0` or `e ∣ a-1`. This is the family §13 recommends searching | the base list §13 quoted from a scan |
+| `no_nice_of_two_adic` | **Theorem C**, operative form — a base in a dead 2-adic class admits no `n` satisfying the digit-sum identity | — |
+| `residues_empty_of_mod_four_of_C` | **Theorem B is the `a = 1` case of C**: `b ≡ 3 (mod 4)` is exactly `v₂(b-1) = 1`. Not a replacement — C assumes `e₁ < e₂`, B does not, so the degenerate `e₁ = e₂` stays B's alone | — |
 
 All of these hold for **all** naturals, and the three gates named above **have been
 deleted** from `verify.py` (which is now ~34 s rather than ~44 s). Gate G was
@@ -94,6 +98,26 @@ misses it — but `x ≡ x³ mod 6` always) and `two_four_base_twelve_dead`. Plu
 `clash_three_one_three` and `nine_no_clash_one_three`, which run the local
 criterion forwards and backwards on numerals.
 
+**Theorem C's guard is the sharpest of the lot, because it is a biconditional:
+both directions have to be shown firing, or the theorem could be the constant
+`False` or the constant `True`.**
+
+* `two_four_base_seventeen_dead` — `(2,4)` at base 17, where **A, B and G all say
+  nothing** (`17 % 3 = 2`, `17 % 4 = 1`, `17 ∤ N(2,4) = 12`) and C kills it alone.
+* `two_four_base_thirtythree_live` — base 33, one step up in `v₂(b-1)`, is *not*
+  killed, and the witness `ρ = 4` the theorem names is checked by `decide`. So the
+  `e₁ ∣ a-1` boundary is sharp, not slack.
+* `base_ten_live` / `base_ten_residue` — base 10 had better be alive, or C would
+  contradict 69; and 69 itself is exhibited as a residue.
+* `single_four_base_twentynine_dead` / `single_four_base_thirtythree_live` — the
+  same pair of ends for the single-exponent form, on the two bases §13 of the
+  report names.
+
+Six statement-level mutations were checked and all six are rejected: declaring
+base 33 dead the way base 17 is, weakening `a ≥ 3` to `a ≥ 2`, dropping the
+`e₂-e₁` odd clause, widening `a ≤ 2` to `a ≤ 3`, moving the odd-gap witness from
+`(b-1)/2 - 1` to `(b-1)/2 + 1`, and (single exponent) `e ∣ a` for `e ∣ a-1`.
+
 ## The formalisation improved the mathematics
 
 The proof of Theorem A in [`REPORT-provability.md`](../../REPORT-provability.md) goes through
@@ -131,6 +155,33 @@ bases. **The lesson repeats A's: the informal proof reached for the sharp
 endpoints because they were already derived and sitting there, and the sharp
 endpoints were the reason it looked like a day's work.**
 
+**Theorem C was priced at "Hensel plus the structure of `(ℤ/p^k)ˣ`", and needed
+neither — nor the CRT, nor a single odd prime.** The estimate came from the
+report's own framing: `R_b = ∅` iff the congruence is unsolvable modulo some
+`p^a ‖ b-1`, so decide it prime power by prime power. That framing is true and it
+is the expensive way round. Three things collapse it:
+
+1. **Odd prime powers never obstruct, because `ρ = 0` solves them.** `2T = b(b-1)`
+   makes `T ≡ 0` modulo the odd part of `b-1`, so the local congruence there is
+   `ρ^{e₁} + ρ^{e₂} ≡ 0`. Everything is 2-adic, which the report had *observed*
+   empirically ("all 2-adic") without noticing it was forced.
+2. **At 2 the question is a valuation count, not a solvability question.**
+   `T ≡ 2^{a-1} (mod 2^a)`, and `S ≡ 2^{a-1} (mod 2^a)` iff `v₂(S) = a-1`
+   *exactly*. So one only has to ask which valuations `ρ^{e₁}(1 + ρ^{e₂-e₁})` can
+   have — three cases, three clauses, no group structure anywhere.
+3. **Writing the witnesses down removes the CRT.** The half that looks like it
+   needs assembly ("solvable locally everywhere ⟹ solvable") is discharged by
+   four explicit residues. The `e₂-e₁` odd witness is the one that makes this
+   work: `(b-1)/2 - 1` is `-1` mod the odd part, not `0`, and the opposite
+   exponent parities cancel the sign. Insisting on a witness that is `0` there is
+   what forces an inverse, and an inverse is what forces CRT.
+
+**The lesson is the same one A, D and G taught, and this is its fourth outing:
+the informal proof reached for the machinery that would decide the *general*
+local question, when the specific local question had a one-line answer.** Every
+estimate in the table below that was written from an informal proof sketch has so
+far been too pessimistic, and always for this reason.
+
 **Theorem G was priced at a week "because it needs Carmichael `λ`", and `λ` turned
 out to be in the *statement*, not in the proof.** The estimate in the table below
 used to say the sufficiency half was the only cheap piece. In fact all of G went
@@ -161,7 +212,7 @@ checks the two against each other, which is exactly the step Lean routes around.
 | result | verdict | notes |
 |---|---|---|
 | ~~**Prop D**~~ — bands for distinct bases are disjoint | **done** (`base_unique`, `bands_disjoint`) | Estimated at ~1 day by the window technique; cost an afternoon by antitonicity of `numDigits` in the base, and came out pair-independent. See above. |
-| **Theorem C** — classification of `R_b = ∅`, per pair | **easy per pair, hard in general** | For one pair and one modulus it is a `Decidable` proposition over `ZMod`; `decide` closes it. The general statement needs solvability of `x^{e₁}+x^{e₂} ≡ T (mod p^k)`, i.e. Hensel plus the structure of `(ℤ/p^k)ˣ`. Mathlib-scale, ~1 week per family. |
+| ~~**Theorem C**~~ — classification of `R_b = ∅` | **done** (`residues_nonempty_iff`, `residues_empty_iff`, `residues_single_nonempty_iff`) | Costed here as "easy per pair, hard in general — needs Hensel plus the structure of `(ℤ/p^k)ˣ`, Mathlib-scale, ~1 week per family". Wrong on every count: it is a closed form in `v₂(b-1)`, no odd prime enters, and it cost an afternoon core-only. See below. |
 | ~~**Theorem G**~~ — `q₁(b)=0 ⟺ b ∣ N(e₁,e₂)` | **done** (`no_nice_of_universal_clash`, `clash_iff_dvd_clashMod`, `clash_prime_pow_iff`) | Estimated at ~1 week "needs Carmichael `λ`"; cost an afternoon once `λ` was pushed out of the statement. See above. **What is left is one classical evaluation**: `exponent((ℤ/p^aℤ)ˣ) = λ(p^a)`, i.e. the structure theorem for that group. Mathlib has `Monoid.exponent`; the value at `p^a` would still have to be proved, and only the *closed form* for `N` depends on it. |
 | **Theorem F** — the `2/E` greedy bound | **medium-hard, ~2 weeks** | Needs the digit ladder `(r + x·bⁱ)^e ≡ r^e + e·r^{e-1}·x·bⁱ (mod b^{i+1})` (binomial theorem plus a vanishing argument) and a greedy pigeonhole induction. Both are standard; the bookkeeping is not small. |
 | ~~**Prop C′**, soundness~~ — the sieve never sees more than `Σ_t b^t S_t` | **done** (`valOf_mod_wsum`, `sieve_sound`) | Estimated inside a "~1 month" for the whole proposition; the soundness half cost an hour, because it is an induction on a list and needs no combinatorics at all. |
@@ -181,7 +232,10 @@ soundness half exposed that the completeness half it had been sampling is false;
 it now checks the conditional theorem, the conjecture, and the counterexamples.
 Two caveats worth keeping in view: Theorem A's *converse* (every base outside the
 dead class really does have candidates) is **not** proved and stays an empirical
-check, and neither is the closed form for `N`, for want of `λ(p^a)`.
+check, and neither is the closed form for `N`, for want of `λ(p^a)`. Theorem C
+arrived with a gate rather than replacing one, and that gate checks §4.1's
+*decoding* — which of C's dead classes Theorem A did not already have — which is
+a statement about two theorems at once and so not something either one proves.
 
 **The "no cheap piece left on the shelf" claim in the previous revision was
 wrong, and wrong in an instructive way.** C′ was costed at ~1 month as a single

@@ -2,7 +2,7 @@
   NiceNumbers.lean
   ================
 
-  Four theorems about nice / quasi-nice numbers, formalised in Lean 4.
+  Five theorems about nice / quasi-nice numbers, formalised in Lean 4.
 
   `n` is **(e₁,e₂)-nice in base b** when the base-`b` digits of `n^e₁` and `n^e₂`
   together are exactly {0,…,b-1}, each once.  `(2,3)` is the classical "nice
@@ -32,6 +32,14 @@
   `n` is a candidate in at most one base.  Proved for arbitrary values, hence for
   every exponent pair.
 
+  **Theorem C** (`residues_nonempty_iff`, `residues_empty_iff`,
+  `residues_single_nonempty_iff`): the residue set `R_b = {ρ : ρ^e₁+ρ^e₂ ≡ T}` is
+  **empty iff `a = 1`, or `a ≥ 3` with `e₂-e₁` even and `e₁ ∤ a-1`**, where
+  `a = v₂(b-1)`.  No odd prime divisor of `b-1` enters: modulo the odd part `T`
+  vanishes and `ρ = 0` is a residue, so the whole classification is a valuation
+  count at 2.  Theorem B is its `a = 1` case.  For a single exponent `n^e` the
+  rule is `R_b ≠ ∅` iff `a = 0` or `e ∣ a-1`.
+
   **Theorem G** (`no_nice_of_universal_clash`, `clash_iff_dvd_clashMod`,
   `clash_prime_pow_iff`): if `x^e₁ ≡ x^e₂ (mod b)` for *every* `x` — a universal
   last-digit clash — then no `n` is pandigital in base `b`.  The bases where that
@@ -42,7 +50,7 @@
   exponent is the one step of Theorem G left unformalised.
 
   Together these replace exhaustive machine checks over `e₁ ≤ 8`, `e₂ ≤ 9`,
-  `b < 400` (A, B), `b < 500`, five pairs, ~2700 values of `n` (D), and
+  `b < 400` (A, B, C), `b < 500`, five pairs, ~2700 values of `n` (D), and
   `e₁ ≤ 5`, `e₂ ≤ 7`, `b < 200` (G) with proofs valid for all bases, all
   exponent pairs and all `n`.
 
@@ -1153,6 +1161,570 @@ theorem base_four_band_nonempty : InBand 4 2 3 2 := by
   rw [numDigits_eq_of_bounds (b := 4) (x := 2 ^ 2) (k := 1) (by decide) (by decide) (by decide),
       numDigits_eq_of_bounds (b := 4) (x := 2 ^ 3) (k := 1) (by decide) (by decide) (by decide)]
 
+/-! ## §7  Theorem C — the complete classification of `R_b = ∅`
+
+The residue set `R_b = {ρ : ρ^e₁ + ρ^e₂ ≡ T (mod b-1)}`, `2T = b(b-1)`, is the
+second necessary condition every solution satisfies (§2 refuted it for
+`b ≡ 3 mod 4`).  This section decides emptiness **for every base and every pair**,
+and the answer is entirely 2-adic: writing `b - 1 = 2^a · m` with `m` odd,
+
+> `R_b = ∅`  ⟺  `a = 1`, or (`a ≥ 3` and `e₂ - e₁` even and `e₁ ∤ a - 1`).
+
+The reason no odd prime enters is `ρ = 0`.  Modulo the odd part of `b-1` the
+target `T` vanishes — `2T = b(b-1)` and `b-1`'s odd part divides `T` — so the odd
+part imposes no condition at all, and the CRT decomposition the informal proof
+reaches for is never needed.  What is left is the 2-part, where `T ≡ 2^(a-1)`,
+and the whole question becomes: which 2-adic valuations can `ρ^e₁ + ρ^e₂` have?
+Exactly `1` (from odd `ρ` with `e₂-e₁` even), whatever `v₂(1 + ρ^(e₂-e₁))` is
+(odd `ρ`, `e₂-e₁` odd — always `≥ 1`), and the multiples of `e₁` (from even `ρ`).
+Never `0`, which is Theorem B.
+
+Theorem B is therefore the `a = 1` case of this theorem, and the three "extra"
+2-adic dead classes the report found for `(2,4)`, `(4,6)` and `(3,7)` are the
+second clause.  §7.5 runs both ends on numerals.
+-/
+
+/-! ### §7.0  A two-adic toolkit -/
+
+theorem pow_two_eq (x : Nat) : x ^ 2 = x * x := by rw [Nat.pow_succ, Nat.pow_one]
+
+theorem mul_pow_two_comm (p q m : Nat) : (2^p * m) * (2^q * m) = 2^(p+q) * (m*m) := by
+  rw [Nat.pow_add, Nat.mul_assoc, ← Nat.mul_assoc m (2^q) m, Nat.mul_comm m (2^q),
+      Nat.mul_assoc, ← Nat.mul_assoc]
+
+theorem odd_pow {u : Nat} (hu : u % 2 = 1) (e : Nat) : u ^ e % 2 = 1 := by
+  induction e with
+  | zero => simp
+  | succ j ih => rw [Nat.pow_succ, Nat.mul_mod, ih, hu]
+
+/-- an odd square is `1` mod 4 -- the only fact about squares this section needs. -/
+theorem odd_sq_mod_four {x : Nat} (hx : x % 2 = 1) : x ^ 2 % 4 = 1 % 4 := by
+  obtain ⟨t, ht⟩ : ∃ t, x = 2 * t + 1 := ⟨x / 2, by omega⟩
+  have hsq : x ^ 2 = 4 * (t * t) + 4 * t + 1 := by
+    rw [pow_two_eq, ht, Nat.add_mul, Nat.mul_add, Nat.mul_add, Nat.mul_one, Nat.one_mul,
+        Nat.mul_assoc, Nat.mul_left_comm t 2 t, ← Nat.mul_assoc]
+    omega
+  omega
+
+/-- `(b-1)/2 = 2^(a-1)·m` is `2^(a-1)` mod `2^a`: the target, localised. -/
+theorem half_mod {a m : Nat} (hm : m % 2 = 1) : (2 ^ a * m) % (2 ^ (a+1)) = 2 ^ a := by
+  obtain ⟨t, ht⟩ : ∃ t, m = 2 * t + 1 := ⟨m / 2, by omega⟩
+  have h : 2 ^ a * m = 2 ^ a + 2 ^ (a+1) * t := by
+    rw [ht, Nat.mul_add, Nat.mul_one, Nat.pow_succ, Nat.mul_comm (2^a) 2, ← Nat.mul_assoc,
+        Nat.mul_comm (2^a) 2, Nat.mul_assoc, Nat.add_comm]
+  rw [h, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt]
+  exact Nat.pow_lt_pow_right (by decide) (by omega)
+
+/-- every positive natural is `2^v` times an odd number -/
+theorem two_adic_split : ∀ x : Nat, 0 < x → ∃ v u, x = 2 ^ v * u ∧ u % 2 = 1 := by
+  intro x
+  induction x using Nat.strongRecOn with
+  | _ x ih =>
+    intro hx
+    by_cases h : x % 2 = 1
+    · exact ⟨0, x, by simp, h⟩
+    · obtain ⟨y, hy⟩ : ∃ y, x = 2 * y := ⟨x / 2, by omega⟩
+      obtain ⟨v, u, hu, hodd⟩ := ih y (by omega) (by omega)
+      refine ⟨v + 1, u, ?_, hodd⟩
+      rw [hy, hu, Nat.pow_succ, Nat.mul_comm (2^v) 2, Nat.mul_assoc]
+
+/-- ...and the exponent is determined, which is the whole of "the 2-adic
+valuation is well defined".  Used only through the equality `2^i·U = 2^j·V`. -/
+theorem two_pow_odd_unique {i j U V : Nat} (hU : U % 2 = 1) (hV : V % 2 = 1)
+    (h : 2 ^ i * U = 2 ^ j * V) : i = j := by
+  rcases Nat.lt_trichotomy i j with hlt | heq | hgt
+  · obtain ⟨s, hs⟩ : ∃ s, j = i + (s + 1) := ⟨j - i - 1, by omega⟩
+    rw [hs, Nat.pow_add, Nat.mul_assoc] at h
+    have := Nat.eq_of_mul_eq_mul_left (Nat.pow_pos (by decide) (n := i)) h
+    have h2 : (2 ^ (s+1) * V) % 2 = 0 := by
+      rw [Nat.pow_succ, Nat.mul_comm (2^s) 2, Nat.mul_assoc, Nat.mul_mod_right]
+    omega
+  · exact heq
+  · obtain ⟨s, hs⟩ : ∃ s, i = j + (s + 1) := ⟨i - j - 1, by omega⟩
+    rw [hs, Nat.pow_add, Nat.mul_assoc] at h
+    have := Nat.eq_of_mul_eq_mul_left (Nat.pow_pos (by decide) (n := j)) h
+    have h2 : (2 ^ (s+1) * U) % 2 = 0 := by
+      rw [Nat.pow_succ, Nat.mul_comm (2^s) 2, Nat.mul_assoc, Nat.mul_mod_right]
+    omega
+
+theorem pow_mod_one {x M : Nat} (h : x % M = 1 % M) (c : Nat) : x ^ c % M = 1 % M := by
+  induction c with
+  | zero => simp
+  | succ j ih => rw [Nat.pow_succ, Nat.mul_mod, ih, h, ← Nat.mul_mod, Nat.one_mul]
+
+/-- a square root of `1` is fixed by odd powers and trivialised by even ones -/
+theorem pow_mod_sq_one {x M : Nat} (h : x ^ 2 % M = 1 % M) :
+    ∀ k, x ^ (2 * k) % M = 1 % M ∧ x ^ (2 * k + 1) % M = x % M := by
+  have h' : x * x % M = 1 % M := by rw [← pow_two_eq]; exact h
+  intro k
+  induction k with
+  | zero => simp
+  | succ j ih =>
+    have heven : x ^ (2 * (j+1)) % M = 1 % M := by
+      have hstep : 2 * (j + 1) = (2 * j + 1) + 1 := by omega
+      rw [hstep, Nat.pow_succ, Nat.mul_mod, ih.2, ← Nat.mul_mod, h']
+    exact ⟨heven, by rw [Nat.pow_succ, Nat.mul_mod, heven, ← Nat.mul_mod, Nat.one_mul]⟩
+
+/-! ### §7.1  The target `T`, reduced
+
+`T = b(b-1)/2` mod `b-1` is `(b-1)/2` when `b` is odd and `0` when `b` is even.
+Both are one line and neither needs `b` again afterwards. -/
+
+theorem target_eq {b T A : Nat} (hb : 1 < b) (hT : 2 * T = b * (b - 1))
+    (hA : 2 * A = b - 1) : T % (b - 1) = A % (b - 1) := by
+  have hb1 : b = (b - 1) + 1 := by omega
+  have h2 : 2 * T = ((b-1) + 1) * (b - 1) := by rw [← hb1]; exact hT
+  rw [← hA] at h2
+  have hAA : A * (2 * A) = 2 * (A * A) := by rw [Nat.mul_left_comm]
+  have hexp : (2 * A + 1) * (2 * A) = 4 * (A * A) + 2 * A := by
+    rw [Nat.add_mul, Nat.one_mul, Nat.mul_assoc, hAA]; omega
+  rw [hexp] at h2
+  have hTv : T = A + (b - 1) * A := by
+    have hswap : (b - 1) * A = 2 * (A * A) := by rw [← hA, Nat.mul_assoc]
+    omega
+  rw [hTv, Nat.add_mul_mod_self_left]
+
+theorem target_zero {b T : Nat} (hb : 1 < b) (hT : 2 * T = b * (b - 1))
+    (hbe : b % 2 = 0) : T % (b - 1) = 0 := by
+  obtain ⟨c, hc⟩ : ∃ c, b = 2 * c := ⟨b / 2, by omega⟩
+  have hstep : b * (b - 1) = 2 * (c * (b - 1)) := by rw [hc, Nat.mul_assoc]
+  have hTv : T = c * (b - 1) := by omega
+  rw [hTv, Nat.mul_mod_left]
+
+/-! ### §7.2  The live direction: four explicit residues
+
+Each live class gets a residue written down, so this half of the theorem needs
+no existence argument and, in particular, no Chinese remainder theorem. -/
+
+/-- The shape two of the four witnesses reduce to: if the sum is `2^w · m · W`
+with `W` odd and `b - 1 = 2^(w+1)·m`, it is congruent to `T`. -/
+theorem residue_of_odd_cofactor {b T w m W S : Nat} (hb : 1 < b) (hT : 2 * T = b * (b - 1))
+    (hM : b - 1 = 2 ^ (w+1) * m) (hW : W % 2 = 1) (hS : S = 2 ^ w * (m * W)) :
+    S % (b - 1) = T % (b - 1) := by
+  have h2A : 2 * (2 ^ w * m) = b - 1 := by rw [hM, ← Nat.mul_assoc, ← Nat.pow_succ']
+  obtain ⟨W', hW'⟩ : ∃ W', W = 2 * W' + 1 := ⟨W / 2, by omega⟩
+  have hval : S = 2 ^ w * m + (b - 1) * W' := by
+    rw [hS, hW', hM, Nat.pow_succ, Nat.mul_add m (2 * W') 1, Nat.mul_one,
+        Nat.mul_add (2 ^ w) (m * (2 * W')) m, Nat.mul_left_comm m 2 W',
+        ← Nat.mul_assoc (2 ^ w) 2 (m * W'), ← Nat.mul_assoc (2 ^ w * 2) m W']
+    omega
+  rw [hval, Nat.add_mul_mod_self_left, target_eq hb hT h2A]
+
+/-- `a = 0`, i.e. `b` even: `ρ = 0`, because then `T ≡ 0 (mod b-1)`. -/
+theorem residue_of_even_base {b e₁ e₂ T : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (he₂ : 1 ≤ e₂)
+    (hT : 2 * T = b * (b - 1)) (hbe : b % 2 = 0) :
+    (0 ^ e₁ + 0 ^ e₂) % (b - 1) = T % (b - 1) := by
+  rw [Nat.zero_pow (by omega), Nat.zero_pow (by omega), target_zero hb hT hbe]
+  simp
+
+/-- `x + 1 = A`, `2A = M` and `M ∣ A²` make `x` a square root of `1` mod `M`.
+With `A = M/2` the cross term `2x = M - 2` is the point: it wipes out `-2A`. -/
+theorem sq_one_of_half {x A M K : Nat} (hx1 : x + 1 = A) (h2A : 2 * A = M)
+    (hAA : A * A = M * K) (hK : 0 < K) : x ^ 2 % M = 1 % M := by
+  have hexp : (x + 1) * (x + 1) = x * x + 2 * x + 1 := by
+    rw [Nat.add_mul, Nat.mul_add, Nat.mul_add, Nat.mul_one, Nat.one_mul, Nat.one_mul]
+    omega
+  have hsq : x * x + 2 * x + 1 = A * A := by rw [← hexp, hx1]
+  obtain ⟨K', hK'⟩ : ∃ K', K = K' + 1 := ⟨K - 1, by omega⟩
+  have hMK : M * K = M * K' + M := by rw [hK', Nat.mul_add, Nat.mul_one]
+  have hxx : x * x = 1 + M * K' := by omega
+  rw [pow_two_eq, hxx, Nat.add_mul_mod_self_left]
+
+/-- a square root of `1` raised to exponents of opposite parity contributes
+`x + 1` — one power gives `x`, the other `1`. -/
+theorem pair_pow_sq_one {x M e₁ e₂ : Nat} (h : x ^ 2 % M = 1 % M) (hpar : e₁ % 2 ≠ e₂ % 2) :
+    (x ^ e₁ + x ^ e₂) % M = (x + 1) % M := by
+  have hpow := pow_mod_sq_one h
+  have hfin : ∀ f g : Nat, f % 2 = 0 → g % 2 = 1 →
+      (x ^ f % M + x ^ g % M) % M = (x + 1) % M := by
+    intro f g hf hg
+    obtain ⟨k, hk⟩ : ∃ k, f = 2 * k := ⟨f / 2, by omega⟩
+    obtain ⟨l, hl⟩ : ∃ l, g = 2 * l + 1 := ⟨g / 2, by omega⟩
+    rw [hk, hl, (hpow k).1, (hpow l).2, ← Nat.add_mod, Nat.add_comm]
+  rw [Nat.add_mod]
+  rcases Nat.lt_or_ge (e₁ % 2) (e₂ % 2) with h' | h'
+  · exact hfin e₁ e₂ (by omega) (by omega)
+  · rw [Nat.add_comm (x ^ e₁ % M)]
+    exact hfin e₂ e₁ (by omega) (by omega)
+
+/-- `a ≥ 2` and `e₂ - e₁` odd: `ρ = (b-1)/2 - 1`, whose square is `1`, so the two
+powers contribute `ρ` and `1` and their sum is `(b-1)/2 ≡ T`.  Note the witness
+is *not* `≡ 0` mod the odd part of `b-1`: there it is `-1`, and the two opposite
+parities cancel it. -/
+theorem residue_of_odd_gap {b e₁ e₂ T c m : Nat} (hb : 1 < b) (hm : m % 2 = 1)
+    (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ (c + 2) * m) (hpar : e₁ % 2 ≠ e₂ % 2) :
+    ((2 ^ (c+1) * m - 1) ^ e₁ + (2 ^ (c+1) * m - 1) ^ e₂) % (b - 1) = T % (b - 1) := by
+  have hmpos : 0 < m := by omega
+  have hApos : 0 < 2 ^ (c+1) * m := Nat.mul_pos (Nat.pow_pos (by decide)) hmpos
+  have h2A : 2 * (2 ^ (c+1) * m) = b - 1 := by
+    rw [hM, ← Nat.mul_assoc, ← Nat.pow_succ']
+  have hAA : (2 ^ (c+1) * m) * (2 ^ (c+1) * m) = (b - 1) * (2 ^ c * m) := by
+    rw [hM, mul_pow_two_comm, mul_pow_two_comm]
+    have hidx : c + 1 + (c + 1) = c + 2 + c := by omega
+    rw [hidx]
+  have hK : 0 < 2 ^ c * m := Nat.mul_pos (Nat.pow_pos (by decide)) hmpos
+  have hsq := sq_one_of_half (x := 2 ^ (c+1) * m - 1) (A := 2 ^ (c+1) * m) (M := b - 1)
+    (K := 2 ^ c * m) (by omega) h2A hAA hK
+  rw [pair_pow_sq_one hsq hpar]
+  have hx1 : (2 ^ (c+1) * m - 1) + 1 = 2 ^ (c+1) * m := by omega
+  rw [hx1, target_eq hb hT h2A]
+
+/-- `a = 2`: `ρ = m²`, where `b - 1 = 4m`.  An odd square is `1` mod 8, so the
+sum is `m` times something `≡ 2 (mod 4)` — valuation exactly `1 = a - 1`. -/
+theorem residue_of_two_adic_two {b e₁ e₂ T m : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (he₂ : 1 ≤ e₂)
+    (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ 2 * m) :
+    ((m ^ 2) ^ e₁ + (m ^ 2) ^ e₂) % (b - 1) = T % (b - 1) := by
+  obtain ⟨f, rfl⟩ : ∃ f, e₁ = f + 1 := ⟨e₁ - 1, by omega⟩
+  obtain ⟨g, rfl⟩ : ∃ g, e₂ = g + 1 := ⟨e₂ - 1, by omega⟩
+  have hpow : ∀ e : Nat, (m ^ 2) ^ (e+1) = m ^ (2 * e + 1) * m := by
+    intro e
+    rw [← Nat.pow_mul]
+    have hidx : 2 * (e + 1) = (2 * e + 1) + 1 := by omega
+    rw [hidx, Nat.pow_succ]
+  have hZ : (m ^ (2*f+1) + m ^ (2*g+1)) % 4 = 2 := by
+    have h1 := (pow_mod_sq_one (M := 4) (odd_sq_mod_four hm) f).2
+    have h2 := (pow_mod_sq_one (M := 4) (odd_sq_mod_four hm) g).2
+    rw [Nat.add_mod, h1, h2, ← Nat.add_mod]
+    omega
+  obtain ⟨s, hs⟩ : ∃ s, m ^ (2*f+1) + m ^ (2*g+1) = 2 * (2 * s + 1) :=
+    ⟨(m ^ (2*f+1) + m ^ (2*g+1) - 2) / 4, by omega⟩
+  refine residue_of_odd_cofactor (w := 1) (m := m) (W := 2 * s + 1) hb hT (by rw [hM])
+    (by omega) ?_
+  rw [hpow f, hpow g, ← Nat.add_mul, hs, Nat.pow_one, Nat.mul_comm m (2 * s + 1),
+      ← Nat.mul_assoc]
+
+/-- `a - 1 = e₁·V` with `V ≥ 1`: `ρ = 2^V·m`, where `b - 1 = 2^a·m`.  Here
+`v₂(ρ^e₁ + ρ^e₂) = V·e₁` exactly, because `1 + ρ^(e₂-e₁)` is odd. -/
+theorem residue_of_dvd {b e₁ e₂ T m V : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (hlt : e₁ < e₂)
+    (hV : 1 ≤ V) (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1))
+    (hM : b - 1 = 2 ^ (V * e₁ + 1) * m) :
+    ((2 ^ V * m) ^ e₁ + (2 ^ V * m) ^ e₂) % (b - 1) = T % (b - 1) := by
+  obtain ⟨V, rfl⟩ : ∃ V', V = V' + 1 := ⟨V - 1, by omega⟩
+  obtain ⟨f, hf⟩ : ∃ f, e₁ = f + 1 := ⟨e₁ - 1, by omega⟩
+  obtain ⟨d, hd⟩ : ∃ d, e₂ = e₁ + (d + 1) := ⟨e₂ - e₁ - 1, by omega⟩
+  have hlow : (2 ^ (V+1) * m) ^ e₁ = 2 ^ ((V+1) * e₁) * (m * m ^ f) := by
+    rw [Nat.mul_pow, ← Nat.pow_mul, hf, Nat.pow_succ (m := f), Nat.mul_comm (m ^ f) m]
+  have hhigh : (2 ^ (V+1) * m) ^ e₂
+      = 2 ^ ((V+1) * e₁) * (m * (2 ^ ((V+1) * (d+1)) * (m ^ f * m ^ (d+1)))) := by
+    rw [Nat.mul_pow, ← Nat.pow_mul, hd, Nat.mul_add (V+1) e₁ (d+1),
+        Nat.pow_add 2 ((V+1) * e₁) ((V+1) * (d+1)),
+        Nat.pow_add m e₁ (d+1), hf, Nat.pow_succ (m := f), Nat.mul_comm (m ^ f) m,
+        Nat.mul_assoc m (m ^ f) (m ^ (d+1)),
+        Nat.mul_assoc (2 ^ ((V+1) * (f+1))) (2 ^ ((V+1) * (d+1))) (m * (m ^ f * m ^ (d+1))),
+        Nat.mul_left_comm (2 ^ ((V+1) * (d+1))) m (m ^ f * m ^ (d+1))]
+  refine residue_of_odd_cofactor (w := (V+1) * e₁) (m := m)
+    (W := m ^ f + 2 ^ ((V+1) * (d+1)) * (m ^ f * m ^ (d+1))) hb hT ?_ ?_ ?_
+  · rw [hM, Nat.mul_comm (V+1) e₁]
+  · have h1 : m ^ f % 2 = 1 := odd_pow hm f
+    have h2 : (2 ^ ((V+1) * (d+1)) * (m ^ f * m ^ (d+1))) % 2 = 0 := by
+      obtain ⟨p, hp⟩ : ∃ p, (V+1) * (d+1) = p + 1 :=
+        ⟨(V+1)*(d+1) - 1, by
+          have := Nat.mul_pos (n := V+1) (m := d+1) (by omega) (by omega); omega⟩
+      rw [hp, Nat.pow_succ, Nat.mul_comm (2^p) 2, Nat.mul_assoc, Nat.mul_mod_right]
+    omega
+  · rw [hlow, hhigh, ← Nat.mul_add (2 ^ ((V+1) * e₁)),
+        ← Nat.mul_add m (m ^ f) (2 ^ ((V+1) * (d+1)) * (m ^ f * m ^ (d+1)))]
+
+/-! ### §7.3  The dead direction -/
+
+theorem sum_factor (ρ e₁ d : Nat) : ρ ^ e₁ + ρ ^ (e₁ + (d+1)) = ρ ^ e₁ * (1 + ρ ^ (d+1)) := by
+  rw [Nat.mul_add, Nat.mul_one, Nat.pow_add]
+
+theorem sum_shape {S a' q : Nat} (hdiv : 2 ^ (a'+1) * q + 2 ^ a' = S) :
+    S = 2 ^ a' * (2 * q + 1) := by
+  have hexp : 2 ^ a' * (2 * q + 1) = 2 ^ (a'+1) * q + 2 ^ a' := by
+    rw [Nat.mul_add, Nat.mul_one, ← Nat.mul_assoc, Nat.pow_succ]
+  omega
+
+/-- The 2-adic admissibility condition of Theorem C, in terms of `a = v₂(b-1)`.
+`a ≠ 1` is Theorem B; the rest bites only at `a ≥ 3` with `e₂ - e₁` even. -/
+def LiveTwoAdic (a e₁ e₂ : Nat) : Prop :=
+  a ≠ 1 ∧ (a ≤ 2 ∨ (e₂ - e₁) % 2 = 1 ∨ e₁ ∣ (a - 1))
+
+/-- **Theorem C, necessity.**  A residue exists only in the classes above.  The
+argument is one valuation count: `ρ^e₁ + ρ^e₂ = ρ^e₁·(1 + ρ^(e₂-e₁))` must have
+`v₂` exactly `a - 1`, and the three cases of `ρ` (zero, odd, even) supply the
+three clauses. -/
+theorem live_of_residue {b e₁ e₂ T a m ρ : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (hlt : e₁ < e₂)
+    (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ a * m)
+    (hρ : (ρ ^ e₁ + ρ ^ e₂) % (b - 1) = T % (b - 1)) :
+    LiveTwoAdic a e₁ e₂ := by
+  rcases Nat.eq_zero_or_pos a with rfl | hapos
+  · exact ⟨by omega, Or.inl (by omega)⟩
+  obtain ⟨a', ha'⟩ : ∃ a', a = a' + 1 := ⟨a - 1, by omega⟩
+  subst ha'
+  obtain ⟨d, hd⟩ : ∃ d, e₂ = e₁ + (d + 1) := ⟨e₂ - e₁ - 1, by omega⟩
+  -- the sum is `2^(a-1)` times an odd number
+  have h2A : 2 * (2 ^ a' * m) = b - 1 := by rw [hM, ← Nat.mul_assoc, ← Nat.pow_succ']
+  have hdvd : 2 ^ (a' + 1) ∣ (b - 1) := ⟨m, hM⟩
+  have hstep : ∀ x y : Nat, x % (b - 1) = y % (b - 1) → x % 2 ^ (a'+1) = y % 2 ^ (a'+1) := by
+    intro x y hxy
+    rw [← Nat.mod_mod_of_dvd x hdvd, ← Nat.mod_mod_of_dvd y hdvd, hxy]
+  have hSA : (ρ ^ e₁ + ρ ^ e₂) % 2 ^ (a'+1) = 2 ^ a' := by
+    rw [hstep _ _ (hρ.trans (target_eq hb hT h2A)), half_mod hm]
+  have hSodd : ρ ^ e₁ + ρ ^ e₂ = 2 ^ a' * (2 * ((ρ ^ e₁ + ρ ^ e₂) / 2 ^ (a'+1)) + 1) := by
+    refine sum_shape ?_
+    have := Nat.div_add_mod (ρ ^ e₁ + ρ ^ e₂) (2 ^ (a'+1))
+    omega
+  have hUodd : (2 * ((ρ ^ e₁ + ρ ^ e₂) / 2 ^ (a'+1)) + 1) % 2 = 1 := by omega
+  -- `ρ = 0` gives the sum `0`, which has no valuation at all
+  rcases Nat.eq_zero_or_pos ρ with rfl | hρpos
+  · have hz : (0:Nat) ^ e₁ + 0 ^ e₂ = 0 := by
+      rw [Nat.zero_pow (by omega), Nat.zero_pow (by omega)]
+    have hpos : 0 < 2 ^ a' * (2 * ((0 ^ e₁ + 0 ^ e₂) / 2 ^ (a'+1)) + 1) :=
+      Nat.mul_pos (Nat.pow_pos (by decide)) (by omega)
+    omega
+  obtain ⟨w, u, hu, huodd⟩ := two_adic_split ρ hρpos
+  rw [hd] at hSodd hUodd ⊢
+  rw [sum_factor] at hSodd hUodd
+  rcases Nat.eq_zero_or_pos w with rfl | hwpos
+  · -- `ρ` odd
+    have hρodd : ρ % 2 = 1 := by rw [hu] at *; simpa using huodd
+    by_cases hpar : (d + 1) % 2 = 0
+    · -- `e₂ - e₁` even: `ρ^(e₂-e₁) ≡ 1 (mod 4)`, so the valuation is exactly 1
+      obtain ⟨k, hk⟩ : ∃ k, d + 1 = 2 * k := ⟨(d+1) / 2, by omega⟩
+      have hpow4 : ρ ^ (d+1) % 4 = 1 := by
+        rw [hk, Nat.pow_mul, pow_mod_one (odd_sq_mod_four hρodd) k]
+      obtain ⟨t, ht⟩ : ∃ t, 1 + ρ ^ (d+1) = 2 * (2 * t + 1) := ⟨(ρ ^ (d+1) - 1) / 4, by omega⟩
+      have hfac : ρ ^ e₁ * (1 + ρ ^ (d+1)) = 2 ^ 1 * (ρ ^ e₁ * (2 * t + 1)) := by
+        rw [ht, Nat.pow_one, Nat.mul_left_comm]
+      have hodd2 : (ρ ^ e₁ * (2 * t + 1)) % 2 = 1 := by
+        rw [Nat.mul_mod, odd_pow hρodd e₁]
+        omega
+      have := two_pow_odd_unique hodd2 hUodd (hfac.symm.trans hSodd)
+      exact ⟨by omega, Or.inl (by omega)⟩
+    · -- `e₂ - e₁` odd: the valuation is unconstrained, but positive
+      have hodd : ρ ^ (d+1) % 2 = 1 := odd_pow hρodd _
+      obtain ⟨c, U, hcU, hUo⟩ := two_adic_split (1 + ρ ^ (d+1)) (by omega)
+      have hcpos : 0 < c := by
+        rcases Nat.eq_zero_or_pos c with rfl | h
+        · rw [Nat.pow_zero, Nat.one_mul] at hcU; omega
+        · exact h
+      have hfac : ρ ^ e₁ * (1 + ρ ^ (d+1)) = 2 ^ c * (ρ ^ e₁ * U) := by
+        rw [hcU, Nat.mul_left_comm]
+      have hodd2 : (ρ ^ e₁ * U) % 2 = 1 := by
+        rw [Nat.mul_mod, odd_pow hρodd e₁, hUo]
+      have := two_pow_odd_unique hodd2 hUodd (hfac.symm.trans hSodd)
+      exact ⟨by omega, Or.inr (Or.inl (by omega))⟩
+  · -- `ρ` even: `1 + ρ^(e₂-e₁)` is odd, so the valuation is `v₂(ρ)·e₁`
+    have hρeven : ρ % 2 = 0 := by
+      rw [hu]
+      obtain ⟨p, hp⟩ : ∃ p, w = p + 1 := ⟨w - 1, by omega⟩
+      rw [hp, Nat.pow_succ, Nat.mul_comm (2^p) 2, Nat.mul_assoc, Nat.mul_mod_right]
+    have hcof : (1 + ρ ^ (d+1)) % 2 = 1 := by
+      have := pow_mod_two (n := ρ) (d+1) (by omega)
+      omega
+    have hfac : ρ ^ e₁ * (1 + ρ ^ (d+1)) = 2 ^ (w * e₁) * (u ^ e₁ * (1 + ρ ^ (d+1))) := by
+      rw [hu, Nat.mul_pow, ← Nat.pow_mul, Nat.mul_assoc]
+    have hodd2 : (u ^ e₁ * (1 + ρ ^ (d+1))) % 2 = 1 := by
+      rw [Nat.mul_mod, odd_pow huodd e₁, hcof]
+    have hwe := two_pow_odd_unique hodd2 hUodd (hfac.symm.trans hSodd)
+    have : 0 < w * e₁ := Nat.mul_pos hwpos (by omega)
+    exact ⟨by omega, Or.inr (Or.inr ⟨w, by rw [Nat.mul_comm]; omega⟩)⟩
+
+/-! ### §7.4  Theorem C -/
+
+/--
+**Theorem C.**  For every base `b > 1`, every pair `1 ≤ e₁ < e₂` and every
+factorisation `b - 1 = 2^a·m` with `m` odd, the residue set is nonempty **iff**
+`a ≠ 1` and one of `a ≤ 2`, `e₂ - e₁` odd, `e₁ ∣ a - 1` holds.
+
+No odd prime divisor of `b-1` appears anywhere: the classification is a
+condition on `v₂(b-1)` and the pair alone, which is why the dead bases form a
+union of congruence classes mod powers of two.
+-/
+theorem residues_nonempty_iff {b e₁ e₂ T a m : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (hlt : e₁ < e₂)
+    (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ a * m) :
+    (∃ ρ, (ρ ^ e₁ + ρ ^ e₂) % (b - 1) = T % (b - 1)) ↔ LiveTwoAdic a e₁ e₂ := by
+  constructor
+  · rintro ⟨ρ, hρ⟩
+    exact live_of_residue hb he₁ hlt hm hT hM hρ
+  · rintro ⟨hne, hcases⟩
+    rcases Nat.lt_or_ge a 3 with hsmall | hbig
+    · have ha : a = 0 ∨ a = 2 := by omega
+      rcases ha with rfl | rfl
+      · rw [Nat.pow_zero, Nat.one_mul] at hM
+        exact ⟨0, residue_of_even_base hb he₁ (by omega) hT (by omega)⟩
+      · exact ⟨m ^ 2, residue_of_two_adic_two hb he₁ (by omega) hm hT hM⟩
+    · rcases hcases with h | h | h
+      · omega
+      · obtain ⟨c, rfl⟩ : ∃ c, a = c + 2 := ⟨a - 2, by omega⟩
+        exact ⟨_, residue_of_odd_gap hb hm hT hM (by omega)⟩
+      · obtain ⟨V, hV⟩ := h
+        have hVpos : 1 ≤ V := by
+          rcases Nat.eq_zero_or_pos V with rfl | h'
+          · omega
+          · exact h'
+        have hMV : b - 1 = 2 ^ (V * e₁ + 1) * m := by
+          rw [hM, Nat.mul_comm V e₁]
+          have hidx : e₁ * V + 1 = a := by omega
+          rw [hidx]
+        exact ⟨_, residue_of_dvd hb he₁ hlt hVpos hm hT hMV⟩
+
+/-- **Theorem C, dead form** — the classification read as a list of dead classes,
+which is how §4 of the report states it. -/
+theorem residues_empty_iff {b e₁ e₂ T a m : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (hlt : e₁ < e₂)
+    (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ a * m) :
+    (∀ ρ, (ρ ^ e₁ + ρ ^ e₂) % (b - 1) ≠ T % (b - 1))
+      ↔ (a = 1 ∨ (3 ≤ a ∧ (e₂ - e₁) % 2 = 0 ∧ ¬ e₁ ∣ (a - 1))) := by
+  have hiff := residues_nonempty_iff hb he₁ hlt hm hT hM
+  constructor
+  · intro hall
+    have hnot : ¬ LiveTwoAdic a e₁ e₂ := fun hl => (hiff.2 hl).elim (fun ρ hρ => hall ρ hρ)
+    by_cases h1 : a = 1
+    · exact Or.inl h1
+    by_cases h2 : a ≤ 2
+    · exact absurd ⟨h1, Or.inl h2⟩ hnot
+    by_cases h3 : (e₂ - e₁) % 2 = 1
+    · exact absurd ⟨h1, Or.inr (Or.inl h3)⟩ hnot
+    by_cases h4 : e₁ ∣ (a - 1)
+    · exact absurd ⟨h1, Or.inr (Or.inr h4)⟩ hnot
+    exact Or.inr ⟨by omega, by omega, h4⟩
+  · intro hdead ρ hρ
+    obtain ⟨hne, hcases⟩ := live_of_residue hb he₁ hlt hm hT hM hρ
+    rcases hdead with rfl | ⟨h3, hpar, hnd⟩
+    · exact hne rfl
+    · rcases hcases with h | h | h
+      · omega
+      · omega
+      · exact hnd h
+
+/-- The operative form: a base in a dead 2-adic class admits no `n` whose digit
+sums satisfy the identity, hence no solution.  Same shape as
+`no_nice_of_mod_four`, of which this is the generalisation. -/
+theorem no_nice_of_two_adic {b e₁ e₂ a m n : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (hlt : e₁ < e₂)
+    (hm : m % 2 = 1) (hM : b - 1 = 2 ^ a * m)
+    (hdead : a = 1 ∨ (3 ≤ a ∧ (e₂ - e₁) % 2 = 0 ∧ ¬ e₁ ∣ (a - 1)))
+    (hT : 2 * (digitSum b (n ^ e₁) + digitSum b (n ^ e₂)) = b * (b - 1)) : False := by
+  have hd1 : n ^ e₁ % (b-1) = digitSum b (n ^ e₁) % (b-1) := digitSum_mod hb _
+  have hd2 : n ^ e₂ % (b-1) = digitSum b (n ^ e₂) % (b-1) := digitSum_mod hb _
+  have hsum : (n ^ e₁ + n ^ e₂) % (b-1)
+      = (digitSum b (n ^ e₁) + digitSum b (n ^ e₂)) % (b-1) := by
+    rw [Nat.add_mod, hd1, hd2, ← Nat.add_mod]
+  exact (residues_empty_iff hb he₁ hlt hm hT hM).2 hdead n hsum
+
+/-! ### §7.5  Non-vacuity, and the theorem firing
+
+The `(2,4)` pair at base 17 is the sharpest example available: `17 % 3 = 2` so
+Theorem A says nothing, `17 % 4 = 1` so Theorem B says nothing, and
+`N(2,4) = 12` with `17 ∤ 12` so Theorem G says nothing.  `v₂(16) = 4`, the gap
+`4 - 2 = 2` is even and `2 ∤ 3`, so Theorem C alone kills it.  Base 33 — the very
+next base with `v₂(b-1) ≥ 3` that A leaves alive — is *not* killed, and the
+witness is exhibited, so the boundary `e₁ ∣ a-1` is sharp and not slack. -/
+
+/-- `(2,4)` in base 17: no residue at all.  `T = 136`, `2·136 = 17·16`. -/
+theorem two_four_base_seventeen_dead (ρ : Nat) : (ρ ^ 2 + ρ ^ 4) % 16 ≠ 136 % 16 :=
+  (residues_empty_iff (b := 17) (a := 4) (m := 1) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)).2 (Or.inr ⟨by decide, by decide, by decide⟩) ρ
+
+/-- ...and base 33 is alive, with the witness `ρ = 2^2·1 = 4` the theorem
+predicts: `v₂(32) = 5` and `e₁ = 2 ∣ 4`. -/
+theorem two_four_base_thirtythree_live : (4 ^ 2 + 4 ^ 4) % 32 = 528 % 32 := by decide
+
+/-- Base 10 had better be alive, or the theorem would contradict 69.
+`v₂(9) = 0`, so the `a = 0` clause applies and `ρ = 0` is a residue — as is 69
+itself, which is the residue the solution actually lives in. -/
+theorem base_ten_live : LiveTwoAdic 0 2 3 := ⟨by decide, Or.inl (by decide)⟩
+
+theorem base_ten_residue : (69 ^ 2 + 69 ^ 3) % 9 = 45 % 9 := by decide
+
+/-- Theorem B is the `a = 1` case: `b ≡ 3 (mod 4)` is exactly `v₂(b-1) = 1`.
+Re-deriving `residues_empty_of_mod_four` from Theorem C, for every pair. -/
+theorem residues_empty_of_mod_four_of_C {b e₁ e₂ T ρ : Nat}
+    (hb : 1 < b) (he₁ : 1 ≤ e₁) (hlt : e₁ < e₂) (hmod : b % 4 = 3)
+    (hT : 2 * T = b * (b - 1)) :
+    (ρ ^ e₁ + ρ ^ e₂) % (b - 1) ≠ T % (b - 1) := by
+  refine (residues_empty_iff (a := 1) (m := (b-1)/2) hb he₁ hlt (by omega) hT ?_).2
+    (Or.inl rfl) ρ
+  rw [Nat.pow_one]
+  omega
+
+/-! ### §7.6  The single-exponent family
+
+`n^e` alone pandigital is the `E = e` member of the family, and §13 of the
+report recommends it as the best compute target — which makes "which bases are
+live" load-bearing there.  The same valuation count answers it, and more simply,
+because `v₂(ρ^e) = e·v₂(ρ)` with no cofactor `1 + ρ^d` to think about:
+
+> `R_b = ∅`  ⟺  `a ≥ 1` and `e ∤ a - 1`.
+
+Note `a = 1` is **live** here — Theorem B needs the sum `ρ^e₁ + ρ^e₂ ≡ 2ρ`, and a
+single exponent has no partner to pair with — which is why `b ≡ 3 (mod 4)`
+survives for `n^4` and not for `(1,3)`. -/
+
+/-- `a - 1 = e·V` (including `V = 0`, i.e. `a = 1`): `ρ = 2^V·m`. -/
+theorem residue_single_of_dvd {b e T m V : Nat} (hb : 1 < b) (he : 1 ≤ e) (hm : m % 2 = 1)
+    (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ (V * e + 1) * m) :
+    (2 ^ V * m) ^ e % (b - 1) = T % (b - 1) := by
+  obtain ⟨f, rfl⟩ : ∃ f, e = f + 1 := ⟨e - 1, by omega⟩
+  refine residue_of_odd_cofactor (w := V * (f+1)) (m := m) (W := m ^ f) hb hT hM
+    (odd_pow hm f) ?_
+  rw [Nat.mul_pow, ← Nat.pow_mul, Nat.pow_succ (m := f), Nat.mul_comm (m ^ f) m]
+
+/-- `a = 0`, i.e. `b` even: `ρ = 0`. -/
+theorem residue_single_of_even_base {b e T : Nat} (hb : 1 < b) (he : 1 ≤ e)
+    (hT : 2 * T = b * (b - 1)) (hbe : b % 2 = 0) : (0:Nat) ^ e % (b - 1) = T % (b - 1) := by
+  rw [Nat.zero_pow (by omega), target_zero hb hT hbe]
+  simp
+
+/-- **Theorem C, single-exponent form.**  (`a - 1` is truncated subtraction, so
+the `a = 0` disjunct is formally implied by the second; it is kept because the
+mathematics has two cases — even base, and `v₂(b-1) ≡ 1 mod e` — not one.) -/
+theorem residues_single_nonempty_iff {b e T a m : Nat} (hb : 1 < b) (he : 1 ≤ e)
+    (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ a * m) :
+    (∃ ρ, ρ ^ e % (b - 1) = T % (b - 1)) ↔ (a = 0 ∨ e ∣ (a - 1)) := by
+  constructor
+  · rintro ⟨ρ, hρ⟩
+    rcases Nat.eq_zero_or_pos a with rfl | hapos
+    · exact Or.inl rfl
+    obtain ⟨a', ha'⟩ : ∃ a', a = a' + 1 := ⟨a - 1, by omega⟩
+    subst ha'
+    have h2A : 2 * (2 ^ a' * m) = b - 1 := by rw [hM, ← Nat.mul_assoc, ← Nat.pow_succ']
+    have hdvd : 2 ^ (a' + 1) ∣ (b - 1) := ⟨m, hM⟩
+    have hstep : ∀ x y : Nat, x % (b - 1) = y % (b - 1) → x % 2 ^ (a'+1) = y % 2 ^ (a'+1) := by
+      intro x y hxy
+      rw [← Nat.mod_mod_of_dvd x hdvd, ← Nat.mod_mod_of_dvd y hdvd, hxy]
+    have hSA : ρ ^ e % 2 ^ (a'+1) = 2 ^ a' := by
+      rw [hstep _ _ (hρ.trans (target_eq hb hT h2A)), half_mod hm]
+    have hSodd : ρ ^ e = 2 ^ a' * (2 * (ρ ^ e / 2 ^ (a'+1)) + 1) := by
+      refine sum_shape ?_
+      have := Nat.div_add_mod (ρ ^ e) (2 ^ (a'+1))
+      omega
+    have hUodd : (2 * (ρ ^ e / 2 ^ (a'+1)) + 1) % 2 = 1 := by omega
+    rcases Nat.eq_zero_or_pos ρ with rfl | hρpos
+    · have hz : (0:Nat) ^ e = 0 := Nat.zero_pow (by omega)
+      have hpos : 0 < 2 ^ a' * (2 * ((0:Nat) ^ e / 2 ^ (a'+1)) + 1) :=
+        Nat.mul_pos (Nat.pow_pos (by decide)) (by omega)
+      omega
+    obtain ⟨w, u, hu, huodd⟩ := two_adic_split ρ hρpos
+    have hfac : ρ ^ e = 2 ^ (w * e) * u ^ e := by rw [hu, Nat.mul_pow, ← Nat.pow_mul]
+    have hwe := two_pow_odd_unique (odd_pow huodd e) hUodd (hfac.symm.trans hSodd)
+    exact Or.inr ⟨w, by rw [Nat.mul_comm]; omega⟩
+  · intro h
+    rcases h with rfl | ⟨V, hV⟩
+    · rw [Nat.pow_zero, Nat.one_mul] at hM
+      exact ⟨0, residue_single_of_even_base hb he hT (by omega)⟩
+    · rcases Nat.eq_zero_or_pos a with rfl | hapos
+      · rw [Nat.pow_zero, Nat.one_mul] at hM
+        exact ⟨0, residue_single_of_even_base hb he hT (by omega)⟩
+      · refine ⟨2 ^ V * m, residue_single_of_dvd hb he hm hT ?_⟩
+        rw [hM, Nat.mul_comm V e]
+        have hidx : e * V + 1 = a := by omega
+        rw [hidx]
+
+/-- `n⁴` in base 29 has no residue: `v₂(28) = 2` and `4 ∤ 1`.  This is one of the
+bases §13 of the report lists as killed, and base 8 — where the only known
+solution `42⁴` lives — is even, hence `a = 0`, hence live. -/
+theorem single_four_base_twentynine_dead (ρ : Nat) : ρ ^ 4 % 28 ≠ 406 % 28 := by
+  intro h
+  rcases (residues_single_nonempty_iff (b := 29) (e := 4) (a := 2) (m := 7)
+    (by decide) (by decide) (by decide) (by decide) (by decide)).1 ⟨ρ, h⟩ with h' | h' <;>
+    revert h' <;> decide
+
+/-- ...and base 33 is live, with the residue `2^1·1 = 2` the theorem predicts:
+`v₂(32) = 5` and `4 ∣ 4`. -/
+theorem single_four_base_thirtythree_live : (2:Nat) ^ 4 % 32 = 528 % 32 := by decide
+
 end Nice
 
 #print axioms Nice.no_nice_of_dvd
@@ -1188,3 +1760,13 @@ end Nice
 #print axioms Nice.base_four_sieve_is_incomplete'
 #print axioms Nice.base_four_attained
 #print axioms Nice.base_four_band_nonempty
+#print axioms Nice.residues_nonempty_iff
+#print axioms Nice.residues_empty_iff
+#print axioms Nice.live_of_residue
+#print axioms Nice.no_nice_of_two_adic
+#print axioms Nice.two_four_base_seventeen_dead
+#print axioms Nice.two_four_base_thirtythree_live
+#print axioms Nice.base_ten_residue
+#print axioms Nice.residues_empty_of_mod_four_of_C
+#print axioms Nice.residues_single_nonempty_iff
+#print axioms Nice.single_four_base_twentynine_dead
