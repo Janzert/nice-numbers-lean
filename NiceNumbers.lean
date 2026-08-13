@@ -887,6 +887,272 @@ theorem nine_no_clash_one_three : ¬ UniversalClash 9 1 3 := by
   have hc := (clash_prime_pow_iff (p := 3) (a := 2) isPrime_three (by decide) (by decide)
     (by decide)).mp h
   omega
+
+/-! ## §6  Proposition C′ — how complete the congruence sieve is
+
+A *congruence sieve* at modulus `m` prunes a candidate `n` by testing
+`(n^e₁ + n^e₂) mod m` for membership in the set of residues that a pandigital
+pair can have.  Proposition C′ of the report claims that set is always exactly
+the one the digit-sum congruence already gives — that **no** modulus adds
+information.  This section formalises the two halves of that claim, and they
+come out differently:
+
+* **Soundness** (`sieve_sound_mod_pred`, `valOf_mod_pow_sub_one`) — the half that
+  is true for every modulus.  Casting out `b-1`s pins `x + y` mod `b-1`, and
+  more generally `x + y ≡ Σ_t b^t S_t (mod b^j - 1)` where `S_t` totals the
+  digits in positions `≡ t (mod j)`.  This is the engine of the whole
+  proposition: it is why only `j = ord_m(b)` matters, and why the block sizes
+  `c_t` are the only combinatorial data.
+* **Completeness** — the claim that nothing beyond that survives.  It is
+  **false**, and `base_four_sieve_is_incomplete` is a machine-checked
+  counterexample: in base 4 with digit lengths `(2,2)` — a genuine `(2,3)` band,
+  `n = 2` lies in it — the digit-sum congruence permits all five residues mod 5,
+  and only three occur.  So a modulus *can* buy density the digit sum does not.
+
+See REPORT-provability.md §6 for what is true instead: completeness holds under
+an explicit hypothesis on the block sizes, the deficiency elsewhere is tiny
+(base 10 loses 2 residues in 11111), and the sharp threshold is conjectural. -/
+
+/-! ### §6.0  Little-endian values, and folding the weights mod `b^j - 1` -/
+
+/-- Value of a digit list, least significant digit first. -/
+def valOf (b : Nat) : List Nat → Nat
+  | [] => 0
+  | d :: ds => d + b * valOf b ds
+
+/-- `Σ_i b^(i mod j) · dᵢ` — the same sum with the weights folded to period `j`.
+The accumulator `t` is the current position mod `j`. -/
+def wsum (b j : Nat) : Nat → List Nat → Nat
+  | _, [] => 0
+  | t, d :: ds => b ^ t * d + wsum b j ((t + 1) % j) ds
+
+theorem wsum_nil (b j t : Nat) : wsum b j t [] = 0 := rfl
+
+theorem wsum_cons (b j t d : Nat) (ds : List Nat) :
+    wsum b j t (d :: ds) = b ^ t * d + wsum b j ((t + 1) % j) ds := rfl
+
+/-- `x^q ≡ 1 (mod x-1)`, the reason weights are periodic at all. -/
+theorem pow_mod_pred {x : Nat} (hx : 1 ≤ x) : ∀ q, x ^ q % (x - 1) = 1 % (x - 1) := by
+  intro q
+  induction q with
+  | zero => rw [Nat.pow_zero]
+  | succ k ih =>
+    have hstep : x % (x - 1) = 1 % (x - 1) := by
+      have h := Nat.add_mod_left (x - 1) 1
+      rwa [show x - 1 + 1 = x from by omega] at h
+    rw [Nat.pow_succ, Nat.mul_mod, ih, hstep, ← Nat.mul_mod, Nat.one_mul]
+
+/-- Weights are periodic mod `b^j - 1`: only `u mod j` matters. -/
+theorem pow_mod_cycle {b j : Nat} (hb : 1 < b) (hj : 0 < j) (u : Nat) :
+    b ^ u % (b ^ j - 1) = b ^ (u % j) % (b ^ j - 1) := by
+  have hbj : 1 ≤ b ^ j := Nat.pow_pos (by omega)
+  have key : b ^ u = (b ^ j) ^ (u / j) * b ^ (u % j) := by
+    rw [← Nat.pow_mul, ← Nat.pow_add, Nat.div_add_mod]
+  rw [key, Nat.mul_mod, pow_mod_pred hbj (u / j), ← Nat.mul_mod, Nat.one_mul]
+
+/--
+**The block congruence.**  `b^t · valOf b ds ≡ wsum b j t ds (mod b^j - 1)`:
+reducing mod `b^j - 1` collapses the digit positions into `j` residue classes,
+and only the total of each class survives.  Everything §6 says about which
+moduli can see what comes from this one identity.
+-/
+theorem valOf_mod_wsum {b j : Nat} (hb : 1 < b) (hj : 0 < j) :
+    ∀ (ds : List Nat) (t : Nat),
+      (b ^ t * valOf b ds) % (b ^ j - 1) = wsum b j (t % j) ds % (b ^ j - 1) := by
+  intro ds
+  induction ds with
+  | nil => intro t; show (b ^ t * 0) % _ = 0 % _; rw [Nat.mul_zero]
+  | cons d ds ih =>
+    intro t
+    have hsplit : b ^ t * valOf b (d :: ds) = b ^ t * d + b ^ (t + 1) * valOf b ds := by
+      show b ^ t * (d + b * valOf b ds) = _
+      rw [Nat.mul_add, Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm b (valOf b ds)]
+    have hidx : (t % j + 1) % j = (t + 1) % j := Nat.mod_add_mod t j 1
+    rw [hsplit, wsum_cons, hidx, Nat.add_mod, Nat.add_mod (b ^ (t % j) * d),
+        Nat.mul_mod (b ^ t) d, Nat.mul_mod (b ^ (t % j)) d,
+        pow_mod_cycle hb hj t, ih (t + 1)]
+
+/-- The block congruence at `t = 0`, which is the form actually used. -/
+theorem valOf_mod_pow_sub_one {b j : Nat} (hb : 1 < b) (hj : 0 < j) (ds : List Nat) :
+    valOf b ds % (b ^ j - 1) = wsum b j 0 ds % (b ^ j - 1) := by
+  have h := valOf_mod_wsum hb hj ds 0
+  rwa [Nat.pow_zero, Nat.one_mul, Nat.zero_mod] at h
+
+/--
+**Only the block totals are visible.**  For any modulus dividing `b^j - 1`, the
+pair `(x,y)` enters the sieve only through `wsum b j 0` of each digit list — the
+`j` totals of the digits in positions `≡ t (mod j)`.  This is why the block
+sizes are the sole combinatorial data in §6, and why `j = ord_m(b)` is the only
+feature of `m` that matters.
+-/
+theorem pair_mod_pow_sub_one {b j : Nat} (hb : 1 < b) (hj : 0 < j) (d₁ d₂ : List Nat) :
+    (valOf b d₁ + valOf b d₂) % (b ^ j - 1)
+      = (wsum b j 0 d₁ + wsum b j 0 d₂) % (b ^ j - 1) := by
+  rw [Nat.add_mod, valOf_mod_pow_sub_one hb hj, valOf_mod_pow_sub_one hb hj, ← Nat.add_mod]
+
+/-- At `j = 1` the weights collapse to `1` and `wsum` is the plain digit sum. -/
+theorem wsum_one (b : Nat) : ∀ ds : List Nat, wsum b 1 0 ds = ds.sum := by
+  intro ds
+  induction ds with
+  | nil => rfl
+  | cons d ds ih => rw [wsum_cons, ih]; simp
+
+/-- **Casting out `b-1`s, for lists.**  The `j = 1` case of the block
+congruence, and the only congruence Proposition C′ claims is available. -/
+theorem valOf_mod_pred {b : Nat} (hb : 1 < b) (ds : List Nat) :
+    valOf b ds % (b - 1) = ds.sum % (b - 1) := by
+  have h := valOf_mod_pow_sub_one hb Nat.one_pos ds
+  rwa [Nat.pow_one, wsum_one] at h
+
+/-- **Soundness of the digit-sum sieve.**  A pandigital pair has
+`x + y ≡ T (mod b-1)`, where `T` is the total of all `b` digits.  Stated on the
+digit lists, so it holds for any notion of solution whose digits are those
+lists — the same convention §1-§3 use. -/
+theorem sieve_sound_mod_pred {b T : Nat} (hb : 1 < b) (d₁ d₂ : List Nat)
+    (hT : d₁.sum + d₂.sum = T) :
+    (valOf b d₁ + valOf b d₂) % (b - 1) = T % (b - 1) := by
+  rw [Nat.add_mod, valOf_mod_pred hb, valOf_mod_pred hb, ← Nat.add_mod, hT]
+
+/-- `valOf` inverts `digits`, so everything above is about actual numbers and
+not merely about lists that resemble digits. -/
+theorem valOf_digits {b : Nat} (hb : 1 < b) : ∀ x, valOf b (digits b x) = x := by
+  intro x
+  induction x using Nat.strongRecOn with
+  | _ x ih =>
+    rcases Nat.eq_zero_or_pos x with rfl | hx
+    · rw [digits_zero]; rfl
+    · rw [digits_step hb hx]
+      show x % b + b * valOf b (digits b (x / b)) = x
+      rw [ih (x / b) (Nat.div_lt_self hx hb)]
+      exact Nat.mod_add_div x b
+
+/-- …and `digitSum` of §0 is the sum of that list, so §6 and §2 are talking
+about the same quantity. -/
+theorem digitSum_eq_sum {b : Nat} (hb : 1 < b) : ∀ x, digitSum b x = (digits b x).sum := by
+  intro x
+  induction x using Nat.strongRecOn with
+  | _ x ih =>
+    rcases Nat.eq_zero_or_pos x with rfl | hx
+    · rw [digitSum_zero, digits_zero]; rfl
+    · rw [digitSum_step hb hx, digits_step hb hx, ih (x / b) (Nat.div_lt_self hx hb)]
+      simp
+
+/-- **Soundness, on numbers.**  Whatever else a sieve knows, it never learns
+more than this about `x + y` from a modulus dividing `b-1`. -/
+theorem sieve_sound {b x y T : Nat} (hb : 1 < b)
+    (hT : digitSum b x + digitSum b y = T) :
+    (x + y) % (b - 1) = T % (b - 1) := by
+  have h := sieve_sound_mod_pred (b := b) (T := T) hb (digits b x) (digits b y)
+    (by rw [← digitSum_eq_sum hb, ← digitSum_eq_sum hb]; exact hT)
+  rwa [valOf_digits hb, valOf_digits hb] at h
+
+/-! ### §6.1  Completeness fails — a machine-checked counterexample
+
+Base 4 with digit lengths `(2,2)`.  That is a genuine `(2,3)` band: `n = 2` has
+`2² = 4 = "10"` and `2³ = 8 = "20"`, two base-4 digits each, and `2 + 2 = 4 = b`,
+so Theorem A's length identity holds and neither A (`4 % 5 ≠ 1`) nor B
+(`4 % 4 ≠ 3`) kills the base.
+
+`gcd(5, b-1) = gcd(5,3) = 1`, so the digit-sum congruence mod 3 excludes **no**
+residue mod 5 whatsoever — Proposition C′ therefore predicts all five occur.
+Only three do.  The three attainable sums are `15, 18, 21`; all are `≡ 0 (mod 3)`
+as casting out 3s demands, and mod 5 they are `0, 3, 1`. -/
+
+/-- A number with exactly two base-`b` digits has the digit list you expect.
+Same two-`digits_step` unfolding as `digits_69sq`, done once and generically. -/
+theorem digits_two {b x : Nat} (hb : 1 < b) (h1 : b ≤ x) (h2 : x < b * b) :
+    digits b x = [x % b, x / b] := by
+  have hx : 0 < x := by omega
+  have hq : 0 < x / b := Nat.div_pos h1 (by omega)
+  have hqb : x / b < b := Nat.div_lt_of_lt_mul h2
+  have hq2 : x / b / b = 0 := Nat.div_eq_of_lt hqb
+  rw [digits_step hb hx, digits_step hb hq, hq2, digits_zero, Nat.mod_eq_of_lt hqb]
+
+/-- The finite heart of the counterexample, and it pins the image exactly: over
+every pair of two-digit base-4 numbers, a pandigital one sums to `0`, `1` or `3`
+mod 5 — never `2`, never `4`.  256 cases, checked by the kernel.  (The
+hypotheses are conjoined rather than curried purely so that
+`Nat.decidableBallLT` instance search succeeds; curried, it gives up.) -/
+theorem base_four_gap_core :
+    ∀ x < 16, ∀ y < 16,
+      (4 ≤ x ∧ 4 ≤ y ∧ ∀ v < 4, occ v [x % 4, x / 4, y % 4, y / 4] = 1) →
+      ((x + y) % 5 = 0 ∨ (x + y) % 5 = 1 ∨ (x + y) % 5 = 3) := by decide
+
+/-- Lifting the finite check off the digit lists and onto the numbers. -/
+theorem base_four_image {x y : Nat}
+    (hx : numDigits 4 x = 2) (hy : numDigits 4 y = 2)
+    (hpan : ∀ v, v < 4 → occ v (digits 4 x ++ digits 4 y) = 1) :
+    (x + y) % 5 = 0 ∨ (x + y) % 5 = 1 ∨ (x + y) % 5 = 3 := by
+  obtain ⟨hx1, hx2⟩ := bounds_of_numDigits (b := 4) (by decide) x 1 hx
+  obtain ⟨hy1, hy2⟩ := bounds_of_numDigits (b := 4) (by decide) y 1 hy
+  rw [Nat.pow_one] at hx1 hy1
+  rw [show (4 : Nat) ^ (1 + 1) = 16 from by decide] at hx2 hy2
+  have hdx : digits 4 x = [x % 4, x / 4] := digits_two (by decide) hx1 (by omega)
+  have hdy : digits 4 y = [y % 4, y / 4] := digits_two (by decide) hy1 (by omega)
+  rw [hdx, hdy] at hpan
+  exact base_four_gap_core x hx2 y hy2 ⟨hx1, hy1, fun v hv => hpan v hv⟩
+
+/--
+**Proposition C′ is false.**  In base 4 with digit lengths `(2,2)`, no pandigital
+pair has `x + y ≡ 2 (mod 5)` — while the digit-sum congruence, the only thing
+Proposition C′ allows a sieve to know, permits every residue mod 5 because
+`gcd(5, 4-1) = 1`.  So the modulus 5 is strictly stronger than casting out 3s,
+and "no modulus yields additional density" does not hold as stated.
+-/
+theorem base_four_sieve_is_incomplete {x y : Nat}
+    (hx : numDigits 4 x = 2) (hy : numDigits 4 y = 2)
+    (hpan : ∀ v, v < 4 → occ v (digits 4 x ++ digits 4 y) = 1) :
+    (x + y) % 5 ≠ 2 := by
+  rcases base_four_image hx hy hpan with h | h | h <;> omega
+
+/-- The same for `4`: two of the five residues are unreachable, so the sieve
+mod 5 keeps `3/5` of the residues where casting out 3s keeps all of them. -/
+theorem base_four_sieve_is_incomplete' {x y : Nat}
+    (hx : numDigits 4 x = 2) (hy : numDigits 4 y = 2)
+    (hpan : ∀ v, v < 4 → occ v (digits 4 x ++ digits 4 y) = 1) :
+    (x + y) % 5 ≠ 4 := by
+  rcases base_four_image hx hy hpan with h | h | h <;> omega
+
+/-- Non-vacuity *and* sharpness, which an impossibility statement about an empty
+hypothesis set would have neither of.  The three pandigital base-4 pairs are
+`(4,11)`, `(4,14)` and `(9,12)`, with sums `15, 18, 21` — every one `≡ 0 (mod 3)`
+as casting out 3s demands, and mod 5 they are exactly `0, 3, 1`.  So `{0,1,3}` in
+`base_four_gap_core` is attained, not merely permitted. -/
+theorem base_four_attained :
+    ((∀ v, v < 4 → occ v (digits 4 4 ++ digits 4 11) = 1) ∧ (4 + 11) % 5 = 0) ∧
+    ((∀ v, v < 4 → occ v (digits 4 4 ++ digits 4 14) = 1) ∧ (4 + 14) % 5 = 3) ∧
+    ((∀ v, v < 4 → occ v (digits 4 9 ++ digits 4 12) = 1) ∧ (9 + 12) % 5 = 1) := by
+  have h4 : digits 4 4 = [0, 1] := digits_two (by decide) (by decide) (by decide)
+  have h9 : digits 4 9 = [1, 2] := digits_two (by decide) (by decide) (by decide)
+  have h11 : digits 4 11 = [3, 2] := digits_two (by decide) (by decide) (by decide)
+  have h12 : digits 4 12 = [0, 3] := digits_two (by decide) (by decide) (by decide)
+  have h14 : digits 4 14 = [2, 3] := digits_two (by decide) (by decide) (by decide)
+  refine ⟨⟨?_, by decide⟩, ⟨?_, by decide⟩, ⟨?_, by decide⟩⟩
+  · rw [h4, h11]; decide
+  · rw [h4, h14]; decide
+  · rw [h9, h12]; decide
+
+/-- And the lengths are right, so this really is the `(2,2)` split: `4`, `9`,
+`11`, `12` and `14` all have exactly two base-4 digits. -/
+theorem base_four_lengths :
+    numDigits 4 4 = 2 ∧ numDigits 4 9 = 2 ∧ numDigits 4 11 = 2 ∧
+    numDigits 4 12 = 2 ∧ numDigits 4 14 = 2 :=
+  ⟨numDigits_eq_of_bounds (by decide) (by decide) (by decide),
+   numDigits_eq_of_bounds (by decide) (by decide) (by decide),
+   numDigits_eq_of_bounds (by decide) (by decide) (by decide),
+   numDigits_eq_of_bounds (by decide) (by decide) (by decide),
+   numDigits_eq_of_bounds (by decide) (by decide) (by decide)⟩
+
+/-- Base 4 is a genuine `(2,3)` band and not an artefact: `n = 2` has
+`2² = "10"` and `2³ = "20"`, two base-4 digits each, so the length identity
+`2 + 2 = 4 = b` holds.  Neither Theorem A (`4 % 5 ≠ 1`) nor Theorem B
+(`4 % 4 ≠ 3`) kills the base, so the counterexample sits inside the family this
+repo actually searches. -/
+theorem base_four_band_nonempty : InBand 4 2 3 2 := by
+  show numDigits 4 (2 ^ 2) + numDigits 4 (2 ^ 3) = 4
+  rw [numDigits_eq_of_bounds (b := 4) (x := 2 ^ 2) (k := 1) (by decide) (by decide) (by decide),
+      numDigits_eq_of_bounds (b := 4) (x := 2 ^ 3) (k := 1) (by decide) (by decide) (by decide)]
+
 end Nice
 
 #print axioms Nice.no_nice_of_dvd
@@ -911,3 +1177,14 @@ end Nice
 #print axioms Nice.one_three_base_six_dead
 #print axioms Nice.sixtynine_pandigital
 #print axioms Nice.base_ten_no_clash
+#print axioms Nice.valOf_mod_wsum
+#print axioms Nice.valOf_mod_pow_sub_one
+#print axioms Nice.pair_mod_pow_sub_one
+#print axioms Nice.valOf_mod_pred
+#print axioms Nice.valOf_digits
+#print axioms Nice.sieve_sound
+#print axioms Nice.base_four_gap_core
+#print axioms Nice.base_four_sieve_is_incomplete
+#print axioms Nice.base_four_sieve_is_incomplete'
+#print axioms Nice.base_four_attained
+#print axioms Nice.base_four_band_nonempty
