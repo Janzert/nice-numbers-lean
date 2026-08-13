@@ -1,12 +1,12 @@
 # Formalising the nice-number theorems in Lean 4
 
-**Answer to "can any of the proofs be written in Lean?": yes — Theorems A and B
-and Proposition D are done, they compile in under a second against Lean core with
-no Mathlib, and they are strictly stronger than the exhaustive checks they
+**Answer to "can any of the proofs be written in Lean?": yes — Theorems A, B and
+G and Proposition D are done, they compile in about a second against Lean core
+with no Mathlib, and they are strictly stronger than the exhaustive checks they
 replace.**
 
 ```bash
-lean NiceNumbers.lean      # <1 s, 483 lines, no errors, no sorry
+lean NiceNumbers.lean      # 1.3 s, 913 lines, no errors, no sorry
 ```
 
 Written against 4.16, verified on **4.33**; see "Toolchain drift" below for the
@@ -29,9 +29,14 @@ axioms. No `sorryAx`, and no `native_decide` (which would add
 | `no_nice_of_mod_four` | for **every** pair `e₁,e₂ ≥ 1`, base `b ≡ 3 (mod 4)` fails the digit-sum identity | — |
 | `residues_empty_of_mod_four` | same obstruction as the sieve states it: `R_b = ∅` for `b ≡ 3 (mod 4)`, every pair | `verify.py` gate B, which checked `e₁ ≤ 8, e₂ ≤ 9, b < 400` |
 | `base_unique` / `bands_disjoint` | **Prop D** — the length identity holds for at most one base, so distinct bases' bands are disjoint | `verify.py` gate D, which checked five pairs, `b < 500`, ~2700 values of `n` |
+| `no_nice_of_universal_clash` | **Theorem G**, operative half — a base where `x^e₁ ≡ x^e₂ (mod b)` for every `x` has no pandigital `n` | — |
+| `clash_iff_dvd_clashMod` | **Theorem G**, classification — the clashing bases are exactly the divisors of `N(e₁,e₂)`, computed as a finite gcd | `verify.py` gate G's scan over `b < 200`, `e₁ ≤ 5, e₂ ≤ 7` |
+| `clash_prime_pow_iff` / `prime_pow_dvd_clashMod_iff` | **Theorem G**, local criterion — `p^a ∣ N` iff `a ≤ e₁` and every unit mod `p` has order dividing `e₂-e₁` | — |
 
 All of these hold for **all** naturals, and the three gates named above **have been
-deleted** from `verify.py` (which is now ~34 s rather than ~44 s).
+deleted** from `verify.py` (which is now ~34 s rather than ~44 s). Gate G was
+**narrowed** instead of deleted, for the reason the next paragraph gives: what is
+left of it is `N_λ = N_gcd`, the one step the Lean statement routes around.
 
 **`residues_empty_of_mod_four` exists because of that deletion.** Gate B did not
 check the digit-sum identity that `no_nice_of_mod_four` refutes — it checked that
@@ -45,7 +50,10 @@ proxy is what the rest of the code depends on.
 
 `numDigits` and `digitSum` are defined from scratch by repeated division
 (60 lines, including `bounds_of_numDigits`: `numDigits b x = k+1 ↔ b^k ≤ x < b^(k+1)`,
-and `digitSum_mod`: casting out `b-1`s). Nothing about digits is assumed.
+and `digitSum_mod`: casting out `b-1`s). Nothing about digits is assumed. §5 adds
+`digits` (the digit *list*) and `Pandigital` — the first time the file states the
+solution condition itself rather than one of its two numerical consequences,
+because a digit *collision* is invisible to both of them.
 
 ## Non-vacuity — the check that matters most
 
@@ -66,6 +74,20 @@ trivially true of an `n` that has none. `sixtynine_in_band : InBand 10 2 3 69`
 supplies the witness, and `sixtynine_only_base_ten` then reads off that base 10 is
 the *only* base 69 is a candidate in, over all bases at once and with no finite
 search.
+
+Theorem G needs the guard twice over, because it introduces a *definition*:
+
+* `sixtynine_pandigital : Pandigital 10 2 3 69` — the definition is satisfiable,
+  so `no_nice_of_universal_clash` is not refuting the empty set. (`digits 10 4761
+  = [1,6,7,4]`, `digits 10 328509 = [9,0,5,8,2,3]`, ten values, each once.)
+* `base_ten_no_clash : ¬ UniversalClash 10 2 3` — and Theorem G had better *not*
+  kill base 10, or it would contradict 69. `N(2,3) = 2` and `10 ∤ 2`.
+
+Then two theorems shown firing where A and B say nothing at all:
+`one_three_base_six_dead` (base 6 is `2 mod 4`, so A misses it, and even, so B
+misses it — but `x ≡ x³ mod 6` always) and `two_four_base_twelve_dead`. Plus
+`clash_three_one_three` and `nine_no_clash_one_three`, which run the local
+criterion forwards and backwards on numerals.
 
 ## The formalisation improved the mathematics
 
@@ -104,13 +126,38 @@ bases. **The lesson repeats A's: the informal proof reached for the sharp
 endpoints because they were already derived and sitting there, and the sharp
 endpoints were the reason it looked like a day's work.**
 
+**Theorem G was priced at a week "because it needs Carmichael `λ`", and `λ` turned
+out to be in the *statement*, not in the proof.** The estimate in the table below
+used to say the sufficiency half was the only cheap piece. In fact all of G went
+through in an afternoon, core-only, once three things were noticed:
+
+1. **`λ(p^a) ∣ d` is an evaluation, not a hypothesis.** What the argument actually
+   uses is "every unit mod `p` has order dividing `d`". State the criterion that
+   way (`clash_prime_pow_iff`) and the Carmichael function disappears from the
+   theorem entirely; it reappears only if you want to *compute* the answer.
+2. **The global statement needs no CRT and no factorisation.** `b` clashes iff
+   `b ∣ x^{e₂} - x^{e₁}` for every `x`, so the clashing bases are the divisors of
+   `G = gcd_x (x^{e₂} - x^{e₁})` by definition — divisor-closure, lcm-closure and
+   boundedness all at once. The `x = 2` term bounds every clashing base by
+   `2^{e₂} - 2^{e₁}`, which also truncates the gcd to a finite one, so `N` becomes
+   a *computation the kernel can do* (`clashMod 3 7 = 120` by `decide`, no axioms
+   at all). The report's proof assembles the local criteria by CRT; it never needs to.
+3. **Sufficiency needs the dichotomy `p ∣ x` or not, not the splitting
+   `x = p^v u`.** If `p ∣ x` then `p^a ∣ p^{e₁} ∣ x^{e₁}` and both powers vanish;
+   otherwise `x` is a unit. The valuation `v` is never used.
+
+The gcd form is also the better *definition* outside Lean: `verify.py`'s
+`universal_bound` iterates a hardcoded prime list `[2..47]`, which is silently
+wrong once `e₂ - e₁ ≥ 47`, while the gcd form has no such parameter. Gate G now
+checks the two against each other, which is exactly the step Lean routes around.
+
 ## What else is formalisable, and what it would cost
 
 | result | verdict | notes |
 |---|---|---|
 | ~~**Prop D**~~ — bands for distinct bases are disjoint | **done** (`base_unique`, `bands_disjoint`) | Estimated at ~1 day by the window technique; cost an afternoon by antitonicity of `numDigits` in the base, and came out pair-independent. See above. |
 | **Theorem C** — classification of `R_b = ∅`, per pair | **easy per pair, hard in general** | For one pair and one modulus it is a `Decidable` proposition over `ZMod`; `decide` closes it. The general statement needs solvability of `x^{e₁}+x^{e₂} ≡ T (mod p^k)`, i.e. Hensel plus the structure of `(ℤ/p^k)ˣ`. Mathlib-scale, ~1 week per family. |
-| **Theorem G** — `q₁(b)=0 ⟺ b ∣ N(e₁,e₂)` | **medium, ~1 week** | Needs Carmichael `λ`. Mathlib has `Monoid.exponent (ZMod n)ˣ` but the explicit value at `p^a` would likely have to be proved. The *sufficiency* half — `b ∣ N` ⟹ base dead — is easy and is the half that does work. |
+| ~~**Theorem G**~~ — `q₁(b)=0 ⟺ b ∣ N(e₁,e₂)` | **done** (`no_nice_of_universal_clash`, `clash_iff_dvd_clashMod`, `clash_prime_pow_iff`) | Estimated at ~1 week "needs Carmichael `λ`"; cost an afternoon once `λ` was pushed out of the statement. See above. **What is left is one classical evaluation**: `exponent((ℤ/p^aℤ)ˣ) = λ(p^a)`, i.e. the structure theorem for that group. Mathlib has `Monoid.exponent`; the value at `p^a` would still have to be proved, and only the *closed form* for `N` depends on it. |
 | **Theorem F** — the `2/E` greedy bound | **medium-hard, ~2 weeks** | Needs the digit ladder `(r + x·bⁱ)^e ≡ r^e + e·r^{e-1}·x·bⁱ (mod b^{i+1})` (binomial theorem plus a vanishing argument) and a greedy pigeonhole induction. Both are standard; the bookkeeping is not small. |
 | **Prop C′** — completeness of the congruence sieve | **hard, ~1 month** | The real content is combinatorial: which block-sum vectors of an ordered partition of `{0,…,b-1}` occur. Multiset/`List.Perm` machinery, genuinely Mathlib-scale. |
 | **T4** — the rigorous upper bound on `#nice(b)` | **not worth it** | An asymptotic statement with error terms. Formalising analytic estimates costs far more than the result is worth here. |
@@ -119,11 +166,14 @@ endpoints were the reason it looked like a day's work.**
 
 **Net effect.** Three of `verify.py`'s gates are now theorems for all inputs
 rather than checks over a finite range — and they were the three most general
-ones, so they are gone from the script rather than merely superseded. One caveat
+ones, so they are gone from the script rather than merely superseded. A fourth,
+gate G, is narrowed to the single arithmetic identity `N_λ = N_gcd`. Two caveats
 worth keeping in view: Theorem A's *converse* (every base outside the dead class
-really does have candidates) is **not** proved and stays an empirical check. Everything left in the table is a real formalisation project rather
-than a weekend; **Theorem G's sufficiency half (`b ∣ N` ⟹ base dead) is the only
-remaining piece that is cheap on its own**, the rest of G needing Carmichael `λ`.
+really does have candidates) is **not** proved and stays an empirical check, and
+neither is the closed form for `N`, for want of `λ(p^a)`. Everything left in the
+table is a real formalisation project rather than a weekend, and **there is no
+longer a cheap piece sitting on the shelf** — Theorem C per pair is the nearest
+thing, and it is per pair.
 
 ## Toolchain drift: 4.16 → 4.33 (2026-08-12)
 

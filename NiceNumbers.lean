@@ -2,18 +2,22 @@
   NiceNumbers.lean
   ================
 
-  Three theorems about nice / quasi-nice numbers, formalised in Lean 4.
+  Four theorems about nice / quasi-nice numbers, formalised in Lean 4.
 
   `n` is **(e₁,e₂)-nice in base b** when the base-`b` digits of `n^e₁` and `n^e₂`
   together are exactly {0,…,b-1}, each once.  `(2,3)` is the classical "nice
   number" problem, whose only known solution is 69 in base 10.
 
   Pandigitality has two immediate consequences, and both are formalised here as
-  hypotheses so that the theorems apply to *any* notion of solution satisfying
-  them:
+  hypotheses so that theorems A, B and D apply to *any* notion of solution
+  satisfying them:
 
     * the digit-length identity   `numDigits b (n^e₁) + numDigits b (n^e₂) = b`
     * the digit-sum identity      `2 * (digitSum b (n^e₁) + digitSum b (n^e₂)) = b * (b-1)`
+
+  Theorem G is about a digit *collision*, which neither consequence sees, so §5
+  defines pandigitality outright (`Pandigital`, from a `digits` list built by
+  repeated division) and proves it satisfiable at 69.
 
   **Theorem A** (`no_nice_of_dvd`): if `(e₁+e₂) ∣ e₁*(b-1)` — equivalently
   `b ≡ 1 mod (e₁+e₂)/gcd(e₁,e₂)` — the length identity is unsatisfiable.
@@ -28,9 +32,19 @@
   `n` is a candidate in at most one base.  Proved for arbitrary values, hence for
   every exponent pair.
 
+  **Theorem G** (`no_nice_of_universal_clash`, `clash_iff_dvd_clashMod`,
+  `clash_prime_pow_iff`): if `x^e₁ ≡ x^e₂ (mod b)` for *every* `x` — a universal
+  last-digit clash — then no `n` is pandigital in base `b`.  The bases where that
+  happens are **exactly the divisors of one number** `N(e₁,e₂)`, computed here as
+  a finite gcd (`N(1,3) = 6`, `N(2,4) = 12`, `N(3,7) = 120`, `N(2,3) = 2`); and
+  `p^a ∣ N` iff `a ≤ e₁` and every unit mod `p` has order dividing `e₂-e₁`, which
+  is `λ(p^a) ∣ e₂-e₁` once the unit group's exponent is known.  Evaluating that
+  exponent is the one step of Theorem G left unformalised.
+
   Together these replace exhaustive machine checks over `e₁ ≤ 8`, `e₂ ≤ 9`,
-  `b < 400` (A, B) and `b < 500`, five pairs, ~2700 values of `n` (D) with proofs
-  valid for all bases, all exponent pairs and all `n`.
+  `b < 400` (A, B), `b < 500`, five pairs, ~2700 values of `n` (D), and
+  `e₁ ≤ 5`, `e₂ ≤ 7`, `b < 200` (G) with proofs valid for all bases, all
+  exponent pairs and all `n`.
 
   Lean 4.16-4.33, core only.  No Mathlib, no `sorry`.  `#print axioms` at the end
   shows only the three standard foundational axioms.
@@ -465,6 +479,414 @@ theorem base_seven_dead' (n : Nat) :
     2 * (digitSum 7 (n ^ 3) + digitSum 7 (n ^ 8)) ≠ 7 * (7 - 1) :=
   fun h => no_nice_of_mod_four (by decide) (by decide) (by decide) (by decide) h
 
+/-! ## §5  Theorem G — the universal last-digit clash
+
+If `x^e₁ ≡ x^e₂ (mod b)` for *every* `x` then the last base-`b` digits of `n^e₁`
+and `n^e₂` coincide for every `n`, one digit value is used twice, and base `b` is
+dead for reasons that have nothing to do with the size of the band.  Theorem G
+classifies the bases where that happens.
+
+Two halves, and only the first needs pandigitality:
+
+* `no_nice_of_universal_clash` — a clashing base contains no pandigital `n`.
+* `clash_iff_dvd_clashMod` — the clashing bases for a pair are **exactly the
+  divisors of one number** `N(e₁,e₂)`, computed here as a finite gcd.
+* `clash_prime_pow_iff` — and the prime powers dividing `N` are exactly those
+  with `a ≤ e₁` whose unit group has exponent dividing `e₂-e₁`.  Evaluating that
+  exponent is the classical `λ(p^a)`, the one step left to Mathlib.
+
+This is also the first section that needs pandigitality itself rather than one of
+its consequences, so §5.0 defines it. -/
+
+/-! ### §5.0  Pandigitality, from the digits up -/
+
+/-- The base-`b` digits of `x`, least significant first. -/
+def digits (b x : Nat) : List Nat :=
+  if h : 1 < b ∧ 0 < x then x % b :: digits b (x / b) else []
+decreasing_by exact Nat.div_lt_self h.2 h.1
+
+theorem digits_zero (b : Nat) : digits b 0 = [] := by rw [digits]; simp
+
+theorem digits_step {b x : Nat} (hb : 1 < b) (hx : 0 < x) :
+    digits b x = x % b :: digits b (x / b) := by rw [digits, dif_pos ⟨hb, hx⟩]
+
+/-- Occurrences of `v` in `l`.  Core's `List.count` would do; this keeps the
+section self-contained and reduces in the kernel. -/
+def occ (v : Nat) : List Nat → Nat
+  | [] => 0
+  | a :: l => (if a = v then 1 else 0) + occ v l
+
+theorem occ_cons_self (v : Nat) (l : List Nat) : occ v (v :: l) = 1 + occ v l := by
+  show (if v = v then 1 else 0) + occ v l = 1 + occ v l
+  rw [if_pos rfl]
+
+theorem occ_append (v : Nat) : ∀ l₁ l₂ : List Nat,
+    occ v (l₁ ++ l₂) = occ v l₁ + occ v l₂ := by
+  intro l₁
+  induction l₁ with
+  | nil => intro l₂; show occ v l₂ = 0 + occ v l₂; omega
+  | cons a t ih =>
+    intro l₂
+    show (if a = v then 1 else 0) + occ v (t ++ l₂)
+        = ((if a = v then 1 else 0) + occ v t) + occ v l₂
+    rw [ih]
+    omega
+
+/-- `n` is **`(e₁,e₂)`-pandigital in base `b`**: the base-`b` digits of `n^e₁`
+and of `n^e₂`, taken together, contain every value `< b` exactly once.  This is
+the definition the rest of the repo searches for; §1-§3 above use only its two
+numerical consequences. -/
+def Pandigital (b e₁ e₂ n : Nat) : Prop :=
+  ∀ v, v < b → occ v (digits b (n ^ e₁) ++ digits b (n ^ e₂)) = 1
+
+/-! ### §5.1  A universal clash kills the base -/
+
+/-- Base `b` has a **universal clash** for `(e₁,e₂)` when the last digits of
+`x^e₁` and `x^e₂` agree for every `x`. -/
+def UniversalClash (b e₁ e₂ : Nat) : Prop := ∀ x, x ^ e₁ % b = x ^ e₂ % b
+
+/-- A pandigital `n` is positive: `0` supplies no digit `0` in any base. -/
+theorem pos_of_pandigital {b e₁ e₂ n : Nat} (hb : 1 < b)
+    (hp : Pandigital b e₁ e₂ n) : 0 < n := by
+  rcases Nat.eq_zero_or_pos n with rfl | h
+  · exfalso
+    have key : ∀ e : Nat, occ 0 (digits b ((0 : Nat) ^ e)) = 0 := by
+      intro e
+      rcases Nat.eq_zero_or_pos e with rfl | he
+      · rw [Nat.pow_zero, digits_step hb Nat.one_pos, Nat.mod_eq_of_lt hb,
+            Nat.div_eq_of_lt hb, digits_zero]
+        decide
+      · rw [Nat.zero_pow he, digits_zero]
+        rfl
+    have h0 := hp 0 (by omega)
+    rw [occ_append, key, key] at h0
+    omega
+  · exact h
+
+/--
+**Theorem G, the operative half.**  A base with a universal clash contains no
+pandigital `n` at all — the last digits of `n^e₁` and `n^e₂` are the same value,
+so that value is used twice.  Every exponent pair, every `n`, no search.
+-/
+theorem no_nice_of_universal_clash {b e₁ e₂ n : Nat} (hb : 1 < b)
+    (hclash : UniversalClash b e₁ e₂) : ¬ Pandigital b e₁ e₂ n := by
+  intro hp
+  have hn : 0 < n := pos_of_pandigital hb hp
+  have h1 : digits b (n ^ e₁) = n ^ e₁ % b :: digits b (n ^ e₁ / b) :=
+    digits_step hb (Nat.pow_pos hn)
+  have h2 : digits b (n ^ e₂) = n ^ e₂ % b :: digits b (n ^ e₂ / b) :=
+    digits_step hb (Nat.pow_pos hn)
+  have hcount := hp (n ^ e₁ % b) (Nat.mod_lt _ (by omega))
+  rw [occ_append, h1, h2, ← hclash n, occ_cons_self, occ_cons_self] at hcount
+  omega
+
+/-! ### §5.2  The classification: the clashing bases are the divisors of one number -/
+
+/-- `gcd_{x < m} (x^e₂ - x^e₁)`. -/
+def clashGcd (e₁ e₂ : Nat) : Nat → Nat
+  | 0 => 0
+  | m + 1 => Nat.gcd (m ^ e₂ - m ^ e₁) (clashGcd e₁ e₂ m)
+
+theorem clashGcd_succ (e₁ e₂ m : Nat) :
+    clashGcd e₁ e₂ (m + 1) = Nat.gcd (m ^ e₂ - m ^ e₁) (clashGcd e₁ e₂ m) := rfl
+
+/-- `N(e₁,e₂)` — the modulus of Theorem G.  The range stops at `2^e₂ - 2^e₁`
+because the `x = 2` term already bounds every clashing base by it. -/
+def clashMod (e₁ e₂ : Nat) : Nat := clashGcd e₁ e₂ (2 ^ e₂ - 2 ^ e₁ + 1)
+
+/-- `x^e₁ ≤ x^e₂` for `1 ≤ e₁ ≤ e₂`, `x = 0` included. -/
+theorem pow_le_pow_exp {x e₁ e₂ : Nat} (he₁ : 1 ≤ e₁) (he : e₁ ≤ e₂) :
+    x ^ e₁ ≤ x ^ e₂ := by
+  rcases Nat.eq_zero_or_pos x with rfl | hx
+  · have h1 : (0 : Nat) ^ e₁ = 0 := Nat.zero_pow (by omega)
+    have h2 : (0 : Nat) ^ e₂ = 0 := Nat.zero_pow (by omega)
+    omega
+  · exact Nat.pow_le_pow_right hx he
+
+/-- Congruence as divisibility of the (truncated) difference. -/
+theorem dvd_sub_iff_mod_eq {b x y : Nat} (hb : 0 < b) (hyx : y ≤ x) :
+    b ∣ x - y ↔ x % b = y % b := by
+  constructor
+  · rintro ⟨k, hk⟩
+    have hx : x = y + b * k := by omega
+    rw [hx, Nat.add_mul_mod_self_left]
+  · intro h
+    have hdx : b * (x / b) + x % b = x := Nat.div_add_mod x b
+    have hdy : b * (y / b) + y % b = y := Nat.div_add_mod y b
+    have hq : y / b ≤ x / b := Nat.div_le_div_right hyx
+    obtain ⟨t, ht⟩ : ∃ t, x / b = y / b + t := ⟨x / b - y / b, by omega⟩
+    have hmul : b * (y / b + t) = b * (y / b) + b * t := Nat.mul_add b _ _
+    rw [ht] at hdx
+    exact ⟨t, by omega⟩
+
+theorem clash_iff_dvd_sub {b e₁ e₂ : Nat} (hb : 0 < b) (he₁ : 1 ≤ e₁) (he : e₁ ≤ e₂) :
+    UniversalClash b e₁ e₂ ↔ ∀ x, b ∣ x ^ e₂ - x ^ e₁ := by
+  constructor
+  · intro h x
+    exact (dvd_sub_iff_mod_eq hb (pow_le_pow_exp he₁ he)).mpr (h x).symm
+  · intro h x
+    exact ((dvd_sub_iff_mod_eq hb (pow_le_pow_exp he₁ he)).mp (h x)).symm
+
+theorem dvd_clashGcd_iff {b e₁ e₂ : Nat} :
+    ∀ m, b ∣ clashGcd e₁ e₂ m ↔ ∀ x, x < m → b ∣ x ^ e₂ - x ^ e₁ := by
+  intro m
+  induction m with
+  | zero =>
+    exact ⟨fun _ x hx => absurd hx (Nat.not_lt_zero x), fun _ => Nat.dvd_zero b⟩
+  | succ m ih =>
+    rw [clashGcd_succ]
+    constructor
+    · intro h x hx
+      rcases Nat.lt_or_ge x m with hlt | hge
+      · exact (ih.mp (Nat.dvd_trans h (Nat.gcd_dvd_right _ _))) x hlt
+      · have hxm : x = m := by omega
+        subst hxm
+        exact Nat.dvd_trans h (Nat.gcd_dvd_left _ _)
+    · intro h
+      exact Nat.dvd_gcd (h m (by omega)) (ih.mpr (fun x hx => h x (by omega)))
+
+/--
+**Theorem G (classification).**  For `1 ≤ e₁ < e₂` and any `b > 0`, base `b` has
+a universal clash **iff** `b ∣ N(e₁,e₂)`.  So the clashing bases of a pair are
+exactly the divisors of a single computable number — divisor-closed, closed under
+lcm, and bounded, all at once.
+-/
+theorem clash_iff_dvd_clashMod {b e₁ e₂ : Nat} (hb : 0 < b) (he₁ : 1 ≤ e₁) (he : e₁ < e₂) :
+    UniversalClash b e₁ e₂ ↔ b ∣ clashMod e₁ e₂ := by
+  -- the x = 2 term is at least 2, so it is inside the range and bounds b
+  have hp1 : 2 ^ (e₁ + 1) ≤ 2 ^ e₂ := Nat.pow_le_pow_right (by omega) (by omega)
+  have hp2 : 2 ^ 1 ≤ 2 ^ e₁ := Nat.pow_le_pow_right (by omega) he₁
+  have hp3 : 2 ^ (e₁ + 1) = 2 ^ e₁ * 2 := Nat.pow_succ 2 e₁
+  have hp4 : (2 : Nat) ^ 1 = 2 := Nat.pow_one 2
+  have hK : 2 ≤ 2 ^ e₂ - 2 ^ e₁ := by omega
+  constructor
+  · intro h
+    exact (dvd_clashGcd_iff _).mpr
+      (fun x _ => (clash_iff_dvd_sub hb he₁ (Nat.le_of_lt he)).mp h x)
+  · intro h x
+    have hall := (dvd_clashGcd_iff _).mp h
+    have hble : b ≤ 2 ^ e₂ - 2 ^ e₁ := Nat.le_of_dvd (by omega) (hall 2 (by omega))
+    have hmod := (dvd_sub_iff_mod_eq hb (pow_le_pow_exp he₁ (Nat.le_of_lt he))).mp
+      (hall (x % b) (by have := Nat.mod_lt x hb; omega))
+    rw [Nat.pow_mod x e₁ b, Nat.pow_mod x e₂ b]
+    exact hmod.symm
+
+/-- Divisor-closure, the half of the structure that is obvious. -/
+theorem clash_of_dvd {b b' e₁ e₂ : Nat} (hbb : b ∣ b') (h : UniversalClash b' e₁ e₂) :
+    UniversalClash b e₁ e₂ := by
+  intro x
+  have h1 : x ^ e₁ % b' % b = x ^ e₂ % b' % b := by rw [h x]
+  rwa [Nat.mod_mod_of_dvd _ hbb, Nat.mod_mod_of_dvd _ hbb] at h1
+
+/-- Closure under lcm, which is what makes "divisors of one number" possible. -/
+theorem clash_lcm {b b' e₁ e₂ : Nat} (hb : 0 < b) (hb' : 0 < b') (he₁ : 1 ≤ e₁) (he : e₁ < e₂)
+    (h : UniversalClash b e₁ e₂) (h' : UniversalClash b' e₁ e₂) :
+    UniversalClash (Nat.lcm b b') e₁ e₂ := by
+  have hd := (clash_iff_dvd_clashMod hb he₁ he).mp h
+  have hd' := (clash_iff_dvd_clashMod hb' he₁ he).mp h'
+  exact (clash_iff_dvd_clashMod (Nat.lcm_pos hb hb') he₁ he).mpr (Nat.lcm_dvd hd hd')
+
+/-! ### §5.3  Which prime powers divide `N`
+
+The local criterion, stated without Carmichael's `λ`: the unit condition is
+"every unit has order dividing `e₂-e₁`", which is what `λ(p^a) ∣ e₂-e₁` says
+once the unit group's exponent is known.  That evaluation is the classical
+structure theorem for `(ℤ/p^aℤ)ˣ` and is the only part of Theorem G left
+unformalised. -/
+
+/-- Core has no `Nat.Prime`, and only one consequence of primality is used. -/
+def IsPrime (p : Nat) : Prop := 2 ≤ p ∧ ∀ k, k ∣ p → k = 1 ∨ k = p
+
+theorem coprime_of_not_dvd {p u : Nat} (hp : IsPrime p) (h : ¬ p ∣ u) :
+    Nat.Coprime p u := by
+  rcases hp.2 (Nat.gcd p u) (Nat.gcd_dvd_left p u) with h1 | h1
+  · exact h1
+  · exact absurd (by rw [← h1]; exact Nat.gcd_dvd_right p u) h
+
+/-- Primality of a numeral: a divisor of `p` is at most `p`, so the unbounded
+quantifier in `IsPrime` becomes a bounded one that `decide` can do. -/
+theorem isPrime_of_bounded {p : Nat} (hp : 2 ≤ p)
+    (h : ∀ k, k < p + 1 → k ∣ p → k = 1 ∨ k = p) : IsPrime p :=
+  ⟨hp, fun k hk => h k (by have := Nat.le_of_dvd (show 0 < p by omega) hk; omega) hk⟩
+
+theorem isPrime_two : IsPrime 2 := isPrime_of_bounded (by decide) (by decide)
+
+theorem isPrime_three : IsPrime 3 := isPrime_of_bounded (by decide) (by decide)
+
+theorem pow_dvd_pow_of_dvd {a b : Nat} (h : a ∣ b) (n : Nat) : a ^ n ∣ b ^ n := by
+  obtain ⟨k, rfl⟩ := h
+  exact ⟨k ^ n, Nat.mul_pow a k n⟩
+
+/--
+**Theorem G (local criterion).**  For a prime power `p^a` with `a ≥ 1` and
+`1 ≤ e₁ < e₂`, the universal clash holds mod `p^a` **iff** `a ≤ e₁` and every
+unit mod `p` satisfies `u^(e₂-e₁) ≡ 1 (mod p^a)`.
+
+The `x = p` half of the proof forces `a ≤ e₁`; the unit half forces the exponent
+condition; and the two together suffice, by the dichotomy `p ∣ x` or not.
+-/
+theorem clash_prime_pow_iff {p a e₁ e₂ : Nat} (hp : IsPrime p) (ha : 1 ≤ a)
+    (he₁ : 1 ≤ e₁) (he : e₁ < e₂) :
+    UniversalClash (p ^ a) e₁ e₂ ↔
+      (a ≤ e₁ ∧ ∀ u, ¬ p ∣ u → u ^ (e₂ - e₁) % p ^ a = 1) := by
+  have hp2 : 2 ≤ p := hp.1
+  have hm1 : p ^ 1 ≤ p ^ a := Nat.pow_le_pow_right (by omega) ha
+  have hm : 1 < p ^ a := by rw [Nat.pow_one] at hm1; omega
+  have hmpos : 0 < p ^ a := by omega
+  have hfac : ∀ x : Nat, x ^ e₁ * (x ^ (e₂ - e₁) - 1) = x ^ e₂ - x ^ e₁ := by
+    intro x
+    have hsum : e₁ + (e₂ - e₁) = e₂ := by omega
+    rw [Nat.mul_sub, Nat.mul_one, ← Nat.pow_add, hsum]
+  constructor
+  · intro hcl
+    have hdvd : ∀ x, p ^ a ∣ x ^ e₂ - x ^ e₁ :=
+      (clash_iff_dvd_sub hmpos he₁ (Nat.le_of_lt he)).mp hcl
+    refine ⟨?_, ?_⟩
+    · -- x = p: p^a ∣ p^e₁·(p^(e₂-e₁) - 1) and the second factor is prime to p
+      rcases Nat.lt_or_ge e₁ a with hlt | hge
+      case inr => exact hge
+      exfalso
+      have h1 : p ^ (e₁ + 1) ∣ p ^ a := Nat.pow_dvd_pow p (by omega)
+      have h2 : p ^ a ∣ p ^ e₁ * (p ^ (e₂ - e₁) - 1) := by rw [hfac]; exact hdvd p
+      have h3 : p ^ e₁ * p ∣ p ^ e₁ * (p ^ (e₂ - e₁) - 1) := by
+        rw [← Nat.pow_succ p e₁]
+        exact Nat.dvd_trans h1 h2
+      have h4 : p ∣ p ^ (e₂ - e₁) - 1 :=
+        (Nat.mul_dvd_mul_iff_left (Nat.pow_pos (show 0 < p by omega))).mp h3
+      have h5 : p ∣ p ^ (e₂ - e₁) := by
+        have := Nat.pow_dvd_pow p (show 1 ≤ e₂ - e₁ by omega)
+        rwa [Nat.pow_one] at this
+      have h6 : p ∣ p ^ (e₂ - e₁) - (p ^ (e₂ - e₁) - 1) := Nat.dvd_sub h5 h4
+      have h7 : 1 ≤ p ^ (e₂ - e₁) := Nat.pow_pos (show 0 < p by omega)
+      have h8 : p ^ (e₂ - e₁) - (p ^ (e₂ - e₁) - 1) = 1 := by omega
+      rw [h8] at h6
+      have := Nat.le_of_dvd Nat.one_pos h6
+      omega
+    · -- x = u a unit: cancel u^e₁, which is prime to p
+      intro u hu
+      have hu0 : 0 < u := by
+        rcases Nat.eq_zero_or_pos u with rfl | h
+        · exact absurd (Nat.dvd_zero p) hu
+        · exact h
+      have hco : Nat.Coprime (p ^ a) (u ^ e₁) :=
+        Nat.Coprime.pow a e₁ (coprime_of_not_dvd hp hu)
+      have h2 : p ^ a ∣ u ^ e₁ * (u ^ (e₂ - e₁) - 1) := by rw [hfac]; exact hdvd u
+      have h3 : p ^ a ∣ u ^ (e₂ - e₁) - 1 := hco.dvd_of_dvd_mul_left h2
+      have h5 := (dvd_sub_iff_mod_eq hmpos (Nat.pow_pos hu0)).mp h3
+      rwa [Nat.mod_eq_of_lt hm] at h5
+  · rintro ⟨hae, hunit⟩ x
+    by_cases hpx : p ∣ x
+    · -- p ∣ x: both powers are ≡ 0, since a ≤ e₁ ≤ e₂
+      have h1 : p ^ a ∣ x ^ e₁ :=
+        Nat.dvd_trans (Nat.pow_dvd_pow p hae) (pow_dvd_pow_of_dvd hpx e₁)
+      have h2 : p ^ a ∣ x ^ e₂ :=
+        Nat.dvd_trans (Nat.pow_dvd_pow p (by omega)) (pow_dvd_pow_of_dvd hpx e₂)
+      rw [Nat.dvd_iff_mod_eq_zero.mp h1, Nat.dvd_iff_mod_eq_zero.mp h2]
+    · -- x a unit: multiply the congruence u^(e₂-e₁) ≡ 1 by x^e₁
+      have hd : x ^ (e₂ - e₁) % p ^ a = 1 := hunit x hpx
+      have hsplit : x ^ e₂ = x ^ e₁ * x ^ (e₂ - e₁) := by
+        rw [← Nat.pow_add]
+        have : e₁ + (e₂ - e₁) = e₂ := by omega
+        rw [this]
+      rw [hsplit, Nat.mul_mod, hd, Nat.mul_one, Nat.mod_mod_of_dvd _ (Nat.dvd_refl _)]
+
+/-- The valuation form of Theorem G: `p^a ∣ N(e₁,e₂)` exactly when `a ≤ e₁` and
+every unit mod `p` has order dividing `e₂-e₁`.  Feed in `λ(p^a)` — the exponent
+of `(ℤ/p^aℤ)ˣ` — and this is the report's closed form
+`N = ∏_p p^{a_p}`, `a_p = max{a ≤ e₁ : λ(p^a) ∣ e₂-e₁}`. -/
+theorem prime_pow_dvd_clashMod_iff {p a e₁ e₂ : Nat} (hp : IsPrime p) (ha : 1 ≤ a)
+    (he₁ : 1 ≤ e₁) (he : e₁ < e₂) :
+    p ^ a ∣ clashMod e₁ e₂ ↔ (a ≤ e₁ ∧ ∀ u, ¬ p ∣ u → u ^ (e₂ - e₁) % p ^ a = 1) := by
+  have hppos : 0 < p := by have := hp.1; omega
+  exact (clash_iff_dvd_clashMod (Nat.pow_pos hppos) he₁ he).symm.trans
+    (clash_prime_pow_iff hp ha he₁ he)
+
+/-! ### §5.4  `N(e₁,e₂)`, computed, and the theorem firing
+
+The values agree with `verify.py`'s Carmichael product `∏ p^{a_p}`, which is the
+form Theorem G is stated in.  These are kernel computations, not `native_decide`. -/
+
+theorem clashMod_one_two : clashMod 1 2 = 2 := by decide
+theorem clashMod_two_three : clashMod 2 3 = 2 := by decide
+theorem clashMod_one_four : clashMod 1 4 = 2 := by decide
+theorem clashMod_one_three : clashMod 1 3 = 6 := by decide
+theorem clashMod_two_four : clashMod 2 4 = 12 := by decide
+theorem clashMod_one_five : clashMod 1 5 = 30 := by decide
+theorem clashMod_one_seven : clashMod 1 7 = 42 := by decide
+theorem clashMod_two_six : clashMod 2 6 = 60 := by decide
+theorem clashMod_three_seven : clashMod 3 7 = 120 := by decide
+
+/-- Every divisor of `N(e₁,e₂)` is a dead base, for every `n`. -/
+theorem no_pandigital_of_dvd_clashMod {b e₁ e₂ n : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁)
+    (he : e₁ < e₂) (hdvd : b ∣ clashMod e₁ e₂) : ¬ Pandigital b e₁ e₂ n :=
+  no_nice_of_universal_clash hb ((clash_iff_dvd_clashMod (by omega) he₁ he).mpr hdvd)
+
+/-- Theorem G firing where A and B both say nothing: `6 % 4 = 2` so Theorem A
+misses it and `6` is even so Theorem B misses it, but `x ≡ x³ (mod 6)` for every
+`x` because `6 ∣ N(1,3) = 6`.  So base 6 has no `(1,3)` pandigital number. -/
+theorem one_three_base_six_dead (n : Nat) : ¬ Pandigital 6 1 3 n :=
+  no_pandigital_of_dvd_clashMod (by decide) (by decide) (by decide) (by decide)
+
+/-- The same at `(2,4)`, base 12: `12 ≡ 0 (mod 3)` so Theorem A misses it too,
+and `12 ∣ N(2,4) = 12`. -/
+theorem two_four_base_twelve_dead (n : Nat) : ¬ Pandigital 12 2 4 n :=
+  no_pandigital_of_dvd_clashMod (by decide) (by decide) (by decide) (by decide)
+
+/-! ### §5.5  Non-vacuity
+
+Two directions matter here.  `Pandigital` must be satisfiable, or §5.1 proves
+nothing; and Theorem G must **not** kill base 10 at `(2,3)`, or it would
+contradict 69. -/
+
+theorem digits_69sq : digits 10 (69 ^ 2) = [1, 6, 7, 4] := by
+  show digits 10 4761 = [1, 6, 7, 4]
+  rw [digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_zero]
+
+theorem digits_69cb : digits 10 (69 ^ 3) = [9, 0, 5, 8, 2, 3] := by
+  show digits 10 328509 = [9, 0, 5, 8, 2, 3]
+  rw [digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_zero]
+
+/-- 69 in base 10 really is `(2,3)`-pandigital: `69² = 4761`, `69³ = 328509`,
+and the ten digits are `{0,…,9}` once each. -/
+theorem sixtynine_pandigital : Pandigital 10 2 3 69 := by
+  have h : ∀ v, v < 10 → occ v ([1, 6, 7, 4] ++ [9, 0, 5, 8, 2, 3]) = 1 := by decide
+  intro v hv
+  rw [digits_69sq, digits_69cb]
+  exact h v hv
+
+/-- Theorem G does not kill base 10 at `(2,3)` — it had better not.
+`N(2,3) = 2` and `10 ∤ 2`. -/
+theorem base_ten_no_clash : ¬ UniversalClash 10 2 3 := by
+  intro h
+  have hd := (clash_iff_dvd_clashMod (by decide) (by decide) (by decide)).mp h
+  rw [clashMod_two_three] at hd
+  have := Nat.le_of_dvd (by decide) hd
+  omega
+
+/-- The local criterion running forwards: `3 = 3¹` clashes for `(1,3)` because
+`1 ≤ e₁` and every unit mod 3 squares to 1. -/
+theorem clash_three_one_three : UniversalClash 3 1 3 := by
+  refine (clash_prime_pow_iff (p := 3) (a := 1) isPrime_three (by decide) (by decide)
+    (by decide)).mpr ⟨by decide, ?_⟩
+  intro u hu
+  have h0 : u % 3 ≠ 0 := fun h => hu (Nat.dvd_iff_mod_eq_zero.mpr h)
+  have hlt : u % 3 < 3 := Nat.mod_lt u (by decide)
+  have hpm := Nat.pow_mod u 2 3
+  have h3 : u % 3 = 1 ∨ u % 3 = 2 := by omega
+  rcases h3 with h | h <;> rw [h] at hpm <;> omega
+
+/-- And backwards: base 9 does *not* clash for `(1,3)`, because `a = 2` exceeds
+`e₁ = 1`.  No unit-group computation is needed to see it. -/
+theorem nine_no_clash_one_three : ¬ UniversalClash 9 1 3 := by
+  intro h
+  have hc := (clash_prime_pow_iff (p := 3) (a := 2) isPrime_three (by decide) (by decide)
+    (by decide)).mp h
+  omega
 end Nice
 
 #print axioms Nice.no_nice_of_dvd
@@ -481,3 +903,11 @@ end Nice
 #print axioms Nice.base_unique
 #print axioms Nice.bands_disjoint
 #print axioms Nice.sixtynine_only_base_ten
+#print axioms Nice.no_nice_of_universal_clash
+#print axioms Nice.clash_iff_dvd_clashMod
+#print axioms Nice.clash_prime_pow_iff
+#print axioms Nice.prime_pow_dvd_clashMod_iff
+#print axioms Nice.clashMod_three_seven
+#print axioms Nice.one_three_base_six_dead
+#print axioms Nice.sixtynine_pandigital
+#print axioms Nice.base_ten_no_clash
