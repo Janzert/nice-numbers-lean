@@ -2,7 +2,7 @@
   NiceNumbers.lean
   ================
 
-  Six theorems about nice / quasi-nice numbers, formalised in Lean 4.
+  Seven theorems about nice / quasi-nice numbers, formalised in Lean 4.
 
   `n` is **(e₁,e₂)-nice in base b** when the base-`b` digits of `n^e₁` and `n^e₂`
   together are exactly {0,…,b-1}, each once.  `(2,3)` is the classical "nice
@@ -55,6 +55,16 @@
   then some `d`-digit `n` has `2d` pairwise-distinct low slots, hence combined
   digit deficiency at most `b - 2d`.  Since `d ≈ b/E` that is `b(1 - 2/E)`: the
   same `2/E` as the DFS prune, reached from the constructive side.
+
+  **Theorem H** (`theorem_H`, `theorem_H_count`, `theorem_H_closed`): the first
+  *quantitative* result here — an upper bound on how many nice numbers a base can
+  have, with no hypotheses beyond the base and a choice of depth `k`.  Every
+  pandigital `n` lies in the crude band `b^(b-2) ≤ n^E < b^b` and passes a test
+  `adm` depending on `n` only through `n mod (b-1)` and `n mod b^k`; `adm` has
+  period `(b-1)·b^k`, so counting one window of that length bounds the whole band.
+  Two witnesses: at base 10, `k = 4` leaves exactly one survivor and it is 69
+  (`base_ten_nice_iff` — the set of `(2,3)`-nice numbers in base 10 is `{69}`), and
+  at base 17 a 272-number window bounds a band 38 times longer (`≤ 585`).
 
   Together these replace exhaustive machine checks over `e₁ ≤ 8`, `e₂ ≤ 9`,
   `b < 400` (A, B, C), `b < 500`, five pairs, ~2700 values of `n` (D), and
@@ -1168,6 +1178,1481 @@ theorem base_four_band_nonempty : InBand 4 2 3 2 := by
   rw [numDigits_eq_of_bounds (b := 4) (x := 2 ^ 2) (k := 1) (by decide) (by decide) (by decide),
       numDigits_eq_of_bounds (b := 4) (x := 2 ^ 3) (k := 1) (by decide) (by decide) (by decide)]
 
+/-! ### §6.2  Theorem C′ — completeness, under an explicit hypothesis
+
+§6.1 refuted the unconditional claim.  This is what survives, and it is the
+statement REPORT-provability.md §6.3 proves on paper: **if** the class sizes
+`c_t` admit a legal split `p` whose no-gap conditions hold, and the classes are
+big enough, then the image is the whole coset — so no modulus of order `j` prunes
+more than casting out `b-1`s does.
+
+The proof is constructive, and it runs on two engines that are independent of
+each other and of the digits:
+
+* `pick_sum` — **subset-sum contiguity**.  The `p`-element sublists of a run of
+  `p+q` consecutive integers realise every sum from the minimum to the minimum
+  plus `p·q`, with no gaps.  `pick` is that sublist, built as a staircase.
+* `cover_exists` — **mixed-radix covering**.  If each place `b^t` opens before
+  the lower places run out, `{Σ_t ν_t b^t : ν_t ≤ N_t}` is a full interval.
+
+Between them sits the arrangement.  Run `t` keeps `p_t` of its values for class
+`t` and passes the other `q_t` up to class `t+1`; `blk_identity` is an exact
+identity in `ℕ` — no congruence anywhere in it — saying that raising the
+kept-sums by one lowers the block-sum value `X = Σ_t b^t S_t` by `b-1`, up to a
+single explicit wrap of `b^j - 1`.  `deal` then reads the blocks out into the two
+digit lists, and `ins0` places the digit `0` at an index of its block that is
+neither number's leading slot.  That last step is the only use of the class-size
+rider, and the only place the leading-digit rule enters at all — take it away and
+the *block-sum* image can overstate the true image, as at base 4, where it says 5
+residues and §6.1 counts 3.
+
+`theorem_C_prime` is the headline.  `blocks_hit` is its block-level half, which
+mentions no digit lengths and no leading digits; `blocks_to_pair` is the other
+half, which mentions no arithmetic. -/
+
+/-- Cancelling a common summand under `%`. -/
+theorem mod_add_cancel {b c u v : Nat} (hb : 0 < b) (h : (u + c) % b = (v + c) % b) :
+    u % b = v % b := by
+  rcases Nat.le_total u v with hle | hle
+  · have h1 : u + c ≤ v + c := by omega
+    have hd : b ∣ v + c - (u + c) := (dvd_sub_iff_mod_eq hb h1).mpr h.symm
+    have he : v + c - (u + c) = v - u := by omega
+    rw [he] at hd
+    exact ((dvd_sub_iff_mod_eq hb hle).mp hd).symm
+  · have h1 : v + c ≤ u + c := by omega
+    have hd : b ∣ u + c - (v + c) := (dvd_sub_iff_mod_eq hb h1).mpr h
+    have he : u + c - (v + c) = u - v := by omega
+    rw [he] at hd
+    exact (dvd_sub_iff_mod_eq hb hle).mp hd
+
+theorem occ_nil (v : Nat) : occ v [] = 0 := rfl
+
+/-! ### Runs of consecutive naturals -/
+
+/-- `[s, s+1, …, s+n-1]`. -/
+def run (s : Nat) : Nat → List Nat
+  | 0 => []
+  | n + 1 => s :: run (s + 1) n
+
+/-- `p(p-1)/2`, without the division. -/
+def tri : Nat → Nat
+  | 0 => 0
+  | p + 1 => tri p + p
+
+theorem run_length (s n : Nat) : (run s n).length = n := by
+  induction n generalizing s with
+  | zero => rfl
+  | succ k ih => show (run (s+1) k).length + 1 = k + 1; rw [ih]
+
+theorem run_sum (s : Nat) : ∀ n, (run s n).sum = n * s + tri n := by
+  intro n
+  induction n generalizing s with
+  | zero => simp [run, tri]
+  | succ k ih =>
+    show s + (run (s+1) k).sum = _
+    rw [ih (s+1)]
+    show s + (k * (s+1) + tri k) = (k+1) * s + (tri k + k)
+    rw [Nat.mul_succ, Nat.succ_mul]
+    omega
+
+/-- `run` splits at any point. -/
+theorem run_add (s m : Nat) : ∀ n, run s (m + n) = run s m ++ run (s + m) n := by
+  intro n
+  induction m generalizing s with
+  | zero => simp [run]
+  | succ k ih =>
+    show run s (k + 1 + n) = _
+    have : k + 1 + n = (k + n) + 1 := by omega
+    rw [this]
+    show s :: run (s+1) (k + n) = (s :: run (s+1) k) ++ run (s + (k+1)) n
+    rw [ih (s+1)]
+    show s :: (run (s+1) k ++ run (s + 1 + k) n) = s :: (run (s+1) k ++ run (s + (k+1)) n)
+    rw [show s + 1 + k = s + (k+1) from by omega]
+
+theorem run_succ (s n : Nat) : run s (n + 1) = run s n ++ [s + n] := by
+  have h := run_add s n 1
+  simpa [run] using h
+
+/-! ### The staircase split -/
+
+/-- Split `run s (p+q)` into a `p`-element sublist and its `q`-element
+complement, so that the first has sum `p·s + tri p + ν`. -/
+def pick : Nat → Nat → Nat → Nat → List Nat × List Nat
+  | s, 0,     q,     _ => ([], run s q)
+  | s, p + 1, 0,     _ => (run s (p + 1), [])
+  | s, p + 1, q + 1, ν =>
+      if q + 1 ≤ ν then
+        (((pick s p (q + 1) (ν - (q + 1))).1) ++ [s + p + q + 1],
+         (pick s p (q + 1) (ν - (q + 1))).2)
+      else
+        ((pick s (p + 1) q ν).1,
+         ((pick s (p + 1) q ν).2) ++ [s + p + q + 1])
+termination_by _ p q _ => p + q
+
+theorem pick_len1 (s p q ν : Nat) : (pick s p q ν).1.length = p := by
+  induction s, p, q, ν using pick.induct with
+  | case1 s q ν => simp [pick]
+  | case2 s p ν => simp [pick, run_length]
+  | case3 s p q ν h ih => rw [pick]; simp [h, ih]
+  | case4 s p q ν h ih => rw [pick]; simp [h, ih]
+
+theorem pick_len2 (s p q ν : Nat) : (pick s p q ν).2.length = q := by
+  induction s, p, q, ν using pick.induct with
+  | case1 s q ν => simp [pick, run_length]
+  | case2 s p ν => simp [pick]
+  | case3 s p q ν h ih => rw [pick]; simp [h, ih]
+  | case4 s p q ν h ih => rw [pick]; simp [h, ih]
+
+theorem pick_occ (v : Nat) : ∀ s p q ν,
+    occ v (pick s p q ν).1 + occ v (pick s p q ν).2 = occ v (run s (p + q)) := by
+  intro s p q ν
+  induction s, p, q, ν using pick.induct with
+  | case1 s q ν => rw [pick]; simp [occ_nil]
+  | case2 s p ν => rw [pick]; simp [occ_nil]
+  | case3 s p q ν h ih =>
+    rw [pick, if_pos h]
+    show occ v ((pick s p (q+1) (ν - (q+1))).1 ++ [s + p + q + 1])
+        + occ v (pick s p (q+1) (ν - (q+1))).2 = _
+    rw [occ_append, show p + 1 + (q + 1) = (p + (q+1)) + 1 from by omega, run_succ,
+        occ_append, ← ih, show s + (p + (q+1)) = s + p + q + 1 from by omega]
+    omega
+  | case4 s p q ν h ih =>
+    rw [pick, if_neg h]
+    show occ v (pick s (p+1) q ν).1
+        + occ v ((pick s (p+1) q ν).2 ++ [s + p + q + 1]) = _
+    rw [occ_append, show p + 1 + (q + 1) = ((p+1) + q) + 1 from by omega, run_succ,
+        occ_append, ← ih, show s + ((p+1) + q) = s + p + q + 1 from by omega]
+    omega
+
+theorem pick_sum_total : ∀ s p q ν,
+    (pick s p q ν).1.sum + (pick s p q ν).2.sum = (run s (p + q)).sum := by
+  intro s p q ν
+  induction s, p, q, ν using pick.induct with
+  | case1 s q ν => rw [pick]; simp
+  | case2 s p ν => rw [pick]; simp
+  | case3 s p q ν h ih =>
+    rw [pick, if_pos h]
+    show ((pick s p (q+1) (ν - (q+1))).1 ++ [s + p + q + 1]).sum
+        + (pick s p (q+1) (ν - (q+1))).2.sum = _
+    rw [List.sum_append, show p + 1 + (q + 1) = (p + (q+1)) + 1 from by omega, run_succ,
+        List.sum_append, ← ih, show s + (p + (q+1)) = s + p + q + 1 from by omega]
+    simp; omega
+  | case4 s p q ν h ih =>
+    rw [pick, if_neg h]
+    show (pick s (p+1) q ν).1.sum
+        + ((pick s (p+1) q ν).2 ++ [s + p + q + 1]).sum = _
+    rw [List.sum_append, show p + 1 + (q + 1) = ((p+1) + q) + 1 from by omega, run_succ,
+        List.sum_append, ← ih, show s + ((p+1) + q) = s + p + q + 1 from by omega]
+    simp; omega
+
+/-- **Subset-sum contiguity.**  The `p`-element sublists of a run of `p+q`
+consecutive integers realise every sum from the minimum to the minimum plus
+`p·q`, with no gaps — this is the one combinatorial fact Theorem C′ needs. -/
+theorem pick_sum : ∀ s p q ν, ν ≤ p * q →
+    (pick s p q ν).1.sum = p * s + tri p + ν := by
+  intro s p q ν
+  induction s, p, q, ν using pick.induct with
+  | case1 s q ν => intro h; rw [pick]; simp [tri]; omega
+  | case2 s p ν =>
+    intro h
+    simp only [Nat.mul_zero, Nat.le_zero_eq] at h
+    subst h
+    rw [pick]
+    show (run s (p+1)).sum = _
+    rw [run_sum]
+    simp only [Nat.succ_eq_add_one]
+    omega
+  | case3 s p q ν h ih =>
+    intro hν
+    simp only [Nat.succ_eq_add_one] at hν
+    have hexp : (p + 1) * (q + 1) = p * (q + 1) + (q + 1) := Nat.succ_mul p (q+1)
+    have hle : ν - (q + 1) ≤ p * (q + 1) := by omega
+    rw [pick, if_pos h]
+    show ((pick s p (q+1) (ν - (q+1))).1 ++ [s + p + q + 1]).sum = _
+    rw [List.sum_append, ih hle]
+    show p * s + tri p + (ν - (q+1)) + (s + p + q + 1 + 0) = (p+1) * s + (tri p + p) + ν
+    rw [Nat.succ_mul]
+    omega
+  | case4 s p q ν h ih =>
+    intro _
+    have hle : ν ≤ (p + 1) * q := by
+      rcases Nat.eq_zero_or_pos q with rfl | hq
+      · omega
+      · have : q ≤ (p+1) * q := Nat.le_mul_of_pos_left q (by omega)
+        omega
+    rw [pick, if_neg h]
+    exact ih hle
+
+/-! ### Finite sums over an initial segment -/
+
+/-- `Σ_{t<n} f t`. -/
+def sumRange (f : Nat → Nat) : Nat → Nat
+  | 0 => 0
+  | n + 1 => sumRange f n + f n
+
+theorem sumRange_congr {f g : Nat → Nat} :
+    ∀ n, (∀ t, t < n → f t = g t) → sumRange f n = sumRange g n := by
+  intro n
+  induction n with
+  | zero => intro _; rfl
+  | succ k ih =>
+    intro h
+    show sumRange f k + f k = sumRange g k + g k
+    rw [ih (fun t ht => h t (by omega)), h k (by omega)]
+
+/-! ### The no-gap covering lemma -/
+
+/-- **Mixed-radix covering.**  If each place `b^t` opens before the lower places
+run out — `b^t ≤ 1 + Σ_{s<t} N_s b^s` — then `{Σ_{t<j} ν_t b^t : ν_t ≤ N_t}` is
+the whole interval `[0, Σ_{t<j} N_t b^t]`, with no gaps.  This is the second of
+Theorem C′'s two engines, and the only place the no-gap hypothesis is used. -/
+theorem cover_exists {b : Nat} (hb : 0 < b) (N : Nat → Nat) :
+    ∀ j, (∀ t, t < j → b ^ t ≤ sumRange (fun s => N s * b ^ s) t + 1) →
+      ∀ V, V ≤ sumRange (fun s => N s * b ^ s) j →
+      ∃ ν : Nat → Nat, (∀ t, ν t ≤ N t) ∧ sumRange (fun t => ν t * b ^ t) j = V := by
+  intro j
+  induction j with
+  | zero =>
+    intro _ V hV
+    have hV0 : V = 0 := Nat.le_zero.mp hV
+    exact ⟨fun _ => 0, fun _ => Nat.zero_le _, by rw [hV0]; rfl⟩
+  | succ k ih =>
+    intro hgap V hV
+    have hbk : 0 < b ^ k := Nat.pow_pos hb
+    have hVk : V ≤ sumRange (fun s => N s * b ^ s) k + N k * b ^ k := hV
+    by_cases hc : V / b ^ k ≤ N k
+    · -- the greedy digit is legal, and the remainder is a genuine remainder
+      have hdm := Nat.div_add_mod V (b ^ k)
+      have hlt : V % b ^ k < b ^ k := Nat.mod_lt _ hbk
+      have hle : V % b ^ k ≤ sumRange (fun s => N s * b ^ s) k := by
+        have := hgap k (by omega); omega
+      obtain ⟨ν, hν, hsum⟩ := ih (fun t ht => hgap t (by omega)) (V % b ^ k) hle
+      refine ⟨fun t => if t = k then V / b ^ k else ν t, ?_, ?_⟩
+      · intro t
+        by_cases h : t = k
+        · subst h; simpa using hc
+        · simpa [h] using hν t
+      · show sumRange _ k + _ = V
+        rw [sumRange_congr (f := fun t => (if t = k then V / b ^ k else ν t) * b ^ t)
+              (g := fun t => ν t * b ^ t) k
+              (by intro t ht; rw [if_neg (Nat.ne_of_lt ht)]), hsum]
+        show V % b ^ k + (if k = k then V / b ^ k else ν k) * b ^ k = V
+        rw [if_pos rfl, Nat.mul_comm]
+        omega
+    · -- the greedy digit overflows, so take all of `N k`
+      have hcc : N k < V / b ^ k := Nat.lt_of_not_le hc
+      have hbig : N k * b ^ k ≤ V := by
+        have h1 : N k * b ^ k ≤ (V / b ^ k) * b ^ k :=
+          Nat.mul_le_mul_right _ (Nat.le_of_lt hcc)
+        have h2 : (V / b ^ k) * b ^ k ≤ V := Nat.div_mul_le_self V (b ^ k)
+        omega
+      have hle : V - N k * b ^ k ≤ sumRange (fun s => N s * b ^ s) k := by omega
+      obtain ⟨ν, hν, hsum⟩ := ih (fun t ht => hgap t (by omega)) (V - N k * b ^ k) hle
+      refine ⟨fun t => if t = k then N k else ν t, ?_, ?_⟩
+      · intro t
+        by_cases h : t = k
+        · subst h; simp
+        · simpa [h] using hν t
+      · show sumRange _ k + _ = V
+        rw [sumRange_congr (f := fun t => (if t = k then N k else ν t) * b ^ t)
+              (g := fun t => ν t * b ^ t) k
+              (by intro t ht; rw [if_neg (Nat.ne_of_lt ht)]), hsum]
+        show V - N k * b ^ k + (if k = k then N k else ν k) * b ^ k = V
+        rw [if_pos rfl]
+        omega
+
+theorem sumRange_update {f g : Nat → Nat} {t₀ x : Nat} :
+    ∀ j, t₀ < j → (∀ t, t ≠ t₀ → g t = f t) → x + g t₀ = f t₀ →
+    x + sumRange g j = sumRange f j := by
+  intro j
+  induction j with
+  | zero => intro h; omega
+  | succ k ih =>
+    intro ht hne hx
+    show x + (sumRange g k + g k) = sumRange f k + f k
+    rcases Nat.lt_or_ge t₀ k with hlt | hge
+    · rw [hne k (by omega), ← ih hlt hne hx]; omega
+    · have : t₀ = k := by omega
+      subst this
+      rw [sumRange_congr (f := g) (g := f) _ (fun t htk => hne t (by omega))]
+      omega
+
+/-! ### Dealing the blocks into slots -/
+
+/-- Walk a list of slot-classes, taking the head of the named block.  Returns
+the values placed, and what is left of each block. -/
+def deal : (Nat → List Nat) → List Nat → List Nat × (Nat → List Nat)
+  | B, [] => ([], B)
+  | B, t :: cs =>
+      ((B t).headD 0 :: (deal (fun u => if u = t then (B t).tail else B u) cs).1,
+       (deal (fun u => if u = t then (B t).tail else B u) cs).2)
+
+theorem deal_len : ∀ (l : List Nat) (B : Nat → List Nat),
+    (deal B l).1.length = l.length := by
+  intro l
+  induction l with
+  | nil => intro B; rfl
+  | cons t cs ih => intro B; show (deal _ cs).1.length + 1 = cs.length + 1; rw [ih]
+
+/-- What is left of block `t` is exactly `B t` with its dealt prefix dropped. -/
+theorem deal_res : ∀ (l : List Nat) (B : Nat → List Nat) (t : Nat),
+    (deal B l).2 t = (B t).drop (occ t l) := by
+  intro l
+  induction l with
+  | nil => intro B t; rfl
+  | cons t₀ cs ih =>
+    intro B t
+    show (deal (fun u => if u = t₀ then (B t₀).tail else B u) cs).2 t = _
+    rw [ih]
+    show (if t = t₀ then (B t₀).tail else B t).drop (occ t cs)
+        = (B t).drop ((if t₀ = t then 1 else 0) + occ t cs)
+    by_cases h : t = t₀
+    · subst h
+      rw [if_pos rfl, if_pos rfl,
+          show (B t).tail = (B t).drop 1 from by cases B t <;> rfl, List.drop_drop]
+    · rw [if_neg h, if_neg (fun hh => h hh.symm)]
+      congr 1
+      omega
+
+theorem deal_app : ∀ (l₁ l₂ : List Nat) (B : Nat → List Nat),
+    (deal B (l₁ ++ l₂)).1 = (deal B l₁).1 ++ (deal (deal B l₁).2 l₂).1 := by
+  intro l₁
+  induction l₁ with
+  | nil => intro l₂ B; rfl
+  | cons t cs ih =>
+    intro l₂ B
+    show (B t).headD 0 :: (deal _ (cs ++ l₂)).1
+        = ((B t).headD 0 :: (deal _ cs).1) ++ _
+    rw [ih]
+    rfl
+
+/-- `Σ_i b^(clsᵢ) · dᵢ` — the weight a slot-class list gives a digit list. -/
+def wcls (b : Nat) : List Nat → List Nat → Nat
+  | [], _ => 0
+  | _ :: _, [] => 0
+  | t :: cs, d :: ds => b ^ t * d + wcls b cs ds
+
+/-- The bookkeeping shared by the next two lemmas: dealing one slot of class
+`t₀` shortens block `t₀` by its head and leaves the others alone. -/
+theorem deal_step_hyps {j t₀ : Nat} {cs : List Nat} {B : Nat → List Nat}
+    (hmem : ∀ t, t ∈ (t₀ :: cs) → t < j) (hlen : ∀ t, occ t (t₀ :: cs) ≤ (B t).length) :
+    t₀ < j ∧ 0 < (B t₀).length ∧ (∀ t, t ∈ cs → t < j) ∧
+      (∀ t, occ t cs ≤ ((fun u => if u = t₀ then (B t₀).tail else B u) t).length) := by
+  refine ⟨hmem t₀ List.mem_cons_self, ?_, fun t ht => hmem t (List.mem_cons_of_mem _ ht), ?_⟩
+  · have h := hlen t₀
+    rw [occ_cons_self] at h
+    omega
+  · intro t
+    by_cases h : t = t₀
+    · subst h
+      have h1 := hlen t
+      rw [occ_cons_self] at h1
+      show occ t cs ≤ (if t = t then (B t).tail else B t).length
+      rw [if_pos rfl, show (B t).tail.length = (B t).length - 1 from by cases B t <;> rfl]
+      omega
+    · have h1 := hlen t
+      show occ t cs ≤ (if t = t₀ then (B t₀).tail else B t).length
+      rw [if_neg h]
+      show occ t cs ≤ (B t).length
+      have : occ t (t₀ :: cs) = (if t₀ = t then 1 else 0) + occ t cs := rfl
+      rw [if_neg (fun hh => h hh.symm)] at this
+      omega
+
+/-- **Dealing conserves values.**  Nothing is created or lost: what is placed
+plus what is left equals what there was. -/
+theorem deal_occ (v j : Nat) : ∀ (l : List Nat) (B : Nat → List Nat),
+    (∀ t, t ∈ l → t < j) → (∀ t, occ t l ≤ (B t).length) →
+    occ v (deal B l).1 + sumRange (fun t => occ v ((deal B l).2 t)) j
+      = sumRange (fun t => occ v (B t)) j := by
+  intro l
+  induction l with
+  | nil =>
+    intro B _ _
+    show occ v ([] : List Nat) + sumRange (fun t => occ v (B t)) j
+        = sumRange (fun t => occ v (B t)) j
+    rw [occ_nil, Nat.zero_add]
+  | cons t₀ cs ih =>
+    intro B hmem hlen
+    obtain ⟨ht₀, hpos, hmem', hlen'⟩ := deal_step_hyps hmem hlen
+    have key := ih (fun u => if u = t₀ then (B t₀).tail else B u) hmem' hlen'
+    show (if (B t₀).headD 0 = v then 1 else 0)
+        + occ v (deal (fun u => if u = t₀ then (B t₀).tail else B u) cs).1
+        + sumRange (fun t => occ v ((deal (fun u => if u = t₀ then (B t₀).tail else B u) cs).2 t)) j
+      = _
+    rw [Nat.add_assoc, key]
+    refine sumRange_update (x := if (B t₀).headD 0 = v then 1 else 0) j ht₀ ?_ ?_
+    · intro t hne
+      show occ v (if t = t₀ then (B t₀).tail else B t) = occ v (B t)
+      rw [if_neg hne]
+    · show (if (B t₀).headD 0 = v then 1 else 0)
+          + occ v (if t₀ = t₀ then (B t₀).tail else B t₀) = occ v (B t₀)
+      rw [if_pos rfl]
+      cases hB : B t₀ with
+      | nil => rw [hB] at hpos; exact absurd hpos (by simp)
+      | cons x xs => show (if x = v then 1 else 0) + occ v xs = occ v (x :: xs); rfl
+
+/-- **Dealing conserves the weighted block totals.**  Slot `i` of class `t`
+carries weight `b^t`, so the value dealt there is charged to block `t`. -/
+theorem deal_wcls (b j : Nat) : ∀ (l : List Nat) (B : Nat → List Nat),
+    (∀ t, t ∈ l → t < j) → (∀ t, occ t l ≤ (B t).length) →
+    wcls b l (deal B l).1 + sumRange (fun t => b ^ t * ((deal B l).2 t).sum) j
+      = sumRange (fun t => b ^ t * (B t).sum) j := by
+  intro l
+  induction l with
+  | nil =>
+    intro B _ _
+    show 0 + sumRange (fun t => b ^ t * (B t).sum) j = sumRange (fun t => b ^ t * (B t).sum) j
+    rw [Nat.zero_add]
+  | cons t₀ cs ih =>
+    intro B hmem hlen
+    obtain ⟨ht₀, hpos, hmem', hlen'⟩ := deal_step_hyps hmem hlen
+    have key := ih (fun u => if u = t₀ then (B t₀).tail else B u) hmem' hlen'
+    show b ^ t₀ * (B t₀).headD 0
+        + wcls b cs (deal (fun u => if u = t₀ then (B t₀).tail else B u) cs).1
+        + sumRange (fun t => b ^ t * ((deal (fun u => if u = t₀ then (B t₀).tail else B u) cs).2 t).sum) j
+      = _
+    rw [Nat.add_assoc, key]
+    refine sumRange_update (x := b ^ t₀ * (B t₀).headD 0) j ht₀ ?_ ?_
+    · intro t hne
+      show b ^ t * (if t = t₀ then (B t₀).tail else B t).sum = b ^ t * (B t).sum
+      rw [if_neg hne]
+    · show b ^ t₀ * (B t₀).headD 0
+          + b ^ t₀ * (if t₀ = t₀ then (B t₀).tail else B t₀).sum = b ^ t₀ * (B t₀).sum
+      rw [if_pos rfl, ← Nat.mul_add]
+      cases hB : B t₀ with
+      | nil => rw [hB] at hpos; exact absurd hpos (by simp)
+      | cons x xs => show b ^ t₀ * (x + xs.sum) = b ^ t₀ * (x :: xs).sum; rfl
+
+/-- The classes of `n` consecutive slots starting at class `t`. -/
+def clsOf (j : Nat) : Nat → Nat → List Nat
+  | _, 0 => []
+  | t, n + 1 => t :: clsOf j ((t + 1) % j) n
+
+theorem clsOf_length (j : Nat) : ∀ n t, (clsOf j t n).length = n := by
+  intro n
+  induction n with
+  | zero => intro t; rfl
+  | succ k ih => intro t; show (clsOf j ((t+1) % j) k).length + 1 = k + 1; rw [ih]
+
+theorem clsOf_mem {j : Nat} (hj : 0 < j) : ∀ n t, t < j → ∀ x, x ∈ clsOf j t n → x < j := by
+  intro n
+  induction n with
+  | zero => intro t _ x hx; exact absurd hx (by simp [clsOf])
+  | succ k ih =>
+    intro t ht x hx
+    rcases List.mem_cons.mp hx with rfl | hx'
+    · exact ht
+    · exact ih ((t+1) % j) (Nat.mod_lt _ hj) x hx'
+
+theorem clsOf_snoc {j : Nat} (hj : 0 < j) : ∀ n t, t < j →
+    clsOf j t (n + 1) = clsOf j t n ++ [(t + n) % j] := by
+  intro n
+  induction n with
+  | zero => intro t ht; show [t] = [] ++ [(t + 0) % j]; rw [Nat.add_zero, Nat.mod_eq_of_lt ht]; rfl
+  | succ k ih =>
+    intro t ht
+    show t :: clsOf j ((t+1) % j) (k+1) = (t :: clsOf j ((t+1) % j) k) ++ [(t + (k+1)) % j]
+    rw [ih ((t+1) % j) (Nat.mod_lt _ hj)]
+    show t :: (clsOf j ((t+1) % j) k ++ [((t+1) % j + k) % j])
+        = t :: (clsOf j ((t+1) % j) k ++ [(t + (k+1)) % j])
+    rw [Nat.mod_add_mod, show t + 1 + k = t + (k+1) from by omega]
+
+/-- `wsum` is `wcls` against the slot-class list — the bridge from the file's
+existing block congruence to the arrangement built here. -/
+theorem wsum_eq_wcls (b j : Nat) : ∀ (ds : List Nat) (t : Nat),
+    wsum b j t ds = wcls b (clsOf j t ds.length) ds := by
+  intro ds
+  induction ds with
+  | nil => intro t; rfl
+  | cons d ds ih =>
+    intro t
+    show b ^ t * d + wsum b j ((t+1) % j) ds = wcls b (t :: clsOf j ((t+1) % j) ds.length) (d :: ds)
+    rw [ih]
+    rfl
+
+theorem wcls_append (b : Nat) : ∀ (l₁ : List Nat) (d₁ : List Nat) (l₂ d₂ : List Nat),
+    l₁.length = d₁.length →
+    wcls b (l₁ ++ l₂) (d₁ ++ d₂) = wcls b l₁ d₁ + wcls b l₂ d₂ := by
+  intro l₁
+  induction l₁ with
+  | nil =>
+    intro d₁ l₂ d₂ h
+    have : d₁ = [] := List.eq_nil_of_length_eq_zero h.symm
+    subst this
+    show wcls b l₂ d₂ = 0 + wcls b l₂ d₂
+    omega
+  | cons t cs ih =>
+    intro d₁ l₂ d₂ h
+    cases d₁ with
+    | nil => exact absurd h (by simp)
+    | cons d ds =>
+      show b ^ t * d + wcls b (cs ++ l₂) (ds ++ d₂) = b ^ t * d + wcls b cs ds + wcls b l₂ d₂
+      rw [ih ds l₂ d₂ (by simpa using h)]
+      omega
+
+/-- The `j` classes account for every slot. -/
+theorem sumRange_occ_length {j : Nat} : ∀ (l : List Nat), (∀ x, x ∈ l → x < j) →
+    sumRange (fun t => occ t l) j = l.length := by
+  intro l
+  induction l with
+  | nil =>
+    intro _
+    show sumRange (fun t => occ t ([] : List Nat)) j = 0
+    have : ∀ n, sumRange (fun t => occ t ([] : List Nat)) n = 0 := by
+      intro n; induction n with
+      | zero => rfl
+      | succ k ihk => show sumRange _ k + occ k ([] : List Nat) = 0; rw [ihk]; rfl
+    exact this j
+  | cons t₀ cs ih =>
+    intro hmem
+    have ht₀ : t₀ < j := hmem t₀ List.mem_cons_self
+    have := sumRange_update (f := fun t => occ t (t₀ :: cs)) (g := fun t => occ t cs)
+      (t₀ := t₀) (x := 1) j ht₀
+      (by intro t hne
+          show occ t cs = occ t (t₀ :: cs)
+          show occ t cs = (if t₀ = t then 1 else 0) + occ t cs
+          rw [if_neg (fun hh => hne hh.symm)]
+          omega)
+      (by rw [occ_cons_self])
+    rw [← this, ih (fun x hx => hmem x (List.mem_cons_of_mem _ hx))]
+    show 1 + cs.length = cs.length + 1
+    omega
+
+theorem sumRange_add (f g : Nat → Nat) : ∀ n,
+    sumRange (fun t => f t + g t) n = sumRange f n + sumRange g n := by
+  intro n
+  induction n with
+  | zero => rfl
+  | succ k ih =>
+    show sumRange (fun t => f t + g t) k + (f k + g k) = (sumRange f k + f k) + (sumRange g k + g k)
+    rw [ih]; omega
+
+theorem sumRange_mul (k : Nat) (f : Nat → Nat) : ∀ n,
+    k * sumRange f n = sumRange (fun t => k * f t) n := by
+  intro n
+  induction n with
+  | zero => show k * 0 = 0; omega
+  | succ m ih => show k * (sumRange f m + f m) = sumRange (fun t => k * f t) m + k * f m
+                 rw [← ih, Nat.mul_add]
+
+theorem sumRange_front (f : Nat → Nat) : ∀ n,
+    sumRange f (n + 1) = f 0 + sumRange (fun t => f (t + 1)) n := by
+  intro n
+  induction n with
+  | zero => show (0 : Nat) + f 0 = f 0 + 0; omega
+  | succ k ih =>
+    show sumRange f (k+1) + f (k+1) = f 0 + (sumRange (fun t => f (t+1)) k + f (k+1))
+    rw [ih]; omega
+
+/-! ### Cyclic indices -/
+
+/-- The next class, cyclically. -/
+def nxt (j t : Nat) : Nat := (t + 1) % j
+
+/-- The previous class, cyclically. -/
+def prv (j t : Nat) : Nat := (t + (j - 1)) % j
+
+theorem nxt_lt {j : Nat} (hj : 0 < j) (t : Nat) : nxt j t < j := Nat.mod_lt _ hj
+
+theorem prv_lt {j : Nat} (hj : 0 < j) (t : Nat) : prv j t < j := Nat.mod_lt _ hj
+
+theorem nxt_prv {j : Nat} (hj : 0 < j) {t : Nat} (ht : t < j) : nxt j (prv j t) = t := by
+  show ((t + (j-1)) % j + 1) % j = t
+  rw [Nat.mod_add_mod, show t + (j-1) + 1 = t + j from by omega, Nat.add_mod_right,
+      Nat.mod_eq_of_lt ht]
+
+theorem prv_zero {j : Nat} (hj : 0 < j) : prv j 0 = j - 1 := by
+  show (0 + (j-1)) % j = j - 1
+  rw [Nat.zero_add, Nat.mod_eq_of_lt (by omega)]
+
+theorem prv_succ {j t : Nat} (hj : 0 < j) (ht : t + 1 < j) : prv j (t + 1) = t := by
+  show (t + 1 + (j-1)) % j = t
+  rw [show t + 1 + (j-1) = t + j from by omega, Nat.add_mod_right, Nat.mod_eq_of_lt (by omega)]
+
+/-- Summing a function of the previous class is summing the function. -/
+theorem sumRange_prv {j : Nat} (hj : 0 < j) (f : Nat → Nat) :
+    sumRange (fun t => f (prv j t)) j = sumRange f j := by
+  obtain ⟨m, rfl⟩ : ∃ m, j = m + 1 := ⟨j - 1, by omega⟩
+  rw [sumRange_front (fun t => f (prv (m+1) t)) m]
+  show f (prv (m+1) 0) + sumRange (fun t => f (prv (m+1) (t+1))) m = sumRange f m + f m
+  rw [prv_zero (by omega),
+      sumRange_congr (f := fun t => f (prv (m+1) (t+1))) (g := f) m
+        (by intro t ht; rw [prv_succ (by omega) (by omega)])]
+  show f m + sumRange f m = sumRange f m + f m
+  omega
+
+/-- …and so is summing a function of the next class. -/
+theorem sumRange_nxt {j : Nat} (hj : 0 < j) (f : Nat → Nat) :
+    sumRange (fun t => f (nxt j t)) j = sumRange f j := by
+  obtain ⟨m, rfl⟩ : ∃ m, j = m + 1 := ⟨j - 1, by omega⟩
+  show sumRange (fun t => f (nxt (m+1) t)) m + f (nxt (m+1) m) = sumRange f (m+1)
+  rw [sumRange_congr (f := fun t => f (nxt (m+1) t)) (g := fun t => f (t+1)) m
+        (by intro t ht; show f ((t+1) % (m+1)) = f (t+1); rw [Nat.mod_eq_of_lt (by omega)]),
+      show nxt (m+1) m = 0 from by show (m+1) % (m+1) = 0; simp,
+      sumRange_front f m]
+  omega
+
+/-- Consecutive runs tile `[0, Σ a)`. -/
+theorem occ_runs (v : Nat) (a : Nat → Nat) : ∀ n,
+    sumRange (fun t => occ v (run (sumRange a t) (a t))) n = occ v (run 0 (sumRange a n)) := by
+  intro n
+  induction n with
+  | zero => show 0 = occ v (run 0 0); rfl
+  | succ k ih =>
+    show sumRange (fun t => occ v (run (sumRange a t) (a t))) k
+        + occ v (run (sumRange a k) (a k)) = occ v (run 0 (sumRange a k + a k))
+    rw [ih, run_add 0 (sumRange a k) (a k), occ_append, Nat.zero_add]
+
+/-! ### The blocks -/
+
+/-- How many values run `t` passes up to class `t+1`. -/
+def qOf (j : Nat) (c p : Nat → Nat) (t : Nat) : Nat := c (nxt j t) - p (nxt j t)
+
+/-- The length of run `t`. -/
+def aOf (j : Nat) (c p : Nat → Nat) (t : Nat) : Nat := p t + qOf j c p t
+
+/-- Where run `t` starts. -/
+def offOf (j : Nat) (c p : Nat → Nat) (t : Nat) : Nat := sumRange (aOf j c p) t
+
+/-- Run `t`, split into what it keeps for class `t` and what it passes up to
+class `t+1`. -/
+def picked (j : Nat) (c p ν : Nat → Nat) (t : Nat) : List Nat × List Nat :=
+  pick (offOf j c p t) (p t) (qOf j c p t) (ν t)
+
+/-- Class `t`'s block: what run `t` keeps, plus what run `t-1` passes up. -/
+def blk (j : Nat) (c p ν : Nat → Nat) (t : Nat) : List Nat :=
+  (picked j c p ν t).1 ++ (picked j c p ν (prv j t)).2
+
+theorem qOf_prv {j : Nat} (hj : 0 < j) (c p : Nat → Nat) {t : Nat} (ht : t < j) :
+    qOf j c p (prv j t) = c t - p t := by
+  show c (nxt j (prv j t)) - p (nxt j (prv j t)) = _
+  rw [nxt_prv hj ht]
+
+theorem blk_length {j : Nat} (hj : 0 < j) (c p ν : Nat → Nat)
+    (hpc : ∀ t, t < j → p t ≤ c t) {t : Nat} (ht : t < j) :
+    (blk j c p ν t).length = c t := by
+  rw [blk, List.length_append, picked, picked, pick_len1, pick_len2, qOf_prv hj c p ht]
+  have := hpc t ht
+  omega
+
+theorem sum_aOf {j : Nat} (hj : 0 < j) (c p : Nat → Nat)
+    (hpc : ∀ t, t < j → p t ≤ c t) : sumRange (aOf j c p) j = sumRange c j := by
+  have h1 : sumRange (aOf j c p) j
+      = sumRange p j + sumRange (fun t => c (nxt j t) - p (nxt j t)) j := by
+    rw [← sumRange_add]
+    exact sumRange_congr j (fun t _ => rfl)
+  rw [h1, sumRange_nxt hj (fun u => c u - p u), ← sumRange_add]
+  exact sumRange_congr j (fun t ht => by have := hpc t ht; omega)
+
+theorem blk_occ {j : Nat} (hj : 0 < j) (c p ν : Nat → Nat) (v : Nat) :
+    sumRange (fun t => occ v (blk j c p ν t)) j
+      = occ v (run 0 (sumRange (aOf j c p) j)) := by
+  have h1 : sumRange (fun t => occ v (blk j c p ν t)) j
+      = sumRange (fun t => occ v (picked j c p ν t).1) j
+        + sumRange (fun t => occ v (picked j c p ν (prv j t)).2) j := by
+    rw [← sumRange_add]
+    exact sumRange_congr j (fun t _ => occ_append v _ _)
+  rw [h1, sumRange_prv hj (fun t => occ v (picked j c p ν t).2), ← sumRange_add,
+      sumRange_congr (f := fun t => occ v (picked j c p ν t).1 + occ v (picked j c p ν t).2)
+        (g := fun t => occ v (run (offOf j c p t) (aOf j c p t))) j
+        (fun t _ => pick_occ v (offOf j c p t) (p t) (qOf j c p t) (ν t)),
+      ← occ_runs v (aOf j c p) j]
+  exact sumRange_congr j (fun t _ => rfl)
+
+/-- The wraparound: reading the block totals with weight `b^(t+1)` differs from
+reading them with `b^t` at the previous class by one multiple of `b^j - 1`. -/
+theorem wrap_sum {b j : Nat} (hb : 0 < b) (hj : 0 < j) (τ : Nat → Nat) :
+    sumRange (fun t => b ^ t * τ (prv j t)) j + (b ^ j - 1) * τ (j - 1)
+      = sumRange (fun t => b ^ (t + 1) * τ t) j := by
+  obtain ⟨m, rfl⟩ : ∃ m, j = m + 1 := ⟨j - 1, by omega⟩
+  have hpow : 1 ≤ b ^ (m + 1) := Nat.one_le_pow _ _ hb
+  rw [sumRange_front (fun t => b ^ t * τ (prv (m+1) t)) m]
+  show b ^ 0 * τ (prv (m+1) 0) + sumRange (fun t => b ^ (t+1) * τ (prv (m+1) (t+1))) m
+      + (b ^ (m+1) - 1) * τ (m + 1 - 1) = sumRange (fun t => b ^ (t+1) * τ t) m + b ^ (m+1) * τ m
+  rw [prv_zero (by omega), Nat.pow_zero, Nat.one_mul,
+      sumRange_congr (f := fun t => b ^ (t+1) * τ (prv (m+1) (t+1)))
+        (g := fun t => b ^ (t+1) * τ t) m
+        (by intro t ht; rw [prv_succ (by omega) (by omega)]),
+      show m + 1 - 1 = m from by omega]
+  have : (b ^ (m+1) - 1) * τ m + τ m = b ^ (m+1) * τ m := by
+    rw [← Nat.succ_mul]
+    congr 1
+    omega
+  omega
+
+/-- **The exact identity.**  `X` is the arrangement's block-sum value; increasing
+the kept-sums by one moves `X` down by `b-1` times that, up to one wrap of
+`b^j - 1`.  No congruence yet: this is an equation in `ℕ`. -/
+theorem blk_identity {b j : Nat} (hb : 0 < b) (hj : 0 < j) (c p ν : Nat → Nat) :
+    sumRange (fun t => b ^ t * (blk j c p ν t).sum) j
+        + (b - 1) * sumRange (fun t => b ^ t * (picked j c p ν t).1.sum) j
+        + (b ^ j - 1) * (picked j c p ν (j - 1)).2.sum
+      = sumRange (fun t => b ^ (t + 1) * (run (offOf j c p t) (aOf j c p t)).sum) j := by
+  have hsplit : sumRange (fun t => b ^ t * (blk j c p ν t).sum) j
+      = sumRange (fun t => b ^ t * (picked j c p ν t).1.sum) j
+        + sumRange (fun t => b ^ t * (picked j c p ν (prv j t)).2.sum) j := by
+    rw [← sumRange_add]
+    exact sumRange_congr j (fun t _ => by
+      show b ^ t * ((picked j c p ν t).1 ++ (picked j c p ν (prv j t)).2).sum = _
+      rw [List.sum_append, Nat.mul_add])
+  rw [hsplit]
+  have hw := wrap_sum hb hj (fun t => (picked j c p ν t).2.sum)
+  have hb1 : (b - 1) * sumRange (fun t => b ^ t * (picked j c p ν t).1.sum) j
+      + sumRange (fun t => b ^ t * (picked j c p ν t).1.sum) j
+      = sumRange (fun t => b ^ (t+1) * (picked j c p ν t).1.sum) j := by
+    rw [← Nat.succ_mul]
+    show (b - 1 + 1) * sumRange (fun t => b ^ t * (picked j c p ν t).1.sum) j = _
+    rw [show b - 1 + 1 = b from by omega, sumRange_mul]
+    exact sumRange_congr j (fun t _ => by rw [← Nat.mul_assoc, ← Nat.pow_succ'])
+  have hfin : sumRange (fun t => b ^ (t+1) * (picked j c p ν t).1.sum) j
+      + sumRange (fun t => b ^ (t+1) * (picked j c p ν t).2.sum) j
+      = sumRange (fun t => b ^ (t + 1) * (run (offOf j c p t) (aOf j c p t)).sum) j := by
+    rw [← sumRange_add]
+    refine sumRange_congr j (fun t _ => ?_)
+    rw [← Nat.mul_add]
+    congr 1
+    exact pick_sum_total _ _ _ _
+  omega
+
+/-! ### The coset `{z : z ≡ T (mod b-1)}` inside `ℤ/(b^j-1)` -/
+
+/-- `1 + b + … + b^(j-1)` — the number of residues mod `b^j - 1` that the
+digit-sum congruence leaves open.  Kept as a sum, so no division appears. -/
+def cosetSize (b j : Nat) : Nat := sumRange (fun t => b ^ t) j
+
+theorem geom {b : Nat} (hb : 1 ≤ b) : ∀ j, (b - 1) * cosetSize b j + 1 = b ^ j := by
+  intro j
+  induction j with
+  | zero => show (b - 1) * 0 + 1 = 1; omega
+  | succ k ih =>
+    show (b - 1) * (cosetSize b k + b ^ k) + 1 = b ^ (k + 1)
+    rw [Nat.mul_add]
+    have h1 : (b - 1) * b ^ k + b ^ k = b * b ^ k := by
+      rw [← Nat.succ_mul]
+      congr 1
+      omega
+    rw [Nat.pow_succ, Nat.mul_comm (b ^ k) b, ← h1]
+    omega
+
+theorem cosetSize_pos {b j : Nat} (hj : 0 < j) : 0 < cosetSize b j := by
+  obtain ⟨m, rfl⟩ : ∃ m, j = m + 1 := ⟨j - 1, by omega⟩
+  show 0 < sumRange (fun t => b ^ t) (m + 1)
+  rw [sumRange_front (fun t => b ^ t) m]
+  show 0 < b ^ 0 + sumRange (fun t => b ^ (t + 1)) m
+  rw [Nat.pow_zero]
+  omega
+
+/-- **The coset is a cycle.**  Inside `ℤ/(g·K)`, the residues congruent to a
+given value mod `g` are the `K` numbers `z, z+g, …, z+(K-1)g`; so any two
+members of the class are joined by adding `g` some `W < K` times. -/
+theorem coset_hit {g K z C : Nat} (hK : 0 < K) (h : z % g = C % g) :
+    ∃ W, W < K ∧ (z + g * W) % (g * K) = C % (g * K) := by
+  have hC := Nat.div_add_mod C g
+  have hz := Nat.div_add_mod z g
+  have hstep : g * (K - 1) + g = g * K := by
+    rw [← Nat.mul_succ]
+    congr 1
+    omega
+  have hmul : g * ((K - 1) * (z / g)) + g * (z / g) = g * K * (z / g) := by
+    rw [← Nat.mul_assoc, ← Nat.add_mul, hstep]
+  have hD : g * (C / g + (K - 1) * (z / g))
+      = g * (C / g) + g * ((K - 1) * (z / g)) := Nat.mul_add _ _ _
+  have key : g * (C / g + (K - 1) * (z / g)) + z = C + g * K * (z / g) := by omega
+  refine ⟨(C / g + (K - 1) * (z / g)) % K, Nat.mod_lt _ hK, ?_⟩
+  have hDK := Nat.div_add_mod (C / g + (K - 1) * (z / g)) K
+  have hsplit : g * (C / g + (K - 1) * (z / g))
+      = g * K * ((C / g + (K - 1) * (z / g)) / K)
+        + g * ((C / g + (K - 1) * (z / g)) % K) := by
+    rw [Nat.mul_assoc, ← Nat.mul_add, hDK]
+  have hfin : z + g * ((C / g + (K - 1) * (z / g)) % K)
+      + g * K * ((C / g + (K - 1) * (z / g)) / K) = C + g * K * (z / g) := by omega
+  have h1 : (z + g * ((C / g + (K - 1) * (z / g)) % K)
+      + g * K * ((C / g + (K - 1) * (z / g)) / K)) % (g * K)
+      = (z + g * ((C / g + (K - 1) * (z / g)) % K)) % (g * K) :=
+    Nat.add_mul_mod_self_left _ _ _
+  have h2 : (C + g * K * (z / g)) % (g * K) = C % (g * K) := Nat.add_mul_mod_self_left _ _ _
+  rw [← h1, hfin, h2]
+
+/-! ### Where the digit `0` lands -/
+
+theorem sumRange_eq_zero {f : Nat → Nat} : ∀ n, sumRange f n = 0 → ∀ t, t < n → f t = 0 := by
+  intro n
+  induction n with
+  | zero => intro _ t ht; omega
+  | succ k ih =>
+    intro h t ht
+    have h' : sumRange f k + f k = 0 := h
+    rcases Nat.lt_or_ge t k with hlt | hge
+    · exact ih (by omega) t hlt
+    · have : t = k := by omega
+      subst this; omega
+
+theorem sumRange_eq_one {f : Nat → Nat} : ∀ n, sumRange f n = 1 →
+    ∃ t₀, t₀ < n ∧ f t₀ = 1 ∧ ∀ t, t < n → t ≠ t₀ → f t = 0 := by
+  intro n
+  induction n with
+  | zero => intro h; exact absurd h (by simp [sumRange])
+  | succ k ih =>
+    intro h
+    have h' : sumRange f k + f k = 1 := h
+    rcases Nat.eq_zero_or_pos (f k) with hk | hk
+    · obtain ⟨t₀, ht₀, hf, hz⟩ := ih (by omega)
+      exact ⟨t₀, by omega, hf, fun t ht hne => by
+        rcases Nat.lt_or_ge t k with hlt | hge
+        · exact hz t hlt hne
+        · have : t = k := by omega
+          subst this; exact hk⟩
+    · refine ⟨k, by omega, by omega, fun t ht hne => ?_⟩
+      exact sumRange_eq_zero k (by omega) t (by omega)
+
+/-! ### Reading a list by index, and moving the `0` -/
+
+/-- The value at index `m`, read through `drop` so that no `Fin` is needed. -/
+def nth (l : List Nat) (m : Nat) : Nat := (l.drop m).headD 0
+
+theorem nth_ne_zero : ∀ (l : List Nat), occ 0 l = 0 → ∀ m, m < l.length → nth l m ≠ 0 := by
+  intro l
+  induction l with
+  | nil => intro _ m hm; exact absurd hm (by simp)
+  | cons x xs ih =>
+    intro h0 m hm
+    have hx : x ≠ 0 ∧ occ 0 xs = 0 := by
+      have : (if x = 0 then 1 else 0) + occ 0 xs = 0 := h0
+      by_cases hx0 : x = 0
+      · rw [if_pos hx0] at this; omega
+      · exact ⟨hx0, by rw [if_neg hx0] at this; omega⟩
+    cases m with
+    | zero => show (x :: xs).headD 0 ≠ 0; exact hx.1
+    | succ i => exact ih hx.2 i (by simpa using hm)
+
+theorem nth_append_left : ∀ (l₁ : List Nat) (l₂ : List Nat) (m : Nat), m < l₁.length →
+    nth (l₁ ++ l₂) m = nth l₁ m := by
+  intro l₁
+  induction l₁ with
+  | nil => intro l₂ m hm; exact absurd hm (by simp)
+  | cons x xs ih =>
+    intro l₂ m hm
+    cases m with
+    | zero => rfl
+    | succ i => exact ih l₂ i (by simpa using hm)
+
+theorem nth_append_right : ∀ (l₁ : List Nat) (l₂ : List Nat) (m : Nat), l₁.length ≤ m →
+    nth (l₁ ++ l₂) m = nth l₂ (m - l₁.length) := by
+  intro l₁
+  induction l₁ with
+  | nil => intro l₂ m _; rfl
+  | cons x xs ih =>
+    intro l₂ m hm
+    cases m with
+    | zero => exact absurd hm (by simp)
+    | succ i =>
+      have h : xs.length ≤ i := by simpa using hm
+      show nth (xs ++ l₂) i = nth l₂ (i + 1 - (xs.length + 1))
+      rw [ih l₂ i h]
+      congr 1
+      omega
+
+/-- `l` with a `0` inserted at index `k`. -/
+def ins0 (k : Nat) (l : List Nat) : List Nat := l.take k ++ 0 :: l.drop k
+
+theorem ins0_occ (k : Nat) (l : List Nat) (v : Nat) : occ v (ins0 k l) = occ v (0 :: l) := by
+  show occ v (l.take k ++ 0 :: l.drop k) = (if 0 = v then 1 else 0) + occ v l
+  rw [occ_append]
+  show occ v (l.take k) + ((if 0 = v then 1 else 0) + occ v (l.drop k)) = _
+  have := occ_append v (l.take k) (l.drop k)
+  rw [List.take_append_drop] at this
+  omega
+
+theorem ins0_sum (k : Nat) (l : List Nat) : (ins0 k l).sum = l.sum := by
+  show (l.take k ++ 0 :: l.drop k).sum = l.sum
+  rw [List.sum_append]
+  show (l.take k).sum + (0 + (l.drop k).sum) = l.sum
+  have := List.sum_append (l₁ := l.take k) (l₂ := l.drop k)
+  rw [List.take_append_drop] at this
+  omega
+
+theorem ins0_length {k : Nat} {l : List Nat} (hk : k ≤ l.length) :
+    (ins0 k l).length = l.length + 1 := by
+  show (l.take k ++ 0 :: l.drop k).length = l.length + 1
+  rw [List.length_append, List.length_take, Nat.min_eq_left hk]
+  show k + ((l.drop k).length + 1) = l.length + 1
+  rw [List.length_drop]
+  omega
+
+/-- Away from index `k`, the inserted list has no zeros — which is exactly what
+a leading digit needs. -/
+theorem ins0_nth_ne {k : Nat} {l : List Nat} (h0 : occ 0 l = 0) (hk : k ≤ l.length)
+    {m : Nat} (hm : m < l.length + 1) (hmk : m ≠ k) : nth (ins0 k l) m ≠ 0 := by
+  have hsplit := occ_append 0 (l.take k) (l.drop k)
+  rw [List.take_append_drop, h0] at hsplit
+  have htk : (l.take k).length = k := by rw [List.length_take, Nat.min_eq_left hk]
+  have hdk : (l.drop k).length = l.length - k := List.length_drop
+  rcases Nat.lt_or_ge m k with hlt | hge
+  · show nth (l.take k ++ 0 :: l.drop k) m ≠ 0
+    rw [nth_append_left _ _ m (by omega)]
+    exact nth_ne_zero _ (by omega) m (by omega)
+  · have hgt : k < m := by omega
+    show nth (l.take k ++ 0 :: l.drop k) m ≠ 0
+    rw [nth_append_right _ _ m (by omega), htk]
+    have : m - k = (m - k - 1) + 1 := by omega
+    rw [this]
+    show nth (l.drop k) (m - k - 1) ≠ 0
+    exact nth_ne_zero _ (by omega) _ (by omega)
+
+/-- Dropping the zeros of a list: same sum, same non-zero values. -/
+def dropZeros : List Nat → List Nat
+  | [] => []
+  | x :: xs => if x = 0 then dropZeros xs else x :: dropZeros xs
+
+theorem dropZeros_occ_zero : ∀ l : List Nat, occ 0 (dropZeros l) = 0 := by
+  intro l
+  induction l with
+  | nil => rfl
+  | cons x xs ih =>
+    show occ 0 (if x = 0 then dropZeros xs else x :: dropZeros xs) = 0
+    by_cases h : x = 0
+    · rw [if_pos h]; exact ih
+    · rw [if_neg h]; show (if x = 0 then 1 else 0) + occ 0 (dropZeros xs) = 0
+      rw [if_neg h]; omega
+
+theorem dropZeros_occ {v : Nat} (hv : v ≠ 0) : ∀ l : List Nat, occ v (dropZeros l) = occ v l := by
+  intro l
+  induction l with
+  | nil => rfl
+  | cons x xs ih =>
+    show occ v (if x = 0 then dropZeros xs else x :: dropZeros xs)
+        = (if x = v then 1 else 0) + occ v xs
+    by_cases h : x = 0
+    · rw [if_pos h, ih, if_neg (by omega : ¬ x = v)]; omega
+    · rw [if_neg h]; show (if x = v then 1 else 0) + occ v (dropZeros xs) = _
+      rw [ih]
+
+theorem dropZeros_sum : ∀ l : List Nat, (dropZeros l).sum = l.sum := by
+  intro l
+  induction l with
+  | nil => rfl
+  | cons x xs ih =>
+    show (if x = 0 then dropZeros xs else x :: dropZeros xs).sum = x + xs.sum
+    by_cases h : x = 0
+    · rw [if_pos h, ih, h]; omega
+    · rw [if_neg h]; show x + (dropZeros xs).sum = _; rw [ih]
+
+theorem dropZeros_length_zero : ∀ l : List Nat, occ 0 l = 0 →
+    (dropZeros l).length = l.length := by
+  intro l
+  induction l with
+  | nil => intro _; rfl
+  | cons x xs ih =>
+    intro h
+    have h' : (if x = 0 then 1 else 0) + occ 0 xs = 0 := h
+    have hxne : x ≠ 0 := by
+      intro hx0
+      rw [if_pos hx0] at h'
+      omega
+    rw [if_neg hxne] at h'
+    show (if x = 0 then dropZeros xs else x :: dropZeros xs).length = xs.length + 1
+    rw [if_neg hxne]
+    show (dropZeros xs).length + 1 = xs.length + 1
+    rw [ih (by omega)]
+
+theorem dropZeros_length : ∀ l : List Nat, occ 0 l = 1 →
+    (dropZeros l).length + 1 = l.length := by
+  intro l
+  induction l with
+  | nil => intro h; exact absurd h (by decide)
+  | cons x xs ih =>
+    intro h
+    have h' : (if x = 0 then 1 else 0) + occ 0 xs = 1 := h
+    show (if x = 0 then dropZeros xs else x :: dropZeros xs).length + 1 = xs.length + 1
+    rcases Nat.eq_zero_or_pos x with hx | hx
+    · rw [if_pos hx]
+      rw [if_pos hx] at h'
+      rw [dropZeros_length_zero xs (by omega)]
+    · have hxne : x ≠ 0 := by omega
+      rw [if_neg hxne]
+      rw [if_neg hxne] at h'
+      show (dropZeros xs).length + 1 + 1 = xs.length + 1
+      rw [ih (by omega)]
+
+theorem sumRange_zero {f : Nat → Nat} : ∀ n, (∀ t, t < n → f t = 0) → sumRange f n = 0 := by
+  intro n
+  induction n with
+  | zero => intro _; rfl
+  | succ k ih =>
+    intro h
+    show sumRange f k + f k = 0
+    rw [ih (fun t ht => h t (by omega)), h k (by omega)]
+
+theorem sumRange_mod_congr {f g : Nat → Nat} {d : Nat} : ∀ n,
+    (∀ t, t < n → f t % d = g t % d) → sumRange f n % d = sumRange g n % d := by
+  intro n
+  induction n with
+  | zero => intro _; rfl
+  | succ k ih =>
+    intro h
+    show (sumRange f k + f k) % d = (sumRange g k + g k) % d
+    rw [Nat.add_mod, ih (fun t ht => h t (by omega)), h k (by omega), ← Nat.add_mod]
+
+theorem mem_of_occ_pos : ∀ (l : List Nat) (t : Nat), 0 < occ t l → t ∈ l := by
+  intro l
+  induction l with
+  | nil => intro t h; exact absurd h (by simp [occ_nil])
+  | cons x xs ih =>
+    intro t h
+    by_cases hx : x = t
+    · exact hx ▸ List.mem_cons_self
+    · refine List.mem_cons_of_mem _ (ih t ?_)
+      have hh : occ t (x :: xs) = (if x = t then 1 else 0) + occ t xs := rfl
+      rw [if_neg hx] at hh
+      omega
+
+theorem occ_run_lt : ∀ n s v, v < s → occ v (run s n) = 0 := by
+  intro n
+  induction n with
+  | zero => intro s v _; rfl
+  | succ k ih =>
+    intro s v hv
+    show (if s = v then 1 else 0) + occ v (run (s+1) k) = 0
+    rw [if_neg (by omega), ih (s+1) v (by omega)]
+
+/-- Every value below `b` occurs exactly once in `run 0 b`. -/
+theorem occ_run : ∀ n s v, s ≤ v → v < s + n → occ v (run s n) = 1 := by
+  intro n
+  induction n with
+  | zero => intro s v h1 h2; omega
+  | succ k ih =>
+    intro s v h1 h2
+    show (if s = v then 1 else 0) + occ v (run (s+1) k) = 1
+    by_cases h : s = v
+    · rw [if_pos h, occ_run_lt k (s+1) v (by omega)]
+    · rw [if_neg h, ih (s+1) v (by omega) (by omega)]
+
+/-- Consecutive runs tile `[0, Σ a)` — the sum form. -/
+theorem sum_runs (a : Nat → Nat) : ∀ n,
+    sumRange (fun t => (run (sumRange a t) (a t)).sum) n = (run 0 (sumRange a n)).sum := by
+  intro n
+  induction n with
+  | zero => rfl
+  | succ k ih =>
+    show sumRange (fun t => (run (sumRange a t) (a t)).sum) k + (run (sumRange a k) (a k)).sum
+        = (run 0 (sumRange a k + a k)).sum
+    rw [ih, run_add 0 (sumRange a k) (a k), List.sum_append, Nat.zero_add]
+
+/-! ### From blocks to a pair of digit lists -/
+
+/-- **Realisation.**  Blocks of the right sizes become a pandigital pair of digit
+lists: value-for-value the same multiset, and block `t` is charged weight `b^t`,
+which is exactly what the block congruence sees. -/
+theorem realise_pair {b j L₁ L₂ : Nat} (hj : 0 < j) (B : Nat → List Nat)
+    (hlen : ∀ t, t < j → (B t).length = occ t (clsOf j 0 L₁) + occ t (clsOf j 0 L₂)) :
+    ((deal B (clsOf j 0 L₁)).1.length = L₁) ∧
+    ((deal (deal B (clsOf j 0 L₁)).2 (clsOf j 0 L₂)).1.length = L₂) ∧
+    (∀ v, occ v ((deal B (clsOf j 0 L₁)).1
+              ++ (deal (deal B (clsOf j 0 L₁)).2 (clsOf j 0 L₂)).1)
+        = sumRange (fun t => occ v (B t)) j) ∧
+    (wsum b j 0 (deal B (clsOf j 0 L₁)).1
+        + wsum b j 0 (deal (deal B (clsOf j 0 L₁)).2 (clsOf j 0 L₂)).1
+      = sumRange (fun t => b ^ t * (B t).sum) j) := by
+  have hmem : ∀ t, t ∈ (clsOf j 0 L₁ ++ clsOf j 0 L₂) → t < j := by
+    intro t ht
+    rcases List.mem_append.mp ht with h | h
+    · exact clsOf_mem hj L₁ 0 hj t h
+    · exact clsOf_mem hj L₂ 0 hj t h
+  have hocc : ∀ t, occ t (clsOf j 0 L₁ ++ clsOf j 0 L₂) ≤ (B t).length := by
+    intro t
+    by_cases ht : t < j
+    · rw [occ_append, hlen t ht]
+      omega
+    · have h1 : occ t (clsOf j 0 L₁ ++ clsOf j 0 L₂) = 0 := by
+        rcases Nat.eq_zero_or_pos (occ t (clsOf j 0 L₁ ++ clsOf j 0 L₂)) with h | h
+        · exact h
+        · exact absurd (hmem t (mem_of_occ_pos _ t h)) ht
+      omega
+  have hres : ∀ t, t < j →
+      (deal B (clsOf j 0 L₁ ++ clsOf j 0 L₂)).2 t = [] := by
+    intro t ht
+    rw [deal_res, occ_append, ← hlen t ht]
+    exact List.drop_eq_nil_of_le (by omega)
+  have happ := deal_app (clsOf j 0 L₁) (clsOf j 0 L₂) B
+  refine ⟨by rw [deal_len, clsOf_length], by rw [deal_len, clsOf_length], ?_, ?_⟩
+  · intro v
+    rw [← happ]
+    have h := deal_occ v j (clsOf j 0 L₁ ++ clsOf j 0 L₂) B hmem hocc
+    rw [sumRange_zero j (fun t ht => by rw [hres t ht]; rfl)] at h
+    omega
+  · rw [wsum_eq_wcls, wsum_eq_wcls, deal_len, deal_len, clsOf_length, clsOf_length,
+        ← wcls_append b (clsOf j 0 L₁) _ _ _ (by rw [deal_len, clsOf_length]), ← happ]
+    have h := deal_wcls b j (clsOf j 0 L₁ ++ clsOf j 0 L₂) B hmem hocc
+    rw [sumRange_zero j (fun t ht => by rw [hres t ht]; rfl)] at h
+    omega
+
+/-- Any residue mod `K` is reachable by adding `V < K`. -/
+theorem shift_mod {K M W : Nat} (hK : 0 < K) (hW : W < K) :
+    ∃ V, V < K ∧ (M + V) % K = W := by
+  have hr : M % K < K := Nat.mod_lt _ hK
+  have hMr := Nat.div_add_mod M K
+  by_cases hU : W + K - M % K < K
+  · refine ⟨W + K - M % K, hU, ?_⟩
+    have hrw : M + (W + K - M % K) = W + K * (M / K + 1) := by
+      rw [Nat.mul_add, Nat.mul_one]; omega
+    rw [hrw, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hW]
+  · refine ⟨W + K - M % K - K, by omega, ?_⟩
+    have hrw : M + (W + K - M % K - K) = W + K * (M / K) := by omega
+    rw [hrw, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hW]
+
+/-- `N_t = p_t·q_t`, the width of class `t`'s independent choice. -/
+def Nof (j : Nat) (c p : Nat → Nat) (t : Nat) : Nat := p t * qOf j c p t
+
+/-- **Theorem C′, block level.**  Under the no-gap hypothesis, the block-sum
+value `Σ_t b^t S_t` of an arrangement with class sizes `c` runs over the whole
+coset `{z : z ≡ T (mod b-1)}` of `ℤ/(b^j - 1)`.  Leading digits are not yet in
+play; that is the next theorem's business. -/
+theorem blocks_hit {b j : Nat} (hb : 1 < b) (hj : 0 < j) (c p : Nat → Nat)
+    (hpc : ∀ t, t < j → p t ≤ c t)
+    (hgap : ∀ t, t < j → b ^ t ≤ sumRange (fun s => Nof j c p s * b ^ s) t + 1)
+    (hreach : cosetSize b j ≤ sumRange (fun s => Nof j c p s * b ^ s) j + 1)
+    {z : Nat} (hz : z % (b - 1) = (run 0 (sumRange c j)).sum % (b - 1)) :
+    ∃ ν : Nat → Nat, (∀ t, ν t ≤ Nof j c p t) ∧
+      sumRange (fun t => b ^ t * (blk j c p ν t).sum) j % (b ^ j - 1) = z % (b ^ j - 1) := by
+  have hbpos : 0 < b := by omega
+  have hbj : 2 ≤ b ^ j := by
+    obtain ⟨i, rfl⟩ : ∃ i, j = i + 1 := ⟨j - 1, by omega⟩
+    have : 1 ≤ b ^ i := Nat.one_le_pow _ _ hbpos
+    rw [Nat.pow_succ]
+    have := Nat.mul_le_mul_right (k := b) this
+    omega
+  have hm : (b - 1) * cosetSize b j = b ^ j - 1 := by
+    have := geom (b := b) (by omega) j
+    omega
+  have hK : 0 < cosetSize b j := cosetSize_pos hj
+  -- the constant the identity lands on
+  have hac : sumRange (aOf j c p) j = sumRange c j := sum_aOf hj c p hpc
+  have hA : sumRange (fun t => (run (offOf j c p t) (aOf j c p t)).sum) j
+      = (run 0 (sumRange c j)).sum := by
+    have h := sum_runs (aOf j c p) j
+    rw [hac] at h
+    exact h
+  have hConst : sumRange (fun t => b ^ (t + 1) * (run (offOf j c p t) (aOf j c p t)).sum) j
+      % (b - 1) = (run 0 (sumRange c j)).sum % (b - 1) := by
+    rw [sumRange_mod_congr (g := fun t => (run (offOf j c p t) (aOf j c p t)).sum) j
+          (fun t _ => by
+            rw [Nat.mul_mod, pow_mod_pred (by omega : 1 ≤ b) (t + 1), ← Nat.mul_mod,
+                Nat.one_mul]), hA]
+  -- move the target into the coset coordinate
+  obtain ⟨W, hWlt, hWeq⟩ := coset_hit (g := b - 1) (K := cosetSize b j) (z := z)
+    (C := sumRange (fun t => b ^ (t + 1) * (run (offOf j c p t) (aOf j c p t)).sum) j)
+    hK (by rw [hz, hConst])
+  rw [hm] at hWeq
+  obtain ⟨V, hVlt, hVeq⟩ := shift_mod (K := cosetSize b j)
+    (M := sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j) (W := W) hK hWlt
+  obtain ⟨ν, hν, hsum⟩ := cover_exists hbpos (Nof j c p) j hgap V (by omega)
+  refine ⟨ν, hν, ?_⟩
+  -- the kept-sums, in closed form
+  have hsigma : sumRange (fun t => b ^ t * (picked j c p ν t).1.sum) j
+      = sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V := by
+    rw [sumRange_congr
+          (g := fun t => b ^ t * (p t * offOf j c p t + tri (p t)) + ν t * b ^ t) j
+          (fun t _ => by
+            rw [picked, pick_sum (offOf j c p t) (p t) (qOf j c p t) (ν t) (hν t),
+                Nat.mul_add, Nat.mul_comm (ν t) (b ^ t)]),
+        sumRange_add, hsum]
+  have hid := blk_identity (b := b) hbpos hj c p ν
+  rw [hsigma] at hid
+  -- and the arithmetic
+  have hmpos : 0 < b ^ j - 1 := by omega
+  have hMV := Nat.div_add_mod (sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
+    (cosetSize b j)
+  rw [hVeq] at hMV
+  have hexp : (b - 1) * (sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
+      = (b - 1) * W + (b ^ j - 1)
+          * ((sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
+              / cosetSize b j) := by
+    have h1 : (b - 1) * (sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
+        = (b - 1) * (cosetSize b j
+            * ((sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
+                / cosetSize b j) + W) := by
+      rw [hMV]
+    rw [h1, Nat.mul_add, ← Nat.mul_assoc, hm]
+    omega
+  refine mod_add_cancel hmpos (c :=
+    (b - 1) * (sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
+      + (b ^ j - 1) * (picked j c p ν (j - 1)).2.sum) ?_
+  rw [← Nat.add_assoc, hid, hexp]
+  have hfold : z + ((b - 1) * W + (b ^ j - 1)
+      * ((sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
+          / cosetSize b j) + (b ^ j - 1) * (picked j c p ν (j - 1)).2.sum)
+      = z + (b - 1) * W + (b ^ j - 1)
+          * (((sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
+              / cosetSize b j) + (picked j c p ν (j - 1)).2.sum) := by
+    rw [Nat.mul_add]
+    omega
+  rw [hfold, Nat.add_mul_mod_self_left, hWeq]
+
+/-- The leading digit of a dealt list is the head of whatever is left of the
+block named by the last slot. -/
+theorem deal_last (B : Nat → List Nat) (u : List Nat) (t : Nat) :
+    nth (deal B (u ++ [t])).1 u.length = nth (B t) (occ t u) := by
+  rw [deal_app]
+  have hlen : (deal B u).1.length = u.length := deal_len u B
+  rw [nth_append_right _ _ _ (by omega), hlen, Nat.sub_self]
+  show nth [((deal B u).2 t).headD 0] 0 = nth (B t) (occ t u)
+  rw [deal_res]
+  rfl
+
+theorem occ_single (x : Nat) : occ x [x] = 1 := by rw [occ_cons_self, occ_nil]
+
+theorem nth_drop (l : List Nat) (s m : Nat) : nth (l.drop s) m = nth l (s + m) := by
+  show ((l.drop s).drop m).headD 0 = (l.drop (s + m)).headD 0
+  rw [List.drop_drop]
+
+/-- **The digit-list half.**  Blocks of the right sizes, holding each value once
+and keeping `0` off the two leading slots, read out as a genuine pandigital pair
+of digit lists whose sum the sieve sees as `Σ_t b^t S_t`. -/
+theorem blocks_to_pair {b j L₁ L₂ : Nat} (hb : 1 < b) (hj : 0 < j)
+    (hL₁ : 0 < L₁) (hL₂ : 0 < L₂) (B : Nat → List Nat)
+    (hlen : ∀ t, t < j → (B t).length = occ t (clsOf j 0 L₁) + occ t (clsOf j 0 L₂))
+    (hone : ∀ v, v < b → sumRange (fun t => occ v (B t)) j = 1)
+    (hlead₁ : nth (B ((L₁ - 1) % j)) (occ ((L₁ - 1) % j) (clsOf j 0 L₁) - 1) ≠ 0)
+    (hlead₂ : nth (B ((L₂ - 1) % j))
+        (occ ((L₂ - 1) % j) (clsOf j 0 L₁) + occ ((L₂ - 1) % j) (clsOf j 0 L₂) - 1) ≠ 0) :
+    ∃ d₁ d₂ : List Nat,
+      d₁.length = L₁ ∧ d₂.length = L₂ ∧
+      (∀ v, v < b → occ v (d₁ ++ d₂) = 1) ∧
+      nth d₁ (L₁ - 1) ≠ 0 ∧ nth d₂ (L₂ - 1) ≠ 0 ∧
+      (valOf b d₁ + valOf b d₂) % (b ^ j - 1)
+        = sumRange (fun t => b ^ t * (B t).sum) j % (b ^ j - 1) := by
+  obtain ⟨hd₁, hd₂, hocc, hw⟩ := realise_pair (b := b) hj B hlen
+  have hsplit₁ : clsOf j 0 L₁ = clsOf j 0 (L₁ - 1) ++ [(L₁ - 1) % j] := by
+    have h := clsOf_snoc hj (L₁ - 1) 0 hj
+    rw [show L₁ - 1 + 1 = L₁ from by omega, Nat.zero_add] at h
+    exact h
+  have hsplit₂ : clsOf j 0 L₂ = clsOf j 0 (L₂ - 1) ++ [(L₂ - 1) % j] := by
+    have h := clsOf_snoc hj (L₂ - 1) 0 hj
+    rw [show L₂ - 1 + 1 = L₂ from by omega, Nat.zero_add] at h
+    exact h
+  have hu₁ : (clsOf j 0 (L₁ - 1)).length = L₁ - 1 := clsOf_length j (L₁ - 1) 0
+  have hu₂ : (clsOf j 0 (L₂ - 1)).length = L₂ - 1 := clsOf_length j (L₂ - 1) 0
+  have hcnt₁ : occ ((L₁ - 1) % j) (clsOf j 0 L₁)
+      = occ ((L₁ - 1) % j) (clsOf j 0 (L₁ - 1)) + 1 := by
+    rw [hsplit₁, occ_append, occ_single]
+  have hcnt₂ : occ ((L₂ - 1) % j) (clsOf j 0 L₂)
+      = occ ((L₂ - 1) % j) (clsOf j 0 (L₂ - 1)) + 1 := by
+    rw [hsplit₂, occ_append, occ_single]
+  refine ⟨_, _, hd₁, hd₂, fun v hv => by rw [hocc v, hone v hv], ?_, ?_, ?_⟩
+  · have hdl := deal_last B (clsOf j 0 (L₁ - 1)) ((L₁ - 1) % j)
+    rw [hu₁, ← hsplit₁] at hdl
+    rw [hcnt₁] at hlead₁
+    rw [hdl]
+    simpa using hlead₁
+  · have hdl := deal_last (deal B (clsOf j 0 L₁)).2 (clsOf j 0 (L₂ - 1)) ((L₂ - 1) % j)
+    rw [hu₂, ← hsplit₂] at hdl
+    rw [hdl, deal_res, nth_drop,
+        show occ ((L₂ - 1) % j) (clsOf j 0 L₁) + occ ((L₂ - 1) % j) (clsOf j 0 (L₂ - 1))
+          = occ ((L₂ - 1) % j) (clsOf j 0 L₁) + occ ((L₂ - 1) % j) (clsOf j 0 L₂) - 1 from by
+          omega]
+    exact hlead₂
+  · rw [pair_mod_pow_sub_one hb hj, hw]
+
+/-- **Theorem C′.**  Suppose the class sizes `c_t` forced by the digit lengths
+satisfy the no-gap conditions for some legal `p`, that `c_t ≥ 2` for every class,
+and that `c_t ≥ 3` at the one class `(L₂-1) % j` holding the second number's
+leading slot.  Then every residue mod `b^j - 1` that the digit-sum congruence
+permits is realised by a genuine pandigital pair with those digit lengths —
+leading digits included.  So no modulus of order `j` prunes more than casting
+out `b-1`s does.
+
+The rider is sharper than REPORT-provability.md §6.3's `c_t ≥ 3` for all `t`,
+and sharpening it was worth doing: the gap between this theorem and the
+conjecture of §6.5 (`c_t ≥ 2` suffices) is now a single class, not every
+class. -/
+theorem theorem_C_prime {b j L₁ L₂ : Nat} (hb : 1 < b) (hj : 0 < j)
+    (hL : L₁ + L₂ = b) (hL₁ : 0 < L₁) (hL₂ : 0 < L₂)
+    (c p : Nat → Nat)
+    (hc : ∀ t, c t = occ t (clsOf j 0 L₁) + occ t (clsOf j 0 L₂))
+    (hpc : ∀ t, t < j → p t ≤ c t)
+    (h2 : ∀ t, t < j → 2 ≤ c t)
+    (h3 : 3 ≤ c ((L₂ - 1) % j))
+    (hgap : ∀ t, t < j → b ^ t ≤ sumRange (fun s => Nof j c p s * b ^ s) t + 1)
+    (hreach : cosetSize b j ≤ sumRange (fun s => Nof j c p s * b ^ s) j + 1)
+    {z : Nat} (hz : z % (b - 1) = tri b % (b - 1)) :
+    ∃ d₁ d₂ : List Nat,
+      d₁.length = L₁ ∧ d₂.length = L₂ ∧
+      (∀ v, v < b → occ v (d₁ ++ d₂) = 1) ∧
+      nth d₁ (L₁ - 1) ≠ 0 ∧ nth d₂ (L₂ - 1) ≠ 0 ∧
+      (valOf b d₁ + valOf b d₂) % (b ^ j - 1) = z % (b ^ j - 1) := by
+  have hmem₁ : ∀ x, x ∈ clsOf j 0 L₁ → x < j := clsOf_mem hj L₁ 0 hj
+  have hmem₂ : ∀ x, x ∈ clsOf j 0 L₂ → x < j := clsOf_mem hj L₂ 0 hj
+  have hcb : sumRange c j = b := by
+    rw [sumRange_congr (g := fun t => occ t (clsOf j 0 L₁) + occ t (clsOf j 0 L₂)) j
+          (fun t _ => hc t), sumRange_add,
+        sumRange_occ_length _ hmem₁, sumRange_occ_length _ hmem₂,
+        clsOf_length, clsOf_length]
+    exact hL
+  have hrunsum : (run 0 (sumRange c j)).sum = tri b := by rw [hcb, run_sum]; omega
+  obtain ⟨ν, hν, hX⟩ := blocks_hit hb hj c p hpc hgap hreach (z := z) (by rw [hz, hrunsum])
+  have hBlen : ∀ t, t < j → (blk j c p ν t).length = c t := fun t ht =>
+    blk_length hj c p ν hpc ht
+  have hBocc : ∀ v, sumRange (fun t => occ v (blk j c p ν t)) j = occ v (run 0 b) := by
+    intro v
+    rw [blk_occ hj c p ν v, sum_aOf hj c p hpc, hcb]
+  -- the one block holding the digit `0`
+  obtain ⟨t₀, ht₀j, ht₀one, ht₀zero⟩ := sumRange_eq_one j (by
+    rw [hBocc 0]; exact occ_run b 0 0 (by omega) (by omega))
+  have hlen0 : (dropZeros (blk j c p ν t₀)).length + 1 = c t₀ := by
+    rw [dropZeros_length _ ht₀one, hBlen t₀ ht₀j]
+  -- the two leading slots, and the index chosen for `0`
+  have ht₁j : (L₁ - 1) % j < j := Nat.mod_lt _ hj
+  have ht₂j : (L₂ - 1) % j < j := Nat.mod_lt _ hj
+  have hpos₁ : 1 ≤ occ ((L₁ - 1) % j) (clsOf j 0 L₁) := by
+    have h := clsOf_snoc hj (L₁ - 1) 0 hj
+    rw [show L₁ - 1 + 1 = L₁ from by omega, Nat.zero_add] at h
+    rw [h, occ_append, occ_single]
+    omega
+  have hpos₂ : 1 ≤ occ ((L₂ - 1) % j) (clsOf j 0 L₂) := by
+    have h := clsOf_snoc hj (L₂ - 1) 0 hj
+    rw [show L₂ - 1 + 1 = L₂ from by omega, Nat.zero_add] at h
+    rw [h, occ_append, occ_single]
+    omega
+  obtain ⟨k, hkdef⟩ : ∃ k, k = if occ t₀ (clsOf j 0 L₁) = 1 then 1 else 0 := ⟨_, rfl⟩
+  have hk1 : k ≤ 1 := by rw [hkdef]; by_cases h : occ t₀ (clsOf j 0 L₁) = 1 <;> simp [h]
+  have hkle : k ≤ (dropZeros (blk j c p ν t₀)).length := by have := h2 t₀ ht₀j; omega
+  obtain ⟨B, hBdef⟩ : ∃ B : Nat → List Nat, B = fun t =>
+      if t = t₀ then ins0 k (dropZeros (blk j c p ν t₀)) else blk j c p ν t := ⟨_, rfl⟩
+  have hB0 : B t₀ = ins0 k (dropZeros (blk j c p ν t₀)) := by rw [hBdef]; simp
+  have hBn : ∀ t, t ≠ t₀ → B t = blk j c p ν t := by intro t ht; rw [hBdef]; simp [ht]
+  -- the modified blocks have the same sizes, the same values and the same sums
+  have hlen : ∀ t, t < j → (B t).length = occ t (clsOf j 0 L₁) + occ t (clsOf j 0 L₂) := by
+    intro t ht
+    by_cases h : t = t₀
+    · subst h; rw [hB0, ins0_length hkle, hlen0, hc]
+    · rw [hBn t h, hBlen t ht, hc]
+  have hBocc' : ∀ v t, occ v (B t) = occ v (blk j c p ν t) := by
+    intro v t
+    by_cases h : t = t₀
+    · subst h
+      rw [hB0, ins0_occ]
+      show (if 0 = v then 1 else 0) + occ v (dropZeros (blk j c p ν t)) = _
+      by_cases hv : v = 0
+      · subst hv
+        rw [if_pos rfl, dropZeros_occ_zero, ht₀one]
+      · rw [if_neg (fun hh => hv hh.symm), dropZeros_occ (by omega)]
+        omega
+    · rw [hBn t h]
+  have hone : ∀ v, v < b → sumRange (fun t => occ v (B t)) j = 1 := by
+    intro v hv
+    rw [sumRange_congr (g := fun t => occ v (blk j c p ν t)) j (fun t _ => hBocc' v t), hBocc v]
+    exact occ_run b 0 v (by omega) (by omega)
+  have hBsum : ∀ t, (B t).sum = (blk j c p ν t).sum := by
+    intro t
+    by_cases h : t = t₀
+    · subst h; rw [hB0, ins0_sum, dropZeros_sum]
+    · rw [hBn t h]
+  -- the two leading digits are non-zero
+  have hnz : ∀ t, t < j → t ≠ t₀ → ∀ m, m < c t → nth (B t) m ≠ 0 := by
+    intro t ht hne m hm
+    rw [hBn t hne]
+    exact nth_ne_zero _ (ht₀zero t ht hne) m (by rw [hBlen t ht]; exact hm)
+  have hlead₁ : nth (B ((L₁ - 1) % j)) (occ ((L₁ - 1) % j) (clsOf j 0 L₁) - 1) ≠ 0 := by
+    have hlt : occ ((L₁ - 1) % j) (clsOf j 0 L₁) - 1 < c ((L₁ - 1) % j) := by
+      rw [hc]; omega
+    by_cases h : (L₁ - 1) % j = t₀
+    · rw [h] at hlt ⊢
+      rw [hB0]
+      refine ins0_nth_ne (dropZeros_occ_zero _) hkle (by omega) ?_
+      rw [← h] at hkdef ⊢
+      by_cases h1 : occ ((L₁ - 1) % j) (clsOf j 0 L₁) = 1 <;> rw [hkdef] <;> simp [h1] <;> omega
+    · exact hnz _ ht₁j h _ hlt
+  have hlead₂ : nth (B ((L₂ - 1) % j))
+      (occ ((L₂ - 1) % j) (clsOf j 0 L₁) + occ ((L₂ - 1) % j) (clsOf j 0 L₂) - 1) ≠ 0 := by
+    have hlt : occ ((L₂ - 1) % j) (clsOf j 0 L₁) + occ ((L₂ - 1) % j) (clsOf j 0 L₂) - 1
+        < c ((L₂ - 1) % j) := by rw [hc]; omega
+    have h3₂ := h3
+    rw [hc] at h3₂
+    by_cases h : (L₂ - 1) % j = t₀
+    · rw [h] at hlt h3₂ ⊢
+      rw [hB0]
+      refine ins0_nth_ne (dropZeros_occ_zero _) hkle (by omega) (by omega)
+    · exact hnz _ ht₂j h _ hlt
+  obtain ⟨d₁, d₂, h1, h2, h4, h5, h6, h7⟩ :=
+    blocks_to_pair (b := b) hb hj hL₁ hL₂ B hlen hone hlead₁ hlead₂
+  refine ⟨d₁, d₂, h1, h2, h4, h5, h6, ?_⟩
+  rw [h7, sumRange_congr (g := fun t => b ^ t * (blk j c p ν t).sum) j
+        (fun t _ => by rw [hBsum t])]
+  exact hX
+
+/-! ### Non-vacuity, and where the hypothesis bites -/
+
+theorem occ_clsOf_zero {j s n t : Nat} (hj : 0 < j) (hs : s < j) (ht : j ≤ t) :
+    occ t (clsOf j s n) = 0 := by
+  rcases Nat.eq_zero_or_pos (occ t (clsOf j s n)) with h | h
+  · exact h
+  · exact absurd (clsOf_mem hj n s hs t (mem_of_occ_pos _ t h)) (by omega)
+
+/-- At base 10, `j = 2`, digit lengths `(4,6)` — the lengths of `69² = 4761` and
+`69³ = 328509` — both classes hold five values. -/
+theorem base_ten_two_classes : ∀ t,
+    (if t < 2 then 5 else 0) = occ t (clsOf 2 0 4) + occ t (clsOf 2 0 6) := by
+  intro t
+  rcases Nat.lt_or_ge t 2 with h | h
+  · rw [if_pos h]
+    rcases t with _ | _ | t
+    · rfl
+    · rfl
+    · omega
+  · rw [if_neg (by omega), occ_clsOf_zero (by omega) (by omega) h,
+        occ_clsOf_zero (by omega) (by omega) h]
+
+/-- **Theorem C′ fires at the base and the digit lengths of the only known nice
+number.**  Every residue mod `99` that casting out 9s permits really is the sum
+of a genuine pandigital `(4,6)` pair in base 10, so the modulus `99` — and with
+it every modulus of order 2 — buys nothing over casting out 9s. -/
+theorem base_ten_j_two_complete {z : Nat} (hz : z % 9 = 0) :
+    ∃ d₁ d₂ : List Nat,
+      d₁.length = 4 ∧ d₂.length = 6 ∧
+      (∀ v, v < 10 → occ v (d₁ ++ d₂) = 1) ∧
+      nth d₁ 3 ≠ 0 ∧ nth d₂ 5 ≠ 0 ∧
+      (valOf 10 d₁ + valOf 10 d₂) % 99 = z % 99 := by
+  have h := theorem_C_prime (b := 10) (j := 2) (L₁ := 4) (L₂ := 6)
+    (by omega) (by omega) (by omega) (by omega) (by omega)
+    (fun t => if t < 2 then 5 else 0) (fun t => if t = 0 then 5 else 0)
+    base_ten_two_classes
+    (by intro t ht; rcases t with _ | _ | t <;> first | decide | omega)
+    (by intro t ht; rcases t with _ | _ | t <;> first | decide | omega)
+    (by decide)
+    (by intro t ht; rcases t with _ | _ | t <;> first | decide | omega)
+    (by decide)
+    (z := z) (by rw [hz]; rfl)
+  exact h
+
+/-- …and it does **not** fire at `j = 5`, which is exactly where base 10's sieve
+does gain: `11111 = 41 · 271` has order 5 and two residues are unreachable.  The
+class sizes there are `(3,2,2,2,1)`, so the `c_t ≥ 2` half of the rider fails —
+the theorem's hypothesis and the report's measured counterexample agree. -/
+theorem base_ten_j_five_rider_fails :
+    ¬ ∀ t, t < 5 → 2 ≤ occ t (clsOf 5 0 4) + occ t (clsOf 5 0 6) := by decide
+
+/-- Base 4, lengths `(2,2)` — the counterexample of §6.1 — clears `c_t ≥ 2`, and
+it even satisfies the no-gap conditions: `p = (2,0)` gives `N = (4,0)`, and
+`b^1 = 4 ≤ 5`, `K - 1 = 4`.  What stops it is the *other* half of the rider.  So
+the two witnesses fail on different halves and neither half is slack — without
+the second one this theorem would contradict `base_four_sieve_is_incomplete`. -/
+theorem base_four_rider_fails :
+    ¬ 3 ≤ occ ((2 - 1) % 2) (clsOf 2 0 2) + occ ((2 - 1) % 2) (clsOf 2 0 2) := by decide
+
+theorem base_four_clears_the_other_half :
+    ∀ t, t < 2 → 2 ≤ occ t (clsOf 2 0 2) + occ t (clsOf 2 0 2) := by decide
+
+/-- …and it clears the no-gap conditions too, with `c = (2,2)` and `p = (2,0)`.
+Without this the previous theorem would prove nothing about the rider: a witness
+that fails several hypotheses at once says which one is load-bearing only if the
+others are checked to hold. -/
+theorem base_four_clears_the_no_gap :
+    (∀ t, t < 2 → 4 ^ t ≤ sumRange (fun s => Nof 2 (fun u => if u < 2 then 2 else 0)
+        (fun u => if u = 0 then 2 else 0) s * 4 ^ s) t + 1)
+      ∧ cosetSize 4 2 ≤ sumRange (fun s => Nof 2 (fun u => if u < 2 then 2 else 0)
+          (fun u => if u = 0 then 2 else 0) s * 4 ^ s) 2 + 1 :=
+  ⟨by intro t ht; rcases t with _ | _ | t <;> first | decide | omega, by decide⟩
+
 /-! ## §7  Theorem C — the complete classification of `R_b = ∅`
 
 The residue set `R_b = {ρ : ρ^e₁ + ρ^e₂ ≡ T (mod b-1)}`, `2T = b(b-1)`, is the
@@ -1648,7 +3133,7 @@ theorem residues_empty_of_mod_four_of_C {b e₁ e₂ T ρ : Nat}
 
 /-! ### §7.6  The single-exponent family
 
-`n^e` alone pandigital is the `E = e` member of the family, and §13 of the
+`n^e` alone pandigital is the `E = e` member of the family, and §14 of the
 report recommends it as the best compute target — which makes "which bases are
 live" load-bearing there.  The same valuation count answers it, and more simply,
 because `v₂(ρ^e) = e·v₂(ρ)` with no cofactor `1 + ρ^d` to think about:
@@ -1720,7 +3205,7 @@ theorem residues_single_nonempty_iff {b e T a m : Nat} (hb : 1 < b) (he : 1 ≤ 
         rw [hidx]
 
 /-- `n⁴` in base 29 has no residue: `v₂(28) = 2` and `4 ∤ 1`.  This is one of the
-bases §13 of the report lists as killed, and base 8 — where the only known
+bases §14 of the report lists as killed, and base 8 — where the only known
 solution `42⁴` lives — is even, hence `a = 0`, hence live. -/
 theorem single_four_base_twentynine_dead (ρ : Nat) : ρ ^ 4 % 28 ≠ 406 % 28 := by
   intro h
@@ -1859,21 +3344,6 @@ theorem slot_step {b i : Nat} (hb : 0 < b) (hi : 1 ≤ i) (r x e : Nat) :
 The progressions are bijections when their common differences are units, and the
 *difference* of the two progressions is a bijection when `α₁ - α₂` is — which is
 the side condition Theorem F carries, here supplied as an explicit unit `β`. -/
-
-/-- Cancelling a common summand under `%`. -/
-theorem mod_add_cancel {b c u v : Nat} (hb : 0 < b) (h : (u + c) % b = (v + c) % b) :
-    u % b = v % b := by
-  rcases Nat.le_total u v with hle | hle
-  · have h1 : u + c ≤ v + c := by omega
-    have hd : b ∣ v + c - (u + c) := (dvd_sub_iff_mod_eq hb h1).mpr h.symm
-    have he : v + c - (u + c) = v - u := by omega
-    rw [he] at hd
-    exact ((dvd_sub_iff_mod_eq hb hle).mp hd).symm
-  · have h1 : v + c ≤ u + c := by omega
-    have hd : b ∣ u + c - (v + c) := (dvd_sub_iff_mod_eq hb h1).mpr h
-    have he : u + c - (v + c) = u - v := by omega
-    rw [he] at hd
-    exact (dvd_sub_iff_mod_eq hb hle).mp hd
 
 /-- `x ↦ (A + α·x) mod b` is injective on `{0,…,b-1}` when `α` is a unit. -/
 theorem lin_inj {b α A x y : Nat} (hb : 0 < b) (hα : Nat.Coprime b α)
@@ -2442,6 +3912,605 @@ theorem base_thirtyfour_is_even : 34 % 2 = 0 := by decide
 
 theorem base_fiftyseven_not_coprime : ¬ Nat.Coprime 57 3 := by decide
 
+/-! ## §9  Theorem H — a rigorous upper bound on how many nice numbers a base has
+
+Everything provable about this problem comes from three places, and all three are
+*finite* conditions on `n`:
+
+  * the length identity, which confines `n` to a band;
+  * casting out `b-1`s, which confines `n mod (b-1)`;
+  * `n mod b^k`, which pins slot `i < k` of `n^e₁` *and* of `n^e₂` (§8's two slots
+    per digit), and pandigitality makes those `2k` values pairwise distinct.
+
+Counting the `n` that survive all three is an upper bound on the number of nice
+numbers.  The last two are congruences on coprime moduli, so the survivor test has
+period `W = (b-1)·b^k` and the count follows from one window of that length rather
+than from the band.
+
+Nothing here is asymptotic.  `README-lean.md` priced this result at "not worth it —
+an asymptotic statement with error terms"; the error term was an artefact of
+writing the bound as `… + O(b^k)` instead of with an exact ceiling.
+-/
+
+/-! ### §9.0  The low slots of a number -/
+
+/-- The low `k` digits of `x`, least significant first.  Unlike `digits` this is
+total — it pads with zeros — which is exactly why `k ≤ numDigits b x` appears as a
+hypothesis everywhere below. -/
+def lowSlots (b : Nat) : Nat → Nat → List Nat
+  | 0, _ => []
+  | k + 1, x => x % b :: lowSlots b k (x / b)
+
+theorem lowSlots_zero (b x : Nat) : lowSlots b 0 x = [] := rfl
+
+theorem lowSlots_succ (b k x : Nat) :
+    lowSlots b (k + 1) x = x % b :: lowSlots b k (x / b) := rfl
+
+theorem lowSlots_lt {b : Nat} (hb : 0 < b) : ∀ k x v, v ∈ lowSlots b k x → v < b := by
+  intro k
+  induction k with
+  | zero => intro x v hv; cases hv
+  | succ j ih =>
+    intro x v hv
+    rw [lowSlots_succ] at hv
+    rcases List.mem_cons.mp hv with rfl | hv'
+    · exact Nat.mod_lt _ hb
+    · exact ih (x / b) v hv'
+
+/-- The low slots see only `x mod b^k`: the p-adic boundary, in the form the
+counting argument needs. -/
+theorem lowSlots_mod {b : Nat} (hb : 0 < b) :
+    ∀ k x, lowSlots b k (x % b ^ k) = lowSlots b k x := by
+  intro k
+  induction k with
+  | zero => intro x; rfl
+  | succ j ih =>
+    intro x
+    have hsplit : b ^ (j + 1) = b * b ^ j := by rw [Nat.pow_succ, Nat.mul_comm]
+    have h1 : x % b ^ (j + 1) % b = x % b := by
+      rw [hsplit]; exact Nat.mod_mul_right_mod x b (b ^ j)
+    have h2 : x % b ^ (j + 1) / b = x / b % b ^ j := by
+      rw [hsplit]; exact Nat.mod_mul_right_div_self x b (b ^ j)
+    rw [lowSlots_succ, lowSlots_succ, h1, h2, ih (x / b)]
+
+/-- A `k` below the digit count really does name `k` digits: `digits` splits as the
+low `k` slots followed by the digits of what is left. -/
+theorem digits_split {b : Nat} (hb : 1 < b) :
+    ∀ k x, k ≤ numDigits b x → digits b x = lowSlots b k x ++ digits b (x / b ^ k) := by
+  intro k
+  induction k with
+  | zero => intro x _; rw [lowSlots_zero, Nat.pow_zero, Nat.div_one]; rfl
+  | succ j ih =>
+    intro x hx
+    have hpos : 0 < x := by
+      rcases Nat.eq_zero_or_pos x with rfl | h
+      · rw [numDigits_zero] at hx; omega
+      · exact h
+    have hnum : numDigits b x = numDigits b (x / b) + 1 := by
+      rw [numDigits, dif_pos ⟨hb, hpos⟩]
+    have hj : j ≤ numDigits b (x / b) := by omega
+    have hdiv : x / b / b ^ j = x / b ^ (j + 1) := by
+      rw [Nat.div_div_eq_div_mul, ← Nat.pow_succ']
+    rw [digits_step hb hpos, lowSlots_succ, ih (x / b) hj, hdiv]
+    rfl
+
+/-- Hence every value occurs at least as often among the digits as among the low
+slots — the only thing the low-slot filter needs from pandigitality. -/
+theorem occ_lowSlots_le {b : Nat} (hb : 1 < b) {k x : Nat} (hk : k ≤ numDigits b x) (v : Nat) :
+    occ v (lowSlots b k x) ≤ occ v (digits b x) := by
+  rw [digits_split hb k x hk, occ_append]
+  omega
+
+/-! ### §9.1  Two list utilities -/
+
+/-- `List.all`, written out so it reduces in the kernel the way `occ` does. -/
+def allb (p : Nat → Bool) : List Nat → Bool
+  | [] => true
+  | a :: l => p a && allb p l
+
+theorem allb_of_mem {p : Nat → Bool} :
+    ∀ l : List Nat, (∀ v, v ∈ l → p v = true) → allb p l = true := by
+  intro l
+  induction l with
+  | nil => intro _; rfl
+  | cons a t ih =>
+    intro h
+    show (p a && allb p t) = true
+    rw [h a List.mem_cons_self, ih (fun v hv => h v (List.mem_cons_of_mem _ hv))]
+    rfl
+
+theorem allb_mem {p : Nat → Bool} :
+    ∀ l : List Nat, allb p l = true → ∀ v, v ∈ l → p v = true := by
+  intro l
+  induction l with
+  | nil => intro _ v hv; cases hv
+  | cons a t ih =>
+    intro h v hv
+    have h' : (p a && allb p t) = true := h
+    rw [Bool.and_eq_true] at h'
+    rcases List.mem_cons.mp hv with rfl | hv'
+    · exact h'.1
+    · exact ih h'.2 v hv'
+
+theorem mem_run : ∀ n s v, v ∈ run s n → s ≤ v ∧ v < s + n := by
+  intro n
+  induction n with
+  | zero => intro s v hv; cases hv
+  | succ m ih =>
+    intro s v hv
+    have hv' : v ∈ s :: run (s + 1) m := hv
+    rcases List.mem_cons.mp hv' with rfl | hv''
+    · omega
+    · have := ih (s + 1) v hv''; omega
+
+theorem mem_run_of : ∀ n s v, s ≤ v → v < s + n → v ∈ run s n := by
+  intro n
+  induction n with
+  | zero => intro s v h1 h2; omega
+  | succ m ih =>
+    intro s v h1 h2
+    show v ∈ s :: run (s + 1) m
+    rcases Nat.eq_or_lt_of_le h1 with rfl | h
+    · exact List.Mem.head _
+    · exact List.Mem.tail _ (ih (s + 1) v (by omega) (by omega))
+
+/-! ### §9.2  The filters, as one decidable test -/
+
+/-- The `2k` low slots of the pair, in one list. -/
+def lowPair (b e₁ e₂ k r : Nat) : List Nat :=
+  lowSlots b k (r ^ e₁) ++ lowSlots b k (r ^ e₂)
+
+/-- `Q_k`: the low `k` slots of `r^e₁` and `r^e₂` are `2k` pairwise-distinct values.
+Costs `b^k` to tabulate, and `k = 1` is Theorem G. -/
+def lowOK (b e₁ e₂ k r : Nat) : Bool :=
+  allb (fun v => decide (occ v (lowPair b e₁ e₂ k r) ≤ 1)) (run 0 b)
+
+/-- `R_b`: casting out `b-1`s. -/
+def resOK (b e₁ e₂ T r : Nat) : Bool :=
+  decide ((r ^ e₁ + r ^ e₂) % (b - 1) = T % (b - 1))
+
+/-- Everything the two congruence filters know about `n`.  Its period is
+`(b-1)·b^k` (`adm_period`), which is what turns Theorem H into a closed form. -/
+def adm (b e₁ e₂ k T n : Nat) : Bool :=
+  resOK b e₁ e₂ T (n % (b - 1)) && lowOK b e₁ e₂ k (n % b ^ k)
+
+/-- Pandigitality, as a `Bool`, so it can be counted. -/
+def isPandigital (b e₁ e₂ n : Nat) : Bool :=
+  allb (fun v => decide (occ v (digits b (n ^ e₁) ++ digits b (n ^ e₂)) = 1)) (run 0 b)
+
+theorem isPandigital_iff {b e₁ e₂ n : Nat} :
+    isPandigital b e₁ e₂ n = true ↔ Pandigital b e₁ e₂ n := by
+  constructor
+  · intro h v hv
+    have hd := allb_mem _ h v (mem_run_of b 0 v (by omega) (by omega))
+    exact of_decide_eq_true hd
+  · intro hp
+    refine allb_of_mem _ ?_
+    intro v hv
+    have hvb : v < b := by have := (mem_run b 0 v hv).2; omega
+    show decide (occ v (digits b (n ^ e₁) ++ digits b (n ^ e₂)) = 1) = true
+    exact decide_eq_true (hp v hvb)
+
+/-! ### §9.3  Pandigitality implies each filter -/
+
+theorem digits_lt {b : Nat} (hb : 1 < b) : ∀ x v, v ∈ digits b x → v < b := by
+  intro x
+  induction x using Nat.strongRecOn with
+  | _ x ih =>
+    intro v hv
+    rcases Nat.eq_zero_or_pos x with rfl | hx
+    · rw [digits_zero] at hv; cases hv
+    · rw [digits_step hb hx] at hv
+      rcases List.mem_cons.mp hv with rfl | hv'
+      · exact Nat.mod_lt _ (by omega)
+      · exact ih (x / b) (Nat.div_lt_self hx hb) v hv'
+
+theorem digits_length {b : Nat} (hb : 1 < b) : ∀ x, (digits b x).length = numDigits b x := by
+  intro x
+  induction x using Nat.strongRecOn with
+  | _ x ih =>
+    rcases Nat.eq_zero_or_pos x with rfl | hx
+    · rw [digits_zero, numDigits_zero]; rfl
+    · rw [digits_step hb hx, numDigits, dif_pos ⟨hb, hx⟩,
+          ← ih (x / b) (Nat.div_lt_self hx hb)]
+      rfl
+
+/-- The weighted companion of `sumRange_occ_length`: a list of values below `j` is
+worth `Σ_t t · occ t l`. -/
+theorem sumRange_occ_wsum {j : Nat} : ∀ (l : List Nat), (∀ x, x ∈ l → x < j) →
+    sumRange (fun t => t * occ t l) j = l.sum := by
+  intro l
+  induction l with
+  | nil =>
+    intro _
+    show sumRange (fun t => t * occ t ([] : List Nat)) j = 0
+    have h : ∀ n, sumRange (fun t => t * occ t ([] : List Nat)) n = 0 := by
+      intro n; induction n with
+      | zero => rfl
+      | succ m ihm =>
+        show sumRange _ m + m * occ m ([] : List Nat) = 0
+        rw [ihm]; rfl
+    exact h j
+  | cons t₀ cs ih =>
+    intro hmem
+    have ht₀ : t₀ < j := hmem t₀ List.mem_cons_self
+    have hupd := sumRange_update (f := fun t => t * occ t (t₀ :: cs))
+      (g := fun t => t * occ t cs) (t₀ := t₀) (x := t₀) j ht₀
+      (by intro t hne
+          show t * occ t cs = t * occ t (t₀ :: cs)
+          show t * occ t cs = t * ((if t₀ = t then 1 else 0) + occ t cs)
+          rw [if_neg (fun hh => hne hh.symm), Nat.zero_add])
+      (by show t₀ + t₀ * occ t₀ cs = t₀ * occ t₀ (t₀ :: cs)
+          rw [occ_cons_self, Nat.mul_add, Nat.mul_one])
+    rw [← hupd, ih (fun x hx => hmem x (List.mem_cons_of_mem _ hx))]
+    rfl
+
+theorem sumRange_one : ∀ n, sumRange (fun _ => 1) n = n := by
+  intro n
+  induction n with
+  | zero => rfl
+  | succ m ih => show sumRange _ m + 1 = m + 1; rw [ih]
+
+theorem two_sumRange_id : ∀ n, 2 * sumRange (fun t => t) (n + 1) = (n + 1) * n := by
+  intro n
+  induction n with
+  | zero => rfl
+  | succ m ih =>
+    show 2 * (sumRange (fun t => t) (m + 1) + (m + 1)) = (m + 1 + 1) * (m + 1)
+    rw [Nat.mul_add, ih]
+    calc (m + 1) * m + 2 * (m + 1)
+        = (m + 1) * m + (m + 1) * 2 := by rw [Nat.mul_comm 2 (m + 1)]
+      _ = (m + 1) * (m + 2) := (Nat.mul_add (m + 1) m 2).symm
+      _ = (m + 1 + 1) * (m + 1) := Nat.mul_comm _ _
+
+/-- The length identity, derived from pandigitality rather than assumed. -/
+theorem pandigital_length {b e₁ e₂ n : Nat} (hb : 1 < b) (hp : Pandigital b e₁ e₂ n) :
+    numDigits b (n ^ e₁) + numDigits b (n ^ e₂) = b := by
+  have hmem : ∀ x, x ∈ digits b (n ^ e₁) ++ digits b (n ^ e₂) → x < b := by
+    intro x hx
+    rcases List.mem_append.mp hx with h | h
+    · exact digits_lt hb _ x h
+    · exact digits_lt hb _ x h
+  have h1 := sumRange_occ_length (j := b) (digits b (n ^ e₁) ++ digits b (n ^ e₂)) hmem
+  have h2 : sumRange (fun t => occ t (digits b (n ^ e₁) ++ digits b (n ^ e₂))) b
+      = sumRange (fun _ => 1) b :=
+    sumRange_congr b (fun t ht => hp t ht)
+  rw [h2, sumRange_one] at h1
+  rw [← digits_length hb, ← digits_length hb, ← List.length_append]
+  omega
+
+/-- The digit-sum identity, likewise. -/
+theorem pandigital_digitSum {b e₁ e₂ n : Nat} (hb : 1 < b) (hp : Pandigital b e₁ e₂ n) :
+    2 * (digitSum b (n ^ e₁) + digitSum b (n ^ e₂)) = b * (b - 1) := by
+  have hmem : ∀ x, x ∈ digits b (n ^ e₁) ++ digits b (n ^ e₂) → x < b := by
+    intro x hx
+    rcases List.mem_append.mp hx with h | h
+    · exact digits_lt hb _ x h
+    · exact digits_lt hb _ x h
+  have h1 := sumRange_occ_wsum (j := b) (digits b (n ^ e₁) ++ digits b (n ^ e₂)) hmem
+  have h2 : sumRange (fun t => t * occ t (digits b (n ^ e₁) ++ digits b (n ^ e₂))) b
+      = sumRange (fun t => t) b :=
+    sumRange_congr b (fun t ht => by rw [hp t ht, Nat.mul_one])
+  rw [h2] at h1
+  have hb1 : b - 1 + 1 = b := by omega
+  have h3 := two_sumRange_id (b - 1)
+  rw [hb1, h1, List.sum_append, ← digitSum_eq_sum hb, ← digitSum_eq_sum hb] at h3
+  exact h3
+
+/-! ### §9.4  The band, from the length identity alone
+
+No jump structure and no roots: `n^e₁ < b^L₁` and `n^e₂ < b^L₂` multiply to
+`n^E < b^b`, and the lower bounds multiply to `b^(b-2) ≤ n^E`.  That is a slightly
+wider interval than the exact band — the union of the exact band with its two
+neighbouring length splits — and it costs nothing to prove. -/
+
+theorem pandigital_pow_bounds {b e₁ e₂ n : Nat} (hb : 1 < b) (hp : Pandigital b e₁ e₂ n) :
+    b ^ (b - 2) ≤ n ^ (e₁ + e₂) ∧ n ^ (e₁ + e₂) < b ^ b := by
+  have hn : 0 < n := pos_of_pandigital hb hp
+  have hlen := pandigital_length hb hp
+  have hp₁ : 0 < n ^ e₁ := Nat.pow_pos hn
+  have hp₂ : 0 < n ^ e₂ := Nat.pow_pos hn
+  obtain ⟨j₁, hj₁⟩ : ∃ j, numDigits b (n ^ e₁) = j + 1 :=
+    ⟨numDigits b (n ^ e₁) - 1, by have := numDigits_pos hb hp₁; omega⟩
+  obtain ⟨j₂, hj₂⟩ : ∃ j, numDigits b (n ^ e₂) = j + 1 :=
+    ⟨numDigits b (n ^ e₂) - 1, by have := numDigits_pos hb hp₂; omega⟩
+  obtain ⟨lo₁, hi₁⟩ := bounds_of_numDigits hb _ j₁ hj₁
+  obtain ⟨lo₂, hi₂⟩ := bounds_of_numDigits hb _ j₂ hj₂
+  have hsum : j₁ + j₂ = b - 2 := by omega
+  have hsum' : (j₁ + 1) + (j₂ + 1) = b := by omega
+  have hmul : n ^ e₁ * n ^ e₂ = n ^ (e₁ + e₂) := (Nat.pow_add n e₁ e₂).symm
+  refine ⟨?_, ?_⟩
+  · calc b ^ (b - 2) = b ^ j₁ * b ^ j₂ := by rw [← Nat.pow_add, hsum]
+      _ ≤ n ^ e₁ * n ^ e₂ := Nat.mul_le_mul lo₁ lo₂
+      _ = n ^ (e₁ + e₂) := hmul
+  · have hstep : n ^ e₁ * n ^ e₂ < b ^ (j₁ + 1) * b ^ (j₂ + 1) := by
+      calc n ^ e₁ * n ^ e₂ ≤ n ^ e₁ * b ^ (j₂ + 1) :=
+            Nat.mul_le_mul_left _ (Nat.le_of_lt hi₂)
+        _ < b ^ (j₁ + 1) * b ^ (j₂ + 1) :=
+            Nat.mul_lt_mul_of_lt_of_le hi₁ (Nat.le_refl _) (Nat.pow_pos (by omega))
+    calc n ^ (e₁ + e₂) = n ^ e₁ * n ^ e₂ := hmul.symm
+      _ < b ^ (j₁ + 1) * b ^ (j₂ + 1) := hstep
+      _ = b ^ b := by rw [← Nat.pow_add, hsum']
+
+theorem pandigital_gt {b e₁ e₂ n lo : Nat} (hb : 1 < b) (hp : Pandigital b e₁ e₂ n)
+    (hlo : lo ^ (e₁ + e₂) < b ^ (b - 2)) : lo < n := by
+  rcases Nat.lt_or_ge lo n with h | h
+  · exact h
+  · exfalso
+    have h1 : n ^ (e₁ + e₂) ≤ lo ^ (e₁ + e₂) := Nat.pow_le_pow_left h _
+    have h2 := (pandigital_pow_bounds hb hp).1
+    omega
+
+theorem pandigital_lt {b e₁ e₂ n hi : Nat} (hb : 1 < b) (hp : Pandigital b e₁ e₂ n)
+    (hhi : b ^ b ≤ hi ^ (e₁ + e₂)) : n < hi := by
+  rcases Nat.lt_or_ge n hi with h | h
+  · exact h
+  · exfalso
+    have h1 : hi ^ (e₁ + e₂) ≤ n ^ (e₁ + e₂) := Nat.pow_le_pow_left h _
+    have h2 := (pandigital_pow_bounds hb hp).2
+    omega
+
+/-- `k` digits, from `b^(k-1) ≤ x`.  §3's `le_numDigits_of_pow_le` shifted by one so
+that `k` counts digits rather than the exponent. -/
+theorem numDigits_ge {b k x : Nat} (hb : 1 < b) (hk : 0 < k)
+    (h : b ^ (k - 1) ≤ x) : k ≤ numDigits b x := by
+  have := le_numDigits_of_pow_le hb h
+  omega
+
+/-! ### §9.5  The two filters fire -/
+
+theorem pandigital_resOK {b e₁ e₂ T n : Nat} (hb : 1 < b) (hT : 2 * T = b * (b - 1))
+    (hp : Pandigital b e₁ e₂ n) : resOK b e₁ e₂ T (n % (b - 1)) = true := by
+  have hds : digitSum b (n ^ e₁) + digitSum b (n ^ e₂) = T := by
+    have := pandigital_digitSum hb hp; omega
+  have hs := sieve_sound (b := b) (x := n ^ e₁) (y := n ^ e₂) (T := T) hb hds
+  have hmod : ((n % (b - 1)) ^ e₁ + (n % (b - 1)) ^ e₂) % (b - 1)
+      = (n ^ e₁ + n ^ e₂) % (b - 1) := by
+    rw [Nat.add_mod, ← Nat.pow_mod, ← Nat.pow_mod, ← Nat.add_mod]
+  exact decide_eq_true (hmod.trans hs)
+
+theorem pandigital_lowOK {b e₁ e₂ k n : Nat} (hb : 1 < b)
+    (hk₁ : k ≤ numDigits b (n ^ e₁)) (hk₂ : k ≤ numDigits b (n ^ e₂))
+    (hp : Pandigital b e₁ e₂ n) : lowOK b e₁ e₂ k (n % b ^ k) = true := by
+  have hb0 : 0 < b := by omega
+  have hslot : ∀ e, lowSlots b k ((n % b ^ k) ^ e) = lowSlots b k (n ^ e) := by
+    intro e
+    have heq : (n % b ^ k) ^ e % b ^ k = n ^ e % b ^ k := (Nat.pow_mod n e (b ^ k)).symm
+    rw [← lowSlots_mod hb0 k ((n % b ^ k) ^ e), heq, lowSlots_mod hb0]
+  refine allb_of_mem _ ?_
+  intro v hv
+  have hvb : v < b := by have := (mem_run b 0 v hv).2; omega
+  refine decide_eq_true ?_
+  show occ v (lowSlots b k ((n % b ^ k) ^ e₁) ++ lowSlots b k ((n % b ^ k) ^ e₂)) ≤ 1
+  rw [hslot e₁, hslot e₂, occ_append]
+  have hone := hp v hvb
+  rw [occ_append] at hone
+  have a1 := occ_lowSlots_le hb hk₁ v
+  have a2 := occ_lowSlots_le hb hk₂ v
+  omega
+
+/-! ### §9.6  Counting a periodic test on a segment -/
+
+theorem countP_mono {p q : Nat → Bool} (h : ∀ x, p x = true → q x = true) :
+    ∀ l : List Nat, List.countP p l ≤ List.countP q l := by
+  intro l
+  induction l with
+  | nil => simp
+  | cons a t ih =>
+    rw [List.countP_cons, List.countP_cons]
+    by_cases hp : p a = true
+    · rw [if_pos hp, if_pos (h a hp)]; omega
+    · rw [if_neg hp]
+      by_cases hq : q a = true
+      · rw [if_pos hq]; omega
+      · rw [if_neg hq]; omega
+
+theorem countP_run_shift {p : Nat → Bool} {W : Nat} (hper : ∀ x, p (x + W) = p x) :
+    ∀ n s, List.countP p (run (s + W) n) = List.countP p (run s n) := by
+  intro n
+  induction n with
+  | zero => intro s; rfl
+  | succ m ih =>
+    intro s
+    show List.countP p ((s + W) :: run (s + W + 1) m) = List.countP p (s :: run (s + 1) m)
+    rw [List.countP_cons, List.countP_cons, hper s]
+    have he : s + W + 1 = (s + 1) + W := by omega
+    rw [he, ih (s + 1)]
+
+theorem countP_run_window {p : Nat → Bool} {W : Nat} (hper : ∀ x, p (x + W) = p x) :
+    ∀ s, List.countP p (run s W) = List.countP p (run 0 W) := by
+  intro s
+  induction s with
+  | zero => rfl
+  | succ t ih =>
+    rw [← ih]
+    have hcons : List.countP p (run t (W + 1))
+        = List.countP p (run (t + 1) W) + (if p t = true then 1 else 0) := by
+      show List.countP p (t :: run (t + 1) W) = _
+      rw [List.countP_cons]
+    have happ : List.countP p (run t (W + 1))
+        = List.countP p (run t W) + (if p (t + W) = true then 1 else 0) := by
+      rw [run_add t W 1, List.countP_append]
+      have hone : List.countP p (run (t + W) 1) = (if p (t + W) = true then 1 else 0) := by
+        show List.countP p ((t + W) :: []) = _
+        rw [List.countP_cons, List.countP_nil, Nat.zero_add]
+      rw [hone]
+    rw [hper t] at happ
+    exact Nat.add_right_cancel (hcons.symm.trans happ)
+
+theorem countP_run_le {p : Nat → Bool} {W : Nat} (hW : 0 < W) (hper : ∀ x, p (x + W) = p x) :
+    ∀ len s, List.countP p (run s len)
+      ≤ List.countP p (run 0 W) * ((len + W - 1) / W) := by
+  intro len
+  induction len using Nat.strongRecOn with
+  | _ len ih =>
+    intro s
+    rcases Nat.eq_zero_or_pos len with rfl | hlen
+    · show List.countP p [] ≤ _
+      simp
+    rcases Nat.lt_or_ge len (W + 1) with hle | hgt
+    · have hsplit : run s W = run s len ++ run (s + len) (W - len) := by
+        have he : W = len + (W - len) := by omega
+        calc run s W = run s (len + (W - len)) := by rw [← he]
+          _ = run s len ++ run (s + len) (W - len) := run_add s len (W - len)
+      have h1 : List.countP p (run s len) ≤ List.countP p (run 0 W) := by
+        rw [← countP_run_window hper s, hsplit, List.countP_append]
+        omega
+      have h2 : 1 ≤ (len + W - 1) / W := (Nat.le_div_iff_mul_le hW).mpr (by omega)
+      calc List.countP p (run s len) ≤ List.countP p (run 0 W) := h1
+        _ ≤ List.countP p (run 0 W) * ((len + W - 1) / W) :=
+            Nat.le_mul_of_pos_right _ (by omega)
+    · have hsplit : run s len = run s W ++ run (s + W) (len - W) := by
+        have he : len = W + (len - W) := by omega
+        calc run s len = run s (W + (len - W)) := by rw [← he]
+          _ = run s W ++ run (s + W) (len - W) := run_add s W (len - W)
+      have hIH := ih (len - W) (by omega) (s + W)
+      have hdiv : (len + W - 1) / W = (len - W + W - 1) / W + 1 := by
+        have h1 : len + W - 1 = (len - W + W - 1) + W := by omega
+        rw [h1, Nat.add_div_right _ hW]
+      rw [hsplit, List.countP_append, countP_run_window hper s, hdiv,
+          Nat.mul_add, Nat.mul_one]
+      omega
+
+theorem adm_period {b e₁ e₂ k T : Nat} (hb : 1 < b) (x : Nat) :
+    adm b e₁ e₂ k T (x + (b - 1) * b ^ k) = adm b e₁ e₂ k T x := by
+  have h1 : (x + (b - 1) * b ^ k) % (b - 1) = x % (b - 1) :=
+    Nat.add_mul_mod_self_left x (b - 1) (b ^ k)
+  have h2 : (x + (b - 1) * b ^ k) % b ^ k = x % b ^ k := by
+    rw [Nat.mul_comm]
+    exact Nat.add_mul_mod_self_left x (b ^ k) (b - 1)
+  show (resOK b e₁ e₂ T ((x + (b - 1) * b ^ k) % (b - 1))
+        && lowOK b e₁ e₂ k ((x + (b - 1) * b ^ k) % b ^ k))
+      = (resOK b e₁ e₂ T (x % (b - 1)) && lowOK b e₁ e₂ k (x % b ^ k))
+  rw [h1, h2]
+
+/-! ### §9.7  Theorem H -/
+
+/--
+**Theorem H (T4 of REPORT §11).**  Every `(e₁,e₂)`-pandigital `n` lies in the crude
+band `(lo, hi)` and passes the admissibility test `adm`, which depends on `n` only
+through `n mod (b-1)` and `n mod b^k`.
+
+`hlo` and `hhi` are the band: any `lo` below it and any `hi` at or above its top.
+`hk₁`/`hk₂` say only that the powers of the smallest surviving `n` already have `k`
+digits, which is what makes the low-`k`-slot filter legitimate — without them the
+padding zeros of `lowSlots` would be counted as digits.
+-/
+theorem theorem_H {b e₁ e₂ k T lo hi n : Nat} (hb : 1 < b) (hk : 0 < k)
+    (hT : 2 * T = b * (b - 1))
+    (hlo : lo ^ (e₁ + e₂) < b ^ (b - 2)) (hhi : b ^ b ≤ hi ^ (e₁ + e₂))
+    (hk₁ : b ^ (k - 1) ≤ (lo + 1) ^ e₁) (hk₂ : b ^ (k - 1) ≤ (lo + 1) ^ e₂)
+    (hp : Pandigital b e₁ e₂ n) :
+    (lo < n ∧ n < hi) ∧ adm b e₁ e₂ k T n = true := by
+  have hgt := pandigital_gt hb hp hlo
+  have hlt := pandigital_lt hb hp hhi
+  have hle : lo + 1 ≤ n := by omega
+  have hd₁ : k ≤ numDigits b (n ^ e₁) :=
+    numDigits_ge hb hk (Nat.le_trans hk₁ (Nat.pow_le_pow_left hle _))
+  have hd₂ : k ≤ numDigits b (n ^ e₂) :=
+    numDigits_ge hb hk (Nat.le_trans hk₂ (Nat.pow_le_pow_left hle _))
+  refine ⟨⟨hgt, hlt⟩, ?_⟩
+  show (resOK b e₁ e₂ T (n % (b - 1)) && lowOK b e₁ e₂ k (n % b ^ k)) = true
+  rw [pandigital_resOK hb hT hp, pandigital_lowOK hb hd₁ hd₂ hp]
+  rfl
+
+/--
+**Theorem H, counting form.**  At most `countP adm` numbers of the crude band are
+nice.  This is the quantity `nice-provability/bound.py` evaluates.
+-/
+theorem theorem_H_count {b e₁ e₂ k T lo hi : Nat} (hb : 1 < b) (hk : 0 < k)
+    (hT : 2 * T = b * (b - 1))
+    (hlo : lo ^ (e₁ + e₂) < b ^ (b - 2)) (hhi : b ^ b ≤ hi ^ (e₁ + e₂))
+    (hk₁ : b ^ (k - 1) ≤ (lo + 1) ^ e₁) (hk₂ : b ^ (k - 1) ≤ (lo + 1) ^ e₂) :
+    List.countP (isPandigital b e₁ e₂) (run (lo + 1) (hi - lo - 1))
+      ≤ List.countP (adm b e₁ e₂ k T) (run (lo + 1) (hi - lo - 1)) :=
+  countP_mono (fun x hx =>
+    (theorem_H hb hk hT hlo hhi hk₁ hk₂ (isPandigital_iff.mp hx)).2) _
+
+/--
+**Theorem H, closed form.**  `adm` has period `W = (b-1)·b^k`, so the count over the
+band is at most the count over one window times `⌈band/W⌉` — `O(b^k)` work, with no
+reference to the band beyond its length.
+-/
+theorem theorem_H_closed {b e₁ e₂ k T lo hi : Nat} (hb : 1 < b) :
+    List.countP (adm b e₁ e₂ k T) (run (lo + 1) (hi - lo - 1))
+      ≤ List.countP (adm b e₁ e₂ k T) (run 0 ((b - 1) * b ^ k))
+        * ((hi - lo - 1 + (b - 1) * b ^ k - 1) / ((b - 1) * b ^ k)) := by
+  refine countP_run_le ?_ (adm_period hb) _ _
+  have hp : 0 < b ^ k := Nat.pow_pos (by omega)
+  exact Nat.mul_pos (by omega) hp
+
+/-! ### §9.8  Base 10: the bound is sharp, and it settles 69
+
+At `k = 4` the filters leave exactly one survivor in the whole crude band, and it is
+69.  So the classical problem's only known solution is its *only* solution, certified
+by the three provable filters — nothing about the middle digits is used.
+
+This is a *sharpness* witness, not a new result: base 10's band is 53 numbers and has
+been scanned since the problem was posed.  What it shows is that the bound of §9.7 can
+be attained, which an upper bound with no equality case would not.
+
+Note which filter does the work: at `k = 4` the low slots alone already pin 69, so
+`base_ten_survivors` survives deleting `resOK` from `adm`.  `base_seventeen_window`
+below is the witness that catches that deletion, which is why both are here. -/
+
+/-- The crude band at base 10 for `(2,3)`: `39^5 < 10^8` and `10^10 ≤ 100^5`. -/
+theorem base_ten_lo : (39 : Nat) ^ 5 < 10 ^ 8 := by decide
+theorem base_ten_hi : (10 : Nat) ^ 10 ≤ 100 ^ 5 := by decide
+
+/-- The whole content of the bound at base 10: over `[40, 100)`, `adm` at `k = 4`
+admits exactly one number. -/
+theorem base_ten_survivors : (run 40 60).filter (adm 10 2 3 4 45) = [69] := by decide
+
+/-- **69 is the only `(2,3)`-nice number in base 10.** -/
+theorem sixtynine_unique {n : Nat} (hp : Pandigital 10 2 3 n) : n = 69 := by
+  have h := theorem_H (b := 10) (e₁ := 2) (e₂ := 3) (k := 4) (T := 45) (lo := 39) (hi := 100)
+    (by decide) (by decide) (by decide) base_ten_lo base_ten_hi (by decide) (by decide) hp
+  have hmem : n ∈ run 40 60 := mem_run_of 60 40 n (by omega) (by omega)
+  have hfil : n ∈ (run 40 60).filter (adm 10 2 3 4 45) :=
+    List.mem_filter.mpr ⟨hmem, h.2⟩
+  rw [base_ten_survivors] at hfil
+  simpa using hfil
+
+/-- **The set of `(2,3)`-nice numbers in base 10 is exactly `{69}`.** -/
+theorem base_ten_nice_iff {n : Nat} : Pandigital 10 2 3 n ↔ n = 69 :=
+  ⟨sixtynine_unique, fun h => h ▸ sixtynine_pandigital⟩
+
+/-! ### §9.9  Where the closed form earns its keep
+
+Base 10 is the wrong shape for it: `W = (b-1)·b^k` is 90 000 against a band of 60, so
+the window is larger than the thing it bounds and only the *sharp* form says anything.
+Base 17 at `k = 1` is the other way round — a 272-number window bounds a band 38 times
+longer, and comes within 2.5% of the exact count over the same interval (571). -/
+
+set_option maxRecDepth 4000 in
+/-- The whole cost of the closed form at base 17, `k = 1`: 272 kernel evaluations. -/
+theorem base_seventeen_window : List.countP (adm 17 2 3 1 136) (run 0 272) = 15 := by decide
+
+theorem base_seventeen_all {n : Nat} (hp : Pandigital 17 2 3 n) : n ∈ run 4913 10347 := by
+  have h := theorem_H (b := 17) (e₁ := 2) (e₂ := 3) (k := 1) (T := 136)
+    (lo := 4912) (hi := 15260) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide) (by decide) hp
+  exact mem_run_of 10347 4913 n (by omega) (by omega)
+
+/-- **At most 585 `(2,3)`-nice numbers in base 17** — from `base_seventeen_window`
+and a division, with nothing evaluated over the band itself.  (The truth is 0.) -/
+theorem base_seventeen_bound :
+    List.countP (isPandigital 17 2 3) (run 4913 10347) ≤ 585 := by
+  have hlen : 15260 - 4912 - 1 = 10347 := rfl
+  have hstart : (4912 : Nat) + 1 = 4913 := rfl
+  have h1 := theorem_H_count (b := 17) (e₁ := 2) (e₂ := 3) (k := 1) (T := 136)
+    (lo := 4912) (hi := 15260) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide) (by decide)
+  have h2 := theorem_H_closed (b := 17) (e₁ := 2) (e₂ := 3) (k := 1) (T := 136)
+    (lo := 4912) (hi := 15260) (by decide)
+  rw [hstart, hlen] at h1 h2
+  have hW : (17 - 1) * 17 ^ 1 = 272 := rfl
+  rw [hW, base_seventeen_window] at h2
+  have h3 : (10347 + 272 - 1) / 272 = 39 := rfl
+  rw [h3] at h2
+  omega
+
 end Nice
 
 #print axioms Nice.no_nice_of_dvd
@@ -2498,3 +4567,28 @@ end Nice
 #print axioms Nice.F_base_fortyseven
 #print axioms Nice.F_conclusion_not_automatic
 #print axioms Nice.no_even_base
+#print axioms Nice.pick_sum
+#print axioms Nice.cover_exists
+#print axioms Nice.blk_identity
+#print axioms Nice.blocks_hit
+#print axioms Nice.blocks_to_pair
+#print axioms Nice.theorem_C_prime
+#print axioms Nice.base_ten_j_two_complete
+#print axioms Nice.base_ten_j_five_rider_fails
+#print axioms Nice.base_four_rider_fails
+#print axioms Nice.base_four_clears_the_no_gap
+#print axioms Nice.lowSlots_mod
+#print axioms Nice.digits_split
+#print axioms Nice.pandigital_length
+#print axioms Nice.pandigital_digitSum
+#print axioms Nice.pandigital_pow_bounds
+#print axioms Nice.countP_run_le
+#print axioms Nice.adm_period
+#print axioms Nice.theorem_H
+#print axioms Nice.theorem_H_count
+#print axioms Nice.theorem_H_closed
+#print axioms Nice.base_ten_survivors
+#print axioms Nice.sixtynine_unique
+#print axioms Nice.base_ten_nice_iff
+#print axioms Nice.base_seventeen_window
+#print axioms Nice.base_seventeen_bound

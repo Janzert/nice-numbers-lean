@@ -1,20 +1,30 @@
 # Formalising the nice-number theorems in Lean 4
 
 **Answer to "can any of the proofs be written in Lean?": yes — Theorems A, B, C,
-F and G and Proposition D are done, they compile in about four seconds against
-Lean core with no Mathlib, and they are strictly stronger than the exhaustive
-checks they replace.** Proposition C′ is a partial seventh: its *soundness* half is
-proved for all bases and all `j`, and its completeness half is **disproved** —
-the counterexample is in the file.
+C′, F, G and H and Proposition D are done, they compile in about seven seconds
+against Lean core with no Mathlib, and they are strictly stronger than the
+exhaustive checks they replace.** Proposition C′ has all three of its parts
+here: *soundness* for all bases and all `j`, *unconditional completeness*
+**disproved** by a counterexample in the file, and the *conditional* completeness
+theorem of REPORT §6.3 proved in full — leading digits and all.
 
 ```bash
-lean NiceNumbers.lean      # 4.1 s, 2500 lines, no errors, no sorry
+lean NiceNumbers.lean      # 7.0 s, 4594 lines, no errors, no sorry
 ```
 
+**Theorem H (2026-08-13) is the first *quantitative* theorem here**, and the first
+whose conclusion is a number rather than a yes/no: at most `countP adm` of the band
+is nice, where `adm` reads only `n mod (b-1)` and `n mod b^k`. It is also the one
+whose *equality case* is the interesting part — `base_ten_nice_iff` says the set of
+`(2,3)`-nice numbers in base 10 is exactly `{69}`.
+
 **Theorem F (2026-08-13) is the first *constructive* theorem here**; everything
-else is an impossibility. That changes what has to be guarded — see "Non-vacuity"
+else was an impossibility. That changes what has to be guarded — see "Non-vacuity"
 — and it is the one theorem that did **not** retire or narrow a gate, because
 none of the five cases `verify.py`'s gate F runs satisfies its hypotheses.
+**Theorem C′ (2026-08-13) is the second constructive one, and by some distance the
+largest**: ~1 100 lines, it *does* retire a gate, and it produces an explicit
+pandigital pair rather than ruling one out.
 
 Written against 4.16, verified on **4.33**; see "Toolchain drift" below for the
 two core renames that cost, and why an `elan`-shimmed `lean` appears to take 20 s
@@ -42,8 +52,13 @@ axioms. No `sorryAx`, and no `native_decide` (which would add
 | `valOf_mod_wsum` / `valOf_mod_pow_sub_one` | **Prop C′**, the engine — mod `b^j - 1` a digit list is worth `Σ_t b^t S_t`, the totals of its positions `≡ t (mod j)`. All `b`, all `j`, all lists | the block-sum half of `verify.py` gate C′, which sampled 200 000 shuffles at `j = 2,3` |
 | `valOf_mod_pred` / `sieve_sound` | **Prop C′**, soundness — casting out `b-1`s, hence `I(m) ⊆ {z ≡ T mod gcd(m,b-1)}` for every modulus | — |
 | `base_four_sieve_is_incomplete` | **Prop C′ is false** — base 4, lengths `(2,2)`: no pandigital pair has `x+y ≡ 2 (mod 5)`, though `gcd(5,3) = 1` means the digit sum permits it | nothing; this one *refutes* a claim the report used to make |
+| `theorem_C_prime` | **Theorem C′** (REPORT §6.3) — where the class sizes admit a legal `p` with the no-gap conditions, and are big enough, **every** residue the digit-sum congruence permits is the sum of a genuine pandigital pair of those digit lengths, leading digits included. All bases, all `j`, all lengths, all `p` | `verify.py` gate C′(a), which checked four `(b, L1, L2, j)` rows through `block_image` — a *weaker* statement, since that DP ignores the leading-digit rule |
+| `blocks_hit` | **Theorem C′**, block level — the same conclusion about `Σ_t b^t S_t`, with no digit lengths and no leading digits in the statement | — |
+| `pick_sum` | **Theorem C′**, engine 1 — the `p`-element sublists of a run of `p+q` consecutive integers realise every sum in `[min, min + pq]`, with no gaps | — |
+| `cover_exists` | **Theorem C′**, engine 2 — mixed-radix covering: if each place `b^t` opens before the lower places run out, `{Σ ν_t b^t : ν_t ≤ N_t}` is a full interval | — |
+| `blk_identity` | **Theorem C′**, the join — an identity in `ℕ`, not a congruence: `X + (b-1)·Σ_t b^t σ_t + (b^j-1)·τ_{j-1} = Σ_t b^{t+1}·ΣA_t` | — |
 | `residues_nonempty_iff` / `residues_empty_iff` | **Theorem C** — `R_b = ∅` iff `a = 1`, or (`a ≥ 3` and `e₂-e₁` even and `e₁ ∤ a-1`), where `a = v₂(b-1)`. All bases, all pairs | nothing; §4 of the report had no gate, and now needs none |
-| `residues_single_nonempty_iff` | **Theorem C**, single exponent — `R_b ≠ ∅` iff `a = 0` or `e ∣ a-1`. This is the family §13 recommends searching | the base list §13 quoted from a scan |
+| `residues_single_nonempty_iff` | **Theorem C**, single exponent — `R_b ≠ ∅` iff `a = 0` or `e ∣ a-1`. This is the family §14 recommends searching | the base list §14 quoted from a scan |
 | `no_nice_of_two_adic` | **Theorem C**, operative form — a base in a dead 2-adic class admits no `n` satisfying the digit-sum identity | — |
 | `residues_empty_of_mod_four_of_C` | **Theorem B is the `a = 1` case of C**: `b ≡ 3 (mod 4)` is exactly `v₂(b-1) = 1`. Not a replacement — C assumes `e₁ < e₂`, B does not, so the degenerate `e₁ = e₂` stays B's alone | — |
 | `add_pow_ladder` / `slot_step` | **Theorem F**, the engine — `(r + x·bⁱ)^e ≡ r^e + e·r^{e-1}·x·bⁱ (mod b^{i+1})` for `i ≥ 1`, and hence that adding digit `x` at level `i` moves slot `i` of `n^e` along an arithmetic progression with difference `e·r^{e-1} (mod b)`. This is the recurrence the CUDA and Vulkan kernels advance the digit with, and the "2 slots per digit" law itself | nothing; the repo asserted the ladder in comments and in three kernels |
@@ -51,9 +66,16 @@ axioms. No `sorryAx`, and no `native_decide` (which would add
 | `greedy_distinct_slots` | **Theorem F**, slot form — some `d`-digit `n` has `2d` pairwise-distinct values among the low `d` slots of `n^{e₁}` and `n^{e₂}` | — |
 | `theorem_F` | **Theorem F** — hence combined digit deficiency `≤ b - 2d`, i.e. `b(1 - 2/E)` since `d ≈ b/E` | nothing; gate F stays, see below |
 | `no_even_base` | **Theorem F**, its limit — an even base admits no `β`, so Theorem F covers only odd bases. All the repo's `(1,3)` targets are even | a scan that had found only the boundary |
+| `pandigital_length` / `pandigital_digitSum` | **Theorem H**, the bridge — pandigitality *implies* the two numerical consequences §1–§3 take as hypotheses, so H is a statement about nice numbers and not about numbers assumed to behave like them | nothing; the file had asserted the implication only at 69 |
+| `pandigital_pow_bounds` | **Theorem H**, the band without roots — `b^(b-2) ≤ n^E < b^b` for every pandigital `n`, by multiplying the two per-exponent length bounds. No jump structure, no `gcd`, no exponents in the statement | nothing |
+| `theorem_H` | **Theorem H** — every pandigital `n` is in that band and passes `adm`, a test reading only `n mod (b-1)` and `n mod b^k`. All bases, all pairs, all `k`, all `n` | nothing; gate H stays and checks the *other* half, see below |
+| `countP_run_le` / `adm_period` | **Theorem H**, the closed form — `adm` has period `(b-1)·b^k`, and a periodic test on a segment is counted by one window times `⌈len/W⌉` | — |
+| `theorem_H_count` / `theorem_H_closed` | **Theorem H**, counting and closed forms — `#{nice in band} ≤ countP adm (band) ≤ countP adm (one window) · ⌈len/W⌉` | — |
+| `base_ten_nice_iff` | **The set of `(2,3)`-nice numbers in base 10 is exactly `{69}`** — the sharpness witness for H, and the only equality case known | nothing; the repo had this from a 53-number scan, never as a theorem |
 
 All of these hold for **all** naturals, and the three gates named above **have been
-deleted** from `verify.py` (which is now ~34 s rather than ~44 s). Gate G was
+deleted** from `verify.py` (which is now ~38 s: gate H put back rather more
+than the deletions took out). Gate G was
 **narrowed** instead of deleted, for the reason the next paragraph gives: what is
 left of it is `N_λ = N_gcd`, the one step the Lean statement routes around.
 
@@ -94,6 +116,21 @@ supplies the witness, and `sixtynine_only_base_ten` then reads off that base 10 
 the *only* base 69 is a candidate in, over all bases at once and with no finite
 search.
 
+**Theorem H needs the guard in a third shape again: an upper bound is vacuous when
+it is not attained, and useless when the thing it bounds is empty.** Both are
+answered at once by `base_ten_nice_iff` — the bound is 1, the truth is 1, and 69 is
+the witness. The second witness, `base_seventeen_bound` (`≤ 585` from a 272-number
+window over a band of 10 347), is there because base 10 is the wrong shape to
+exercise the closed form at all: `W = 90 000` against a band of 60.
+
+**Which filter each witness actually covers is not obvious and had to be measured.**
+At base 10 with `k = 4` the low slots alone already pin 69, so `base_ten_survivors`
+survives deleting `resOK` from `adm` — it is `base_seventeen_window` that catches
+that deletion. Three other mutations (depth `k = 3` instead of `4`, deleting
+`lowOK`, widening the band by moving `lo` from 39 to 30) are each rejected by the
+base-10 witness. A witness that passes under a deleted hypothesis is not a witness
+for that hypothesis, and only running the mutation says which is which.
+
 Theorem G needs the guard twice over, because it introduces a *definition*:
 
 * `sixtynine_pandigital : Pandigital 10 2 3 69` — the definition is satisfiable,
@@ -120,13 +157,39 @@ both directions have to be shown firing, or the theorem could be the constant
 * `base_ten_live` / `base_ten_residue` — base 10 had better be alive, or C would
   contradict 69; and 69 itself is exhibited as a residue.
 * `single_four_base_twentynine_dead` / `single_four_base_thirtythree_live` — the
-  same pair of ends for the single-exponent form, on the two bases §13 of the
+  same pair of ends for the single-exponent form, on the two bases §14 of the
   report names.
 
 Six statement-level mutations were checked and all six are rejected: declaring
 base 33 dead the way base 17 is, weakening `a ≥ 3` to `a ≥ 2`, dropping the
 `e₂-e₁` odd clause, widening `a ≤ 2` to `a ≤ 3`, moving the odd-gap witness from
 `(b-1)/2 - 1` to `(b-1)/2 + 1`, and (single exponent) `e ∣ a` for `e ∣ a-1`.
+
+**Theorem C′ needs the same kind of guard as C, and it caught a real bug.** Its
+hypothesis is a conjunction of no-gap inequalities, and the first version stated
+them for *every* `t` rather than `t < j`. That type-checks and it is
+**unsatisfiable** — `b^t` outruns any fixed `Σ_{s<j} N_s b^s` — so the theorem was
+vacuous while looking correct. Nothing but a witness finds that.
+
+* `base_ten_j_two_complete` — base 10, `j = 2`, digit lengths `(4,6)`: the lengths
+  of `69² = 4761` and `69³ = 328509`. `c = (5,5)`, `p = (5,0)`, `N = (25,0)`, and
+  the conclusion is that every residue mod `99` allowed by casting out 9s is the
+  sum of a genuine pandigital `(4,6)` pair. All the hypotheses discharge by
+  `decide`.
+* `base_ten_j_five_rider_fails` — and at `j = 5`, which is exactly where base 10's
+  sieve *does* gain (`11111 = 41·271` has order 5 and misses two residues), the
+  class sizes are `(3,2,2,2,1)` and the `c_t ≥ 2` half of the rider fails. The
+  theorem stops precisely where the counterexample starts.
+* `base_four_rider_fails` / `base_four_clears_the_other_half` /
+  `base_four_clears_the_no_gap` — base 4, lengths `(2,2)`, is the sharper test: it
+  clears `c_t ≥ 2` **and** the no-gap conditions (`p = (2,0)` gives `N = (4,0)`,
+  `b^1 = 4 ≤ 5`, `K-1 = 4`), both by `decide`, and is stopped only by `c_t ≥ 3` at
+  the class carrying the second number's leading slot. Checking what it *passes* is
+  the point: a witness that fails several hypotheses at once says which one is
+  load-bearing only if the others are shown to hold. Without that
+  clause the theorem would contradict `base_four_sieve_is_incomplete`, three
+  sections earlier in the same file. **Both halves of the rider are load-bearing,
+  and each is pinned by a witness that fails on it alone.**
 
 **Theorem F needs a guard the other five do not, because it is the only
 constructive one.** An impossibility theorem is worthless if its hypotheses are
@@ -317,19 +380,29 @@ chains, exactly as §5's `digits_69sq` already did. The error is legible
 | ~~**Theorem F**~~ — the `2/E` greedy bound | **done** (`greedy_distinct_slots`, `theorem_F`) | Estimated at "medium-hard, ~2 weeks" for the digit ladder plus a greedy pigeonhole induction; cost an afternoon, and the ladder and the pigeonhole were both short. What the estimate missed is that the *statement* needed two repairs first — the side condition is `O(b)` not `O(db)`, and the counting bound reaches `E = 4`. See above. |
 | ~~**Prop C′**, soundness~~ — the sieve never sees more than `Σ_t b^t S_t` | **done** (`valOf_mod_wsum`, `sieve_sound`) | Estimated inside a "~1 month" for the whole proposition; the soundness half cost an hour, because it is an induction on a list and needs no combinatorics at all. |
 | ~~**Prop C′**, completeness~~ — no modulus adds density | **done: it is FALSE** (`base_four_sieve_is_incomplete`) | 256-case kernel `decide` on base 4, lengths `(2,2)`. Both natural mutations of the check are rejected, and `base_four_attained` supplies the three witnesses, so it is neither vacuous nor slack. |
-| **Prop C′**, the conditional theorem (REPORT §6.3) | **hard, ~1 month** | Needs the arena construction as an *explicit permutation* of `{0,…,b-1}` — subset-sum contiguity plus list surgery, and core has no `Finset`/`Multiset`. The two arithmetic engines (the block congruence, and the base-`b` no-gap covering) are the easy parts and the first is already done. |
-| **Prop C″** — the sharp `c_t ≥ 2` form (REPORT §6.5) | **not yet a proof at all** | Open on paper first. Formalising is not the bottleneck. |
-| **T4** — the rigorous upper bound on `#nice(b)` | **not worth it** | An asymptotic statement with error terms. Formalising analytic estimates costs far more than the result is worth here. |
+| ~~**Prop C′**, the conditional theorem (REPORT §6.3)~~ | **done** (`theorem_C_prime`) | Costed here as "hard, ~1 month", on the grounds that it needs the arena as an *explicit permutation* of `{0,…,b-1}` and core has no `Finset`/`Multiset`. It cost a day. The premise was right and the conclusion wrong: **the absence of `Finset` is what made it cheap, not expensive.** `occ v : List Nat → Nat` is additive over `++`, so "is a permutation" is `∀ v, occ v l = 1` and every step of the construction is an arithmetic identity about counts — no `Perm`, no quotient, no `Multiset.map` congruence lemmas. Reaching for the set-theoretic vocabulary is what would have cost a month. |
+| **Prop C″** — the sharp `c_t ≥ 2` form (REPORT §6.5) | **not yet a proof at all** | Open on paper first. Formalising is not the bottleneck — though formalising C′ did shorten the distance: the rider it actually needs is `c_t ≥ 2` everywhere plus `c_t ≥ 3` at one named class, so C″ is one class away rather than `j`. |
+| **Prop C′**, descent to a general modulus | **an afternoon, low value** | The theorem is proved at `b^j - 1`; getting `I(m) = {z ≡ T mod gcd(m,b-1)}` for every `m` of order `j` is one CRT step. Core has no CRT, so it is a real if small job, and it changes nothing operational. |
+| **Prop C′**, the `j = 2` converse | **an afternoon** | The corollary's *necessity* (`c_0c_1 ≥ b` is also needed) is not proved: it wants "the `p`-subset sums of `{0..b-1}` are *exactly* an interval", where `pick_sum` gives only the inclusion. Same induction, other direction. |
+| ~~**T4**~~ — the rigorous upper bound on `#nice(b)` | **done** (`theorem_H`, `theorem_H_count`, `theorem_H_closed`) | Costed here as "not worth it — an asymptotic statement with error terms. Formalising analytic estimates costs far more than the result is worth." Wrong, and instructively so: **there are no analytic estimates in it and no error term.** `+ O(b^k)` was how REPORT §11 happened to phrase the bound; written with an exact ceiling — `count ≤ window · ⌈len/W⌉`, and even that is only a corollary of the exact count — the whole thing is elementary counting on a periodic predicate, and it cost an afternoon core-only. **Price the statement you would actually prove, not the one the summary table quotes.** |
 | Part II's yield and cost numbers | **not theorems** | They are heuristic expectations under a random-digit model. Lean has nothing to say about them, and pretending otherwise would be the worst kind of false precision. |
 | The exhaustive counts (`(1,3)` has exactly one solution in bases ≤ 44) | **out of the question** | Would need a verified DFS and kernel-level evaluation of ~10¹⁶ candidates. |
+| **Theorem H**, the top-digit refinement (REPORT §9, condition 4) | **an afternoon, real value** | The only part of the bound Lean does not have. It needs the band split into maximal intervals on which `⌊n^e / b^(L-h)⌋` is constant, i.e. exact integer `e`-th roots and their monotonicity — none of which is hard, but none of which the file currently has. Worth a factor of 2–3 at the frontier. Until then `verify.py` gate H is what stands behind it. |
 
-**Net effect.** Three of `verify.py`'s gates are now theorems for all inputs
-rather than checks over a finite range — and they were the three most general
-ones, so they are gone from the script rather than merely superseded. A fourth,
-gate G, is narrowed to the single arithmetic identity `N_λ = N_gcd`. A fifth,
-gate C′, was **rewritten rather than narrowed**, because formalising its
-soundness half exposed that the completeness half it had been sampling is false;
-it now checks the conditional theorem, the conjecture, and the counterexamples.
+**Net effect.** Theorem H added a gate rather than retiring one, and for a reason
+worth naming: the Lean theorem covers three of the bound's four filters for all
+bases, all pairs and all `k`, but not the fourth, so gate H is not a finite
+re-check of anything Lean proves — it checks the top-digit half, and two
+properties of `nice-count`'s output (that `B(k=d,h=0)` *equals* the DFS leaf
+count, and that the bound holds of every count the repo has measured) that are
+not statements about the theorem at all. Four of `verify.py`'s gates are now theorems for all inputs
+rather than checks over a finite range, so they are gone from the script rather
+than merely superseded: A's dead direction, B, D, and — as of 2026-08-13 — C′'s
+conditional-completeness sub-gate. A fifth, gate G, is narrowed to the single
+arithmetic identity `N_λ = N_gcd`. Gate C′ itself was **rewritten rather than
+narrowed** a day earlier, because formalising its soundness half exposed that the
+completeness half it had been sampling is false; what is left of it now is the
+conjecture and the counterexample table, both of which Lean does not carry.
 Two caveats worth keeping in view: Theorem A's *converse* (every base outside the
 dead class really does have candidates) is **not** proved and stays an empirical
 check, and neither is the closed form for `N`, for want of `λ(p^a)`. Theorem C
@@ -349,8 +422,18 @@ because *the two halves need completely different machinery* — soundness is on
 induction over a list, completeness is a construction in a combinatorial category
 core Lean has no vocabulary for. The lesson is to cost the halves, not the
 proposition: an estimate for a biconditional is an estimate for its hardest
-direction, and quoting it for the pair hides whatever is cheap. What is left in
-the table now really is a project apiece.
+direction, and quoting it for the pair hides whatever is cheap.
+
+**And the third piece of C′ then came in at a day against an estimate of a
+month, for a reason worth generalising.** The estimate priced the construction in
+the vocabulary a mathematician would reach for — subsets of `{0,…,b-1}`, an
+explicit permutation, `Finset` — and concluded that core Lean's lack of that
+vocabulary was the obstacle. It was the opposite. Pandigitality here is already
+`∀ v, occ v (d₁ ++ d₂) = 1`, `occ` is additive over `++`, and every step of the
+construction — splitting a run, dealing blocks into slots, moving the digit `0` —
+is then a statement about *counts*, provable by the same `omega` that does the
+arithmetic. **Cost a formalisation in the vocabulary the file already has, not in
+the vocabulary the paper proof used.**
 
 ## Toolchain drift: 4.16 → 4.33 (2026-08-12)
 
