@@ -2,7 +2,7 @@
   NiceNumbers.lean
   ================
 
-  Seven theorems about nice / quasi-nice numbers, formalised in Lean 4.
+  Eight theorems about nice / quasi-nice numbers, formalised in Lean 4.
 
   `n` is **(e₁,e₂)-nice in base b** when the base-`b` digits of `n^e₁` and `n^e₂`
   together are exactly {0,…,b-1}, each once.  `(2,3)` is the classical "nice
@@ -65,6 +65,17 @@
   Two witnesses: at base 10, `k = 4` leaves exactly one survivor and it is 69
   (`base_ten_nice_iff` — the set of `(2,3)`-nice numbers in base 10 is `{69}`), and
   at base 17 a 272-number window bounds a band 38 times longer (`≤ 585`).
+
+  **Theorem I / J / K** (`infinitude_iff`, `model_diverges`, `conditional_infinitude`,
+  `divergence_is_not_existence`): §10, the infinitude question, cut into the half
+  that is provable and the half that is not.  I: there are infinitely many nice
+  numbers **iff** infinitely many bases host one, both directions from the crude
+  band of §9.4.  J: the *heuristic* count `|band|·b!/b^b` exceeds any `M` along an
+  explicit infinite family of bases — band exhibited, not estimated, and no proved
+  obstruction (A, B, C, G) touches it.  K: one named hypothesis, `ModelPositive`,
+  closes the gap; nothing here proves it, and `divergence_is_not_existence` shows
+  it cannot be weakened to "the heuristic is large" — the `(2,3)` bases `20s+7`
+  have a divergent heuristic over a band Theorem B proves empty.
 
   Together these replace exhaustive machine checks over `e₁ ≤ 8`, `e₂ ≤ 9`,
   `b < 400` (A, B, C), `b < 500`, five pairs, ~2700 values of `n` (D), and
@@ -4511,6 +4522,370 @@ theorem base_seventeen_bound :
   rw [h3] at h2
   omega
 
+/-! ## §10  Infinitude — the reduction, the divergence, and the one missing input
+
+Whether there are infinitely many `(e₁,e₂)`-nice numbers is **open**, and §10 of
+REPORT-provability argues that it is far out of reach: it is a statement about all
+`b` digits of two powers at once, where the state of the art handles one digit
+statistic (Mauduit–Rivat) or one *missing* digit in a base above `10^23` (Maynard).
+Nothing here closes that gap.  What this section does is cut the question into the
+half that is provable and the half that is not, and prove the first half in full.
+
+  * **Theorem I** (`infinitude_iff`) — there are infinitely many nice numbers **iff**
+    infinitely many bases host one.  Both directions are the crude band
+    `b^(b-2) ≤ n^E < b^b` of §9.4: a solution in a large base is a large number, and
+    a large number needs a large base.  This is Prop D's "one base per `n`" upgraded
+    from disjointness to a two-sided size estimate.
+  * **Theorem J** (`model_diverges`) — the *heuristic* count `|band|·b!/b^b` exceeds
+    any `M`, along an explicit infinite family of bases, unconditionally and with no
+    asymptotic notation.  The band is **exhibited** — `b^q` consecutive candidates,
+    §10.1 — rather than estimated, and `b^b ≤ 4^b·b!` comes from
+    `b!·b^b ≤ (2b)! ≤ 4^b·(b!)²`: two inductions, no Stirling, no reals.
+  * **Theorem K** (`conditional_infinitude`) — `ModelPositive → infinitude`, where
+    `ModelPositive` says that a base of that family whose heuristic count exceeds one
+    fixed `M₀` hosts a solution.  That is the only input left.
+  * **The guard** (`divergence_is_not_existence`) — and it is not a formality.  For
+    `(2,3)` the bases `b = 20s+7` sit in the *same* family, their heuristic counts
+    diverge at the same rate, and **every one of them is provably empty** (Theorem B:
+    `b ≡ 3 mod 4`).  So no argument from the size of the heuristic alone can ever
+    produce a solution.  `ModelPositive` has to carry arithmetic input, and the whole
+    difficulty of the problem is that no such input is both true and provable.
+-/
+
+/-! ### §10.0  Factorials, and the one analytic fact
+
+`b! ≥ b^b/c^b` for a *constant* `c` is what makes the heuristic diverge — the
+`b^(b/E)` band beats `c^b` for every constant `c` — so the sharp `c = e` of Stirling
+is not needed and `c = 4` is free: `(2b)!` contains `b` factors above `b`, and
+`(2b)! ≤ 4^b·(b!)²` is an induction whose only arithmetic step is
+`(2b+1) ≤ (2b+2)`. -/
+
+def fact : Nat → Nat
+  | 0 => 1
+  | n + 1 => (n + 1) * fact n
+
+theorem fact_succ (n : Nat) : fact (n + 1) = (n + 1) * fact n := rfl
+
+theorem fact_pos (n : Nat) : 0 < fact n := by
+  induction n with
+  | zero => decide
+  | succ n ih => rw [fact_succ]; exact Nat.mul_pos (Nat.succ_pos n) ih
+
+/-- The top `j` factors of `(b+j)!` are each at least `b`. -/
+theorem fact_mul_pow_le (b : Nat) : ∀ j, fact b * b ^ j ≤ fact (b + j) := by
+  intro j
+  induction j with
+  | zero => simp
+  | succ j ih =>
+    calc fact b * b ^ (j + 1) = fact b * b ^ j * b := by rw [Nat.pow_succ, Nat.mul_assoc]
+      _ ≤ fact (b + j) * b := Nat.mul_le_mul ih (Nat.le_refl b)
+      _ ≤ fact (b + j) * (b + j + 1) := Nat.mul_le_mul (Nat.le_refl _) (by omega)
+      _ = (b + j + 1) * fact (b + j) := Nat.mul_comm _ _
+      _ = fact (b + (j + 1)) := by rw [← Nat.add_assoc, fact_succ]
+
+theorem prod_shuffle (x P F : Nat) :
+    (2 * x) * ((2 * x) * (P * (F * F))) = P * 4 * ((x * F) * (x * F)) := by
+  simp [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+
+/-- `(2b)! ≤ 4^b·(b!)²` — the central-binomial bound, proved directly so that no
+binomial coefficients are needed. -/
+theorem fact_two_mul_le (b : Nat) : fact (2 * b) ≤ 4 ^ b * (fact b * fact b) := by
+  induction b with
+  | zero => decide
+  | succ b ih =>
+    have e1 : 2 * (b + 1) = 2 * b + 1 + 1 := by omega
+    have e2 : 2 * b + 1 + 1 = 2 * (b + 1) := by omega
+    rw [e1, fact_succ, fact_succ]
+    calc (2 * b + 1 + 1) * ((2 * b + 1) * fact (2 * b))
+        ≤ (2 * b + 1 + 1) * ((2 * b + 1 + 1) * (4 ^ b * (fact b * fact b))) :=
+          Nat.mul_le_mul (Nat.le_refl _) (Nat.mul_le_mul (by omega) ih)
+      _ = 4 ^ (b + 1) * (fact (b + 1) * fact (b + 1)) := by
+          rw [e2, fact_succ, Nat.pow_succ]
+          exact prod_shuffle (b + 1) (4 ^ b) (fact b)
+
+/-- **`b^b ≤ 4^b · b!`.**  The whole analytic content of Theorem J, in one
+cancellation: `b!·b^b ≤ (2b)! ≤ 4^b·(b!)²`. -/
+theorem pow_self_le_fact (b : Nat) : b ^ b ≤ 4 ^ b * fact b := by
+  have h1 : fact b * b ^ b ≤ fact (2 * b) := by
+    have h := fact_mul_pow_le b b
+    have e : b + b = 2 * b := by omega
+    rwa [e] at h
+  have h2 : fact b * b ^ b ≤ fact b * (4 ^ b * fact b) := by
+    calc fact b * b ^ b ≤ fact (2 * b) := h1
+      _ ≤ 4 ^ b * (fact b * fact b) := fact_two_mul_le b
+      _ = fact b * (4 ^ b * fact b) := by
+          simp [Nat.mul_comm, Nat.mul_assoc]
+  exact Nat.le_of_mul_le_mul_left h2 (fact_pos b)
+
+/-! ### §10.1  A base whose band is exhibited, not estimated
+
+For any `b` with `E ∣ b-2`, put `q = (b-2)/E`.  Then `b^q` is in the band, and so is
+every `n` below `2b^q`, because `n^e < 2^e·b^(qe) ≤ b^(qe+1)` as soon as `2^e ≤ b`.
+That is `b^q` consecutive candidates with no root extraction anywhere — a factor
+`⌊b^(1/e₂)⌋-1` short of the true band, which is nothing on the scale of `b^q`. -/
+
+theorem numDigits_pow_of_interval {b q e n : Nat} (hb : 1 < b) (he : 0 < e)
+    (hpow : 2 ^ e ≤ b) (hlo : b ^ q ≤ n) (hhi : n < 2 * b ^ q) :
+    numDigits b (n ^ e) = q * e + 1 := by
+  refine numDigits_eq_of_bounds hb ?_ ?_
+  · calc b ^ (q * e) = (b ^ q) ^ e := by rw [Nat.pow_mul]
+      _ ≤ n ^ e := Nat.pow_le_pow_left hlo e
+  · calc n ^ e < (2 * b ^ q) ^ e := pow_lt_pow_left' hhi e (by omega)
+      _ = 2 ^ e * (b ^ q) ^ e := by rw [Nat.mul_pow]
+      _ = 2 ^ e * b ^ (q * e) := by rw [Nat.pow_mul]
+      _ ≤ b * b ^ (q * e) := Nat.mul_le_mul hpow (Nat.le_refl _)
+      _ = b ^ (q * e + 1) := by rw [Nat.pow_succ, Nat.mul_comm]
+
+/-- **The band, exhibited.**  With `q·E + 2 = b` and `2^e₁, 2^e₂ ≤ b`, every one of
+the `b^q` integers in `[b^q, 2b^q)` is a candidate in base `b`. -/
+theorem band_of_interval {b e₁ e₂ q n : Nat} (hb : 1 < b) (he₁ : 0 < e₁) (he₂ : 0 < e₂)
+    (h1 : 2 ^ e₁ ≤ b) (h2 : 2 ^ e₂ ≤ b) (hq : q * (e₁ + e₂) + 2 = b)
+    (hlo : b ^ q ≤ n) (hhi : n < 2 * b ^ q) : InBand b e₁ e₂ n := by
+  have hd : q * (e₁ + e₂) = q * e₁ + q * e₂ := Nat.left_distrib q e₁ e₂
+  show numDigits b (n ^ e₁) + numDigits b (n ^ e₂) = b
+  rw [numDigits_pow_of_interval hb he₁ h1 hlo hhi,
+      numDigits_pow_of_interval hb he₂ h2 hlo hhi]
+  omega
+
+/-! ### §10.2  The heuristic count of that base, and why it diverges
+
+`|band|·b!/b^b ≥ b^q·b!/b^b ≥ b^q/4^b`, and `b^q ≥ 4^(2Eq) = 4^(2b-4)` once
+`b ≥ 4^(2E)`, which beats `M·4^b` as soon as `4^(b-4) ≥ M`.  The `4` is the crude
+Stirling constant of §10.0; the real crossover is near `b = e^E` (148 for `(2,3)`),
+and this proof makes no attempt to find it — divergence is insensitive to the
+constant, which is the point. -/
+
+theorem lt_pow_four (k : Nat) : k < 4 ^ k := by
+  induction k with
+  | zero => decide
+  | succ k ih =>
+    have e : 4 ^ (k + 1) = 4 ^ k * 4 := Nat.pow_succ 4 k
+    omega
+
+theorem yield_ge {b q M E : Nat} (hq : q * E + 2 = b)
+    (hbig : 4 ^ (2 * E) ≤ b) (hM : M + 4 ≤ b) : M * b ^ b ≤ b ^ q * fact b := by
+  have h1 : 4 ^ (2 * E * q) ≤ b ^ q := by
+    calc 4 ^ (2 * E * q) = (4 ^ (2 * E)) ^ q := by rw [Nat.pow_mul]
+      _ ≤ b ^ q := Nat.pow_le_pow_left hbig q
+  have hcomm : 2 * E * q = 2 * (q * E) := by rw [Nat.mul_assoc, Nat.mul_comm E q]
+  have hexp : 2 * E * q = (b - 4) + b := by rw [hcomm]; omega
+  have h2 : M * 4 ^ b ≤ 4 ^ (2 * E * q) := by
+    rw [hexp, Nat.pow_add]
+    exact Nat.mul_le_mul (Nat.le_trans (by omega) (Nat.le_of_lt (lt_pow_four (b - 4))))
+      (Nat.le_refl _)
+  calc M * b ^ b ≤ M * (4 ^ b * fact b) :=
+        Nat.mul_le_mul (Nat.le_refl M) (pow_self_le_fact b)
+    _ = M * 4 ^ b * fact b := (Nat.mul_assoc _ _ _).symm
+    _ ≤ b ^ q * fact b := Nat.mul_le_mul (Nat.le_trans h2 h1) (Nat.le_refl _)
+
+/--
+**Theorem J.**  For every exponent pair and every `M`, there are arbitrarily large
+bases `b` which are even, satisfy `E ∣ b-2`, carry `b^q` consecutive candidates in
+their band, and whose heuristic count `|band|·b!/b^b` exceeds `M`.
+
+No hypothesis, no asymptotics, and the band is produced rather than estimated.
+-/
+theorem model_diverges (e₁ e₂ M B : Nat) (he₁ : 0 < e₁) (he₂ : 0 < e₂) :
+    ∃ b q, B < b ∧ 1 < b ∧ b % 2 = 0 ∧ q * (e₁ + e₂) + 2 = b ∧
+      (∀ n, b ^ q ≤ n → n < 2 * b ^ q → InBand b e₁ e₂ n) ∧
+      M * b ^ b ≤ b ^ q * fact b := by
+  obtain ⟨t, ht⟩ : ∃ t, t = B + M + 4 ^ (2 * (e₁ + e₂)) + 2 ^ e₁ + 2 ^ e₂ + 4 := ⟨_, rfl⟩
+  have hE : 1 ≤ e₁ + e₂ := by omega
+  -- `omega` does not know that a power is nonnegative, so say so.
+  have hq1 : 1 ≤ 4 ^ (2 * (e₁ + e₂)) := Nat.one_le_pow _ _ (by omega)
+  have hq2 : 1 ≤ 2 ^ e₁ := Nat.one_le_pow _ _ (by omega)
+  have hq3 : 1 ≤ 2 ^ e₂ := Nat.one_le_pow _ _ (by omega)
+  have ht1 : 2 * t * 1 ≤ 2 * t * (e₁ + e₂) := Nat.mul_le_mul (Nat.le_refl _) hE
+  have ht2 : 2 * t * (e₁ + e₂) = 2 * (t * (e₁ + e₂)) := by rw [Nat.mul_assoc]
+  have hb1 : 1 < 2 * t * (e₁ + e₂) + 2 := by omega
+  have hbB : B < 2 * t * (e₁ + e₂) + 2 := by omega
+  have hbe : (2 * t * (e₁ + e₂) + 2) % 2 = 0 := by omega
+  have hp1 : 2 ^ e₁ ≤ 2 * t * (e₁ + e₂) + 2 := by omega
+  have hp2 : 2 ^ e₂ ≤ 2 * t * (e₁ + e₂) + 2 := by omega
+  have hbig : 4 ^ (2 * (e₁ + e₂)) ≤ 2 * t * (e₁ + e₂) + 2 := by omega
+  have hM : M + 4 ≤ 2 * t * (e₁ + e₂) + 2 := by omega
+  exact ⟨2 * t * (e₁ + e₂) + 2, 2 * t, hbB, hb1, hbe, rfl,
+    fun n hlo hhi => band_of_interval hb1 he₁ he₂ hp1 hp2 rfl hlo hhi,
+    yield_ge rfl hbig hM⟩
+
+/-! ### §10.3  The family is not one of the dead classes
+
+Theorem A cannot touch it — its band is exhibited above — and for **even** members
+neither can B nor C: `b` even makes `b-1` odd, so `T ≡ 0 (mod b-1)` and `ρ = 0` is a
+residue.  That is Theorem C's `v₂(b-1) = 0` case, and it is why §10.2 builds the
+family out of even bases in the first place. -/
+
+theorem resOK_zero_of_even {b e₁ e₂ T : Nat} (hb : 1 < b) (hev : b % 2 = 0)
+    (he₁ : 0 < e₁) (he₂ : 0 < e₂) (hT : 2 * T = b * (b - 1)) :
+    resOK b e₁ e₂ T 0 = true := by
+  obtain ⟨c, hc⟩ : ∃ c, b = 2 * c := ⟨b / 2, by omega⟩
+  have h2 : 2 * T = 2 * (c * (b - 1)) := by rw [hT, hc, Nat.mul_assoc]
+  have hT' : T = c * (b - 1) := Nat.eq_of_mul_eq_mul_left (by omega) h2
+  have hmod : T % (b - 1) = 0 := by rw [hT', Nat.mul_mod_left]
+  have hz : (0 : Nat) ^ e₁ + 0 ^ e₂ = 0 := by
+    rw [Nat.zero_pow he₁, Nat.zero_pow he₂]
+  show decide _ = true
+  refine decide_eq_true ?_
+  rw [hz, hmod, Nat.zero_mod]
+
+/-- And Theorem G misses it as well: the clashing bases all divide `N(e₁,e₂)`, so
+only finitely many of them exist and the family runs past all of them.  With the
+band exhibited (Theorem A), `ρ = 0` a residue (B, C) and no clash (G), **none of
+the four proved obstructions touches §10.2's family**. -/
+theorem no_clash_of_large {b e₁ e₂ : Nat} (hb : 0 < b) (he₁ : 1 ≤ e₁) (he : e₁ < e₂)
+    (hN : 0 < clashMod e₁ e₂) (hgt : clashMod e₁ e₂ < b) : ¬ UniversalClash b e₁ e₂ := by
+  intro h
+  have hd := (clash_iff_dvd_clashMod hb he₁ he).mp h
+  have := Nat.le_of_dvd hN hd
+  omega
+
+/-! ### §10.4  Theorem I — infinitude of numbers is infinitude of bases -/
+
+/-- There are infinitely many `(e₁,e₂)`-nice numbers. -/
+def InfinitelyManyNice (e₁ e₂ : Nat) : Prop :=
+  ∀ N, ∃ b n, N < n ∧ 1 < b ∧ Pandigital b e₁ e₂ n
+
+/-- Infinitely many bases host an `(e₁,e₂)`-nice number. -/
+def InfinitelyManyNiceBases (e₁ e₂ : Nat) : Prop :=
+  ∀ B, ∃ b n, B < b ∧ 1 < b ∧ Pandigital b e₁ e₂ n
+
+theorem le_self_pow' {m e : Nat} (he : 0 < e) : m ≤ m ^ e := by
+  obtain ⟨j, hj⟩ : ∃ j, e = j + 1 := ⟨e - 1, by omega⟩
+  subst hj
+  rcases Nat.eq_zero_or_pos m with h | h
+  · subst h; simp
+  · calc m = 1 * m := (Nat.one_mul m).symm
+      _ ≤ m ^ j * m := Nat.mul_le_mul (Nat.one_le_pow _ _ h) (Nat.le_refl m)
+      _ = m ^ (j + 1) := (Nat.pow_succ m j).symm
+
+/-- Prop D at the level of solutions: a nice number is nice in exactly one base. -/
+theorem nice_base_unique {b b' e₁ e₂ n : Nat} (hb : 1 < b) (hb' : 1 < b')
+    (h : Pandigital b e₁ e₂ n) (h' : Pandigital b' e₁ e₂ n) : b = b' :=
+  base_unique hb hb' (pandigital_length hb h) (pandigital_length hb' h')
+
+/--
+**Theorem I.**  There are infinitely many `(e₁,e₂)`-nice numbers **iff** infinitely
+many bases host one.  "Search more numbers" and "search more bases" are the same
+axis — quantitatively, not just up to the disjointness of Prop D.
+-/
+theorem infinitude_iff {e₁ e₂ : Nat} (he₁ : 0 < e₁) (he₂ : 0 < e₂) :
+    InfinitelyManyNiceBases e₁ e₂ ↔ InfinitelyManyNice e₁ e₂ := by
+  constructor
+  · intro h N
+    obtain ⟨b, n, hBb, hb, hp⟩ := h (N ^ (e₁ + e₂) + 2)
+    refine ⟨b, n, ?_, hb, hp⟩
+    have hlow := (pandigital_pow_bounds hb hp).1
+    have hb1 : b ^ 1 ≤ b ^ (b - 2) := Nat.pow_le_pow_right (by omega) (by omega)
+    rw [Nat.pow_one] at hb1
+    rcases Nat.lt_or_ge N n with h' | h'
+    · exact h'
+    · exact absurd (Nat.pow_le_pow_left h' (e₁ + e₂)) (by omega)
+  · intro h B
+    obtain ⟨b, n, hNn, hb, hp⟩ := h (B ^ B)
+    refine ⟨b, n, ?_, hb, hp⟩
+    have hhigh := (pandigital_pow_bounds hb hp).2
+    have hn : n ≤ n ^ (e₁ + e₂) := le_self_pow' (by omega)
+    rcases Nat.lt_or_ge B b with h' | h'
+    · exact h'
+    · have hB : 0 < B := by omega
+      have hbb : b ^ b ≤ B ^ B :=
+        Nat.le_trans (Nat.pow_le_pow_left h' b) (Nat.pow_le_pow_right hB h')
+      omega
+
+/-! ### §10.5  Theorem K — the conditional statement, and the missing input -/
+
+/--
+**The missing input.**  A base of §10.2's family — even, `E ∣ b-2`, large — whose
+heuristic count `|band|·b!/b^b` (bounded below by the `b^q` exhibited candidates)
+exceeds one fixed `M₀`, hosts a solution.
+
+This is *not* a weakening of the conjecture in any deep sense, and §10.6 shows it
+cannot be proved from the size of the heuristic alone.  Its value is that everything
+else in the chain is a theorem.
+-/
+def ModelPositive (e₁ e₂ : Nat) : Prop :=
+  ∃ M₀ b₀, ∀ b q, b₀ ≤ b → b % 2 = 0 → q * (e₁ + e₂) + 2 = b →
+    M₀ * b ^ b ≤ b ^ q * fact b → ∃ n, Pandigital b e₁ e₂ n
+
+/-- **Theorem K.**  `ModelPositive` implies there are infinitely many nice numbers. -/
+theorem conditional_infinitude {e₁ e₂ : Nat} (he₁ : 0 < e₁) (he₂ : 0 < e₂)
+    (h : ModelPositive e₁ e₂) : InfinitelyManyNice e₁ e₂ := by
+  obtain ⟨M₀, b₀, hmp⟩ := h
+  refine (infinitude_iff he₁ he₂).mp ?_
+  intro B
+  obtain ⟨b, q, hBb, hb1, hev, hq, _, hyield⟩ := model_diverges e₁ e₂ M₀ (B + b₀) he₁ he₂
+  obtain ⟨n, hn⟩ := hmp b q (by omega) hev hq hyield
+  exact ⟨b, n, by omega, hb1, hn⟩
+
+/-! ### §10.6  The guard — a divergent heuristic over a provably empty band
+
+`ModelPositive` needs its parity clause, and this is why.  Take `(2,3)` and
+`b = 20s+7`: then `5 ∣ b-2`, so §10.1 fills the band with `b^q` consecutive
+candidates and §10.2 pushes the heuristic count past any `M` — and `b ≡ 3 (mod 4)`,
+so Theorem B says the base is empty.  An infinite family where the heuristic diverges
+and the truth is exactly zero.
+
+The moral is the one this file keeps meeting from the other side: the three provable
+sources are all *obstructions*.  They can empty a base; nothing here, and nothing in
+the literature, can fill one. -/
+
+theorem no_pandigital_of_mod_four {b e₁ e₂ n : Nat} (hb : 1 < b) (he₁ : e₁ ≠ 0)
+    (he₂ : e₂ ≠ 0) (hmod : b % 4 = 3) : ¬ Pandigital b e₁ e₂ n := fun hp =>
+  no_nice_of_mod_four hb he₁ he₂ hmod (pandigital_digitSum hb hp)
+
+theorem divergence_is_not_existence (M B : Nat) :
+    ∃ b q, B < b ∧ 1 < b ∧ q * (2 + 3) + 2 = b ∧
+      (∀ n, b ^ q ≤ n → n < 2 * b ^ q → InBand b 2 3 n) ∧
+      M * b ^ b ≤ b ^ q * fact b ∧
+      (∀ n, ¬ Pandigital b 2 3 n) := by
+  have h4 : (4 : Nat) ^ (2 * (2 + 3)) = 1048576 := by decide
+  have h22 : (2 : Nat) ^ 2 = 4 := by decide
+  have h23 : (2 : Nat) ^ 3 = 8 := by decide
+  refine ⟨(4 * (B + M + 1048576) + 1) * (2 + 3) + 2, 4 * (B + M + 1048576) + 1,
+    by omega, by omega, rfl, ?_, ?_, ?_⟩
+  · intro n hlo hhi
+    exact band_of_interval (by omega) (by omega) (by omega) (by omega) (by omega)
+      rfl hlo hhi
+  · exact yield_ge rfl (by omega) (by omega)
+  · intro n
+    exact no_pandigital_of_mod_four (by omega) (by omega) (by omega) (by omega)
+
+/-! ### §10.7  Non-vacuity
+
+The family of §10.2 is not empty of solutions: base 8 is even, `3 ∣ 8-2`, and
+`174 = 256₈` is `(1,2)`-nice there — `174² = 73104₈`, and `{2,5,6} ∪ {7,3,1,0,4}` is
+all eight digits.  Base 8 is far below the crossover — its heuristic count is 0.15 —
+so this witnesses the *shape* of `ModelPositive`, not its hypothesis. -/
+
+theorem digits_174 : digits 8 (174 ^ 1) = [6, 5, 2] := by
+  show digits 8 174 = [6, 5, 2]
+  rw [digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_step (by decide) (by decide), digits_zero]
+
+theorem digits_174sq : digits 8 (174 ^ 2) = [4, 0, 1, 3, 7] := by
+  show digits 8 30276 = [4, 0, 1, 3, 7]
+  rw [digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_step (by decide) (by decide), digits_step (by decide) (by decide),
+      digits_step (by decide) (by decide), digits_zero]
+
+/-- 174 is `(1,2)`-nice in base 8, and base 8 is a member of §10.2's family. -/
+theorem base_eight_nice : Pandigital 8 1 2 174 := by
+  have h : ∀ v, v < 8 → occ v ([6, 5, 2] ++ [4, 0, 1, 3, 7]) = 1 := by decide
+  intro v hv
+  rw [digits_174, digits_174sq]
+  exact h v hv
+
+theorem base_eight_in_family : 2 * (1 + 2) + 2 = 8 ∧ 8 % 2 = 0 := by decide
+
+theorem base_eight_band : ∀ n, 8 ^ 2 ≤ n → n < 2 * 8 ^ 2 → InBand 8 1 2 n := by
+  intro n hlo hhi
+  exact band_of_interval (by decide) (by decide) (by decide) (by decide) (by decide)
+    rfl hlo hhi
+
+/-- The even-base residue lemma, firing: base 8, `T = 28`. -/
+theorem base_eight_live : resOK 8 1 2 28 0 = true :=
+  resOK_zero_of_even (by decide) (by decide) (by decide) (by decide) (by decide)
+
 end Nice
 
 #print axioms Nice.no_nice_of_dvd
@@ -4592,3 +4967,14 @@ end Nice
 #print axioms Nice.base_ten_nice_iff
 #print axioms Nice.base_seventeen_window
 #print axioms Nice.base_seventeen_bound
+#print axioms Nice.pow_self_le_fact
+#print axioms Nice.band_of_interval
+#print axioms Nice.model_diverges
+#print axioms Nice.resOK_zero_of_even
+#print axioms Nice.no_clash_of_large
+#print axioms Nice.nice_base_unique
+#print axioms Nice.infinitude_iff
+#print axioms Nice.conditional_infinitude
+#print axioms Nice.divergence_is_not_existence
+#print axioms Nice.base_eight_nice
+#print axioms Nice.base_eight_band

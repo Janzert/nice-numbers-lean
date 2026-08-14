@@ -1,16 +1,25 @@
 # Formalising the nice-number theorems in Lean 4
 
 **Answer to "can any of the proofs be written in Lean?": yes — Theorems A, B, C,
-C′, F, G and H and Proposition D are done, they compile in about seven seconds
-against Lean core with no Mathlib, and they are strictly stronger than the
+C′, F, G, H and I/J/K and Proposition D are done, they compile in about seven
+seconds against Lean core with no Mathlib, and they are strictly stronger than the
 exhaustive checks they replace.** Proposition C′ has all three of its parts
 here: *soundness* for all bases and all `j`, *unconditional completeness*
 **disproved** by a counterexample in the file, and the *conditional* completeness
 theorem of REPORT §6.3 proved in full — leading digits and all.
 
 ```bash
-lean NiceNumbers.lean      # 7.0 s, 4594 lines, no errors, no sorry
+lean NiceNumbers.lean      # 6.5 s, 4980 lines, no errors, no sorry
 ```
+
+**§10 (2026-08-13) is the first section here that is *about* an open problem
+rather than a proved one**, and it is the shape to copy when the answer is "no":
+infinitude of nice numbers is cut into `infinitude_iff` (a theorem),
+`model_diverges` (a theorem, unconditional, with the band exhibited rather than
+estimated), `ModelPositive` (the one hypothesis left) and
+`divergence_is_not_existence` (a theorem that the hypothesis **cannot** be
+weakened to "the heuristic is large" — the `(2,3)` bases `20s+7` diverge over a
+band Theorem B proves empty). See [`REPORT-infinitude.md`](../../REPORT-infinitude.md).
 
 **Theorem H (2026-08-13) is the first *quantitative* theorem here**, and the first
 whose conclusion is a number rather than a yes/no: at most `countP adm` of the band
@@ -72,6 +81,14 @@ axioms. No `sorryAx`, and no `native_decide` (which would add
 | `countP_run_le` / `adm_period` | **Theorem H**, the closed form — `adm` has period `(b-1)·b^k`, and a periodic test on a segment is counted by one window times `⌈len/W⌉` | — |
 | `theorem_H_count` / `theorem_H_closed` | **Theorem H**, counting and closed forms — `#{nice in band} ≤ countP adm (band) ≤ countP adm (one window) · ⌈len/W⌉` | — |
 | `base_ten_nice_iff` | **The set of `(2,3)`-nice numbers in base 10 is exactly `{69}`** — the sharpness witness for H, and the only equality case known | nothing; the repo had this from a 53-number scan, never as a theorem |
+| `pow_self_le_fact` | **Theorem J**, the analytic input — `b^b ≤ 4^b·b!`, from `b!·b^b ≤ (2b)! ≤ 4^b·(b!)²`. Two inductions, no Stirling, no reals | nothing |
+| `band_of_interval` | **Theorem J**, the band — if `E ∣ b-2` and `2^e_i ≤ b`, all `b^q` integers in `[b^q, 2b^q)` are candidates, `q = (b-2)/E`. Exhibited, not estimated: no root extraction and no jump structure | nothing; every band lower bound in the repo was a Python computation |
+| `model_diverges` | **Theorem J** — for every pair and every `M`, arbitrarily large even bases with `E ∣ b-2` and `|band|·b!/b^b > M`. The heuristic diverges, unconditionally | nothing |
+| `resOK_zero_of_even` / `no_clash_of_large` | **Theorem J**, liveness — `ρ = 0` is a residue at every even base (Theorem C's `v₂(b-1)=0` case), and no base above `N(e₁,e₂)` clashes. With the band exhibited, that is all four proved obstructions missing the family | nothing |
+| `nice_base_unique` | **Theorem I** — a nice number is nice in exactly one base. Prop D at the level of solutions rather than candidates | — |
+| `infinitude_iff` | **Theorem I** — infinitely many nice numbers **iff** infinitely many bases host one, for every pair. Both directions from `pandigital_pow_bounds` | nothing; the repo asserted "same axis" in prose |
+| `ModelPositive` / `conditional_infinitude` | **Theorem K** — the single hypothesis that closes the gap, and the implication. Nothing here proves the hypothesis | nothing |
+| `divergence_is_not_existence` | **The guard** — `(2,3)`, `b = 20s+7`: exhibited band, heuristic past any `M`, and **no** nice number, by Theorem B. So `ModelPositive` cannot drop its arithmetic clauses | nothing; this one *refutes* the weakening a reader would reach for |
 
 All of these hold for **all** naturals, and the three gates named above **have been
 deleted** from `verify.py` (which is now ~38 s: gate H put back rather more
@@ -122,6 +139,17 @@ answered at once by `base_ten_nice_iff` — the bound is 1, the truth is 1, and 
 the witness. The second witness, `base_seventeen_bound` (`≤ 585` from a 272-number
 window over a band of 10 347), is there because base 10 is the wrong shape to
 exercise the closed form at all: `W = 90 000` against a band of 60.
+
+**§10 needs the guard in a fourth shape: a conditional theorem is worthless if its
+hypothesis is unsatisfiable, and *dangerous* if the hypothesis is stronger than the
+reader thinks.** Both ends are covered. `base_eight_nice` puts a real solution in
+the divergence family — base 8 is even, `3 ∣ 8-2`, and `174 = 256₈` is `(1,2)`-nice
+there — so `ModelPositive`'s shape is satisfiable; and `divergence_is_not_existence`
+proves that the same family, with the parity clause dropped, contains infinitely
+many **provably empty** bases with the same divergent heuristic. Writing the first
+witness is what forced the second: base 8's `b^q·b!/b^b` is 0.15, so the family
+demonstrably contains bases where the heuristic and the truth disagree in one
+direction, and the question of the other direction answers itself.
 
 **Which filter each witness actually covers is not obvious and had to be measured.**
 At base 10 with `k = 4` the low slots alone already pin 69, so `base_ten_survivors`
@@ -370,6 +398,17 @@ chains, exactly as §5's `digits_69sq` already did. The error is legible
 (`reduction got stuck at the Decidable instance`), but it appears only at the
 `decide`, a long way from the definition that caused it.
 
+**A second trap, from §10, and this one is `omega`'s: it does not know that a
+power is nonnegative.** `omega` abstracts `2^e₁`, `4^(2*(e₁+e₂))` and friends as
+opaque atoms — correctly — but does not add the `≥ 0` that every ℕ atom satisfies,
+so a goal that follows in one line from `t ≤ h` fails, and fails with a printed
+"possible counterexample" whose constraint list is satisfiable only because those
+atoms are allowed to be negative. Three `Nat.one_le_pow` hypotheses in the context
+fix it. This is not the core-vs-Mathlib class of problem; it is a real gap in
+`omega`'s preprocessing, and the symptom reads like "your goal is false" rather
+than "I am missing a fact". Any statement here whose hypotheses are built out of
+`2^e` will hit it.
+
 ## What else is formalisable, and what it would cost
 
 | result | verdict | notes |
@@ -385,6 +424,10 @@ chains, exactly as §5's `digits_69sq` already did. The error is legible
 | **Prop C′**, descent to a general modulus | **an afternoon, low value** | The theorem is proved at `b^j - 1`; getting `I(m) = {z ≡ T mod gcd(m,b-1)}` for every `m` of order `j` is one CRT step. Core has no CRT, so it is a real if small job, and it changes nothing operational. |
 | **Prop C′**, the `j = 2` converse | **an afternoon** | The corollary's *necessity* (`c_0c_1 ≥ b` is also needed) is not proved: it wants "the `p`-subset sums of `{0..b-1}` are *exactly* an interval", where `pick_sum` gives only the inclusion. Same induction, other direction. |
 | ~~**T4**~~ — the rigorous upper bound on `#nice(b)` | **done** (`theorem_H`, `theorem_H_count`, `theorem_H_closed`) | Costed here as "not worth it — an asymptotic statement with error terms. Formalising analytic estimates costs far more than the result is worth." Wrong, and instructively so: **there are no analytic estimates in it and no error term.** `+ O(b^k)` was how REPORT §11 happened to phrase the bound; written with an exact ceiling — `count ≤ window · ⌈len/W⌉`, and even that is only a corollary of the exact count — the whole thing is elementary counting on a periodic predicate, and it cost an afternoon core-only. **Price the statement you would actually prove, not the one the summary table quotes.** |
+| ~~**Theorem I / J / K**~~ — the infinitude reduction, the divergence, the conditional | **done** (`infinitude_iff`, `model_diverges`, `conditional_infinitude`, `divergence_is_not_existence`) | Never costed here, because "infinitude" reads like an analytic statement and analytic statements were priced out of core. It is not one: the reduction is the crude band read twice, the divergence needs a band lower bound (exhibit an interval, `E ∣ b-2`) and a Stirling substitute (`b^b ≤ 4^b·b!`, two inductions), and both are ℕ arithmetic. An afternoon. **The rule that missed it is the same one Theorem H broke** — do not price a formalisation from the word the summary uses for it. |
+| **Theorem J** for *all* admissible bases, not just `E ∣ b-2` | **300–600 lines, no value for infinitude** | The general band lower bound is the plateau of `⌊e₁t⌋+⌊e₂t⌋`: level sets are intervals between consecutive points of `(1/e₁)ℤ ∪ (1/e₂)ℤ`, so multiplicative width `≥ b^(1/e₁e₂)`. Wants exact `ceil_root` in ℕ plus the jump case analysis. Worth doing only because **it is the same lemma Theorem A's converse needs**, which is the oldest unproved claim in the file. |
+| **Proposition L** — coverage is constructive (REPORT-infinitude §5) | **400–700 lines, marginal** | The only *unconditional* infinitude statement in the family: for every `b` and every `e` with `gcd(e,b)=1`, infinitely many `n` have every base-`b` digit in `n^e`. Needs `(Σ d_i Y^i)^e` coefficient-wise (core has no `Polynomial`) and a carry-free concatenation lemma for `digits` (`digits_split` is most of it). It proves a *relaxation*, and the paper proof is four paragraphs — so the argument for doing it is that the file currently contains no existence theorem at all. |
+| A second-moment version of **K** | **blocked by measurement, not by Lean** | Would weaken `ModelPositive` from positivity to a variance bound. The naive second moment is *wrong*: close pairs run 1.6× over Poisson at **+46σ** (REPORT-provability §9.4). Model the archimedean correlation first. |
 | Part II's yield and cost numbers | **not theorems** | They are heuristic expectations under a random-digit model. Lean has nothing to say about them, and pretending otherwise would be the worst kind of false precision. |
 | The exhaustive counts (`(1,3)` has exactly one solution in bases ≤ 44) | **out of the question** | Would need a verified DFS and kernel-level evaluation of ~10¹⁶ candidates. |
 | **Theorem H**, the top-digit refinement (REPORT §9, condition 4) | **an afternoon, real value** | The only part of the bound Lean does not have. It needs the band split into maximal intervals on which `⌊n^e / b^(L-h)⌋` is constant, i.e. exact integer `e`-th roots and their monotonicity — none of which is hard, but none of which the file currently has. Worth a factor of 2–3 at the frontier. Until then `verify.py` gate H is what stands behind it. |
@@ -465,6 +508,11 @@ With the default toolchain set to the **`stable` channel**, the `~/.elan/bin/lea
 shim re-resolves that channel over the network on *every* invocation: 22 s wall
 against 1.7 s of CPU, and `lean --version` alone takes 10 s. The compile itself is
 **0.83 s**. Do not read the shim's wall time as a proof cost.
+
+(Those absolute figures date from an earlier and much smaller revision of the file;
+at 4 980 lines the compile is 6.5 s wall / 18 s CPU. The shim overhead is a fixed
+per-invocation cost that does not scale with the file, which is the whole point of
+the section — but the *ratio* it quotes no longer holds.)
 
 The **`lean-toolchain` file in this directory** is the fix, and it is why the
 timing at the top of this file is honest: it pins `leanprover/lean4:v4.33.0`, so
