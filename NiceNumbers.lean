@@ -4,7 +4,7 @@
 
   Eight theorems about nice / quasi-nice numbers, formalised in Lean 4.
 
-  `n` is **(e₁,e₂)-nice in base b** when the base-`b` digits of `n^e₁` and `n^e₂`
+  `n` is **(e1,e2)-nice in base b** when the base-`b` digits of `n^e1` and `n^e2`
   together are exactly {0,…,b-1}, each once.  `(2,3)` is the classical "nice
   number" problem, whose only known solution is 69 in base 10.
 
@@ -12,19 +12,19 @@
   hypotheses so that theorems A, B and D apply to *any* notion of solution
   satisfying them:
 
-    * the digit-length identity   `numDigits b (n^e₁) + numDigits b (n^e₂) = b`
-    * the digit-sum identity      `2 * (digitSum b (n^e₁) + digitSum b (n^e₂)) = b * (b-1)`
+    * the digit-length identity   `numDigits b (n^e1) + numDigits b (n^e2) = b`
+    * the digit-sum identity      `2 * (digitSum b (n^e1) + digitSum b (n^e2)) = b * (b-1)`
 
   Theorem G is about a digit *collision*, which neither consequence sees, so §5
   defines pandigitality outright (`Pandigital`, from a `digits` list built by
   repeated division) and proves it satisfiable at 69.
 
-  **Theorem A** (`no_nice_of_dvd`): if `(e₁+e₂) ∣ e₁*(b-1)` — equivalently
-  `b ≡ 1 mod (e₁+e₂)/gcd(e₁,e₂)` — the length identity is unsatisfiable.
+  **Theorem A** (`no_nice_of_dvd`): if `(e1+e2) ∣ e1*(b-1)` — equivalently
+  `b ≡ 1 mod (e1+e2)/gcd(e1,e2)` — the length identity is unsatisfiable.
   Special cases: `b ≡ 1 mod 5` kills `(2,3)`, `b ≡ 1 mod 4` kills `(1,3)`,
   `b ≡ 1 mod 3` kills `(2,4)`.
 
-  **Theorem B** (`no_nice_of_mod_four`): for *every* pair with `e₁,e₂ ≥ 1`, if
+  **Theorem B** (`no_nice_of_mod_four`): for *every* pair with `e1,e2 ≥ 1`, if
   `b ≡ 3 (mod 4)` the digit-sum identity is unsatisfiable.
 
   **Proposition D** (`base_unique`, `bands_disjoint`): the length identity holds
@@ -33,24 +33,24 @@
   every exponent pair.
 
   **Theorem C** (`residues_nonempty_iff`, `residues_empty_iff`,
-  `residues_single_nonempty_iff`): the residue set `R_b = {ρ : ρ^e₁+ρ^e₂ ≡ T}` is
-  **empty iff `a = 1`, or `a ≥ 3` with `e₂-e₁` even and `e₁ ∤ a-1`**, where
-  `a = v₂(b-1)`.  No odd prime divisor of `b-1` enters: modulo the odd part `T`
+  `residues_single_nonempty_iff`): the residue set `R_b = {ρ : ρ^e1+ρ^e2 ≡ T}` is
+  **empty iff `a = 1`, or `a ≥ 3` with `e2-e1` even and `e1 ∤ a-1`**, where
+  `a = v_2(b-1)`.  No odd prime divisor of `b-1` enters: modulo the odd part `T`
   vanishes and `ρ = 0` is a residue, so the whole classification is a valuation
   count at 2.  Theorem B is its `a = 1` case.  For a single exponent `n^e` the
   rule is `R_b ≠ ∅` iff `a = 0` or `e ∣ a-1`.
 
   **Theorem G** (`no_nice_of_universal_clash`, `clash_iff_dvd_clashMod`,
-  `clash_prime_pow_iff`): if `x^e₁ ≡ x^e₂ (mod b)` for *every* `x` — a universal
+  `clash_prime_pow_iff`): if `x^e1 ≡ x^e2 (mod b)` for *every* `x` — a universal
   last-digit clash — then no `n` is pandigital in base `b`.  The bases where that
-  happens are **exactly the divisors of one number** `N(e₁,e₂)`, computed here as
+  happens are **exactly the divisors of one number** `N(e1,e2)`, computed here as
   a finite gcd (`N(1,3) = 6`, `N(2,4) = 12`, `N(3,7) = 120`, `N(2,3) = 2`); and
-  `p^a ∣ N` iff `a ≤ e₁` and every unit mod `p` has order dividing `e₂-e₁`, which
-  is `λ(p^a) ∣ e₂-e₁` once the unit group's exponent is known.  Evaluating that
+  `p^a ∣ N` iff `a ≤ e1` and every unit mod `p` has order dividing `e2-e1`, which
+  is `λ(p^a) ∣ e2-e1` once the unit group's exponent is known.  Evaluating that
   exponent is the one step of Theorem G left unformalised.
 
   **Theorem F** (`greedy_distinct_slots`, `theorem_F`): the one *constructive*
-  result here rather than an impossibility.  With `gcd(e₁e₂, b) = 1`, a starting
+  result here rather than an impossibility.  With `gcd(e1e2, b) = 1`, a starting
   digit `ρ` and a unit `β` separating the two progressions, if `4(d-1) + 2 < b`
   then some `d`-digit `n` has `2d` pairwise-distinct low slots, hence combined
   digit deficiency at most `b - 2d`.  Since `d ≈ b/E` that is `b(1 - 2/E)`: the
@@ -77,9 +77,9 @@
   it cannot be weakened to "the heuristic is large" — the `(2,3)` bases `20s+7`
   have a divergent heuristic over a band Theorem B proves empty.
 
-  Together these replace exhaustive machine checks over `e₁ ≤ 8`, `e₂ ≤ 9`,
+  Together these replace exhaustive machine checks over `e1 ≤ 8`, `e2 ≤ 9`,
   `b < 400` (A, B, C), `b < 500`, five pairs, ~2700 values of `n` (D), and
-  `e₁ ≤ 5`, `e₂ ≤ 7`, `b < 200` (G) with proofs valid for all bases, all
+  `e1 ≤ 5`, `e2 ≤ 7`, `b < 200` (G) with proofs valid for all bases, all
   exponent pairs and all `n`.
 
   Lean 4.16-4.33, core only.  No Mathlib, no `sorry`.  `#print axioms` at the end
@@ -186,88 +186,88 @@ theorem pow_lt_pow_left' {x y : Nat} (h : x < y) : ∀ k, k ≠ 0 → x ^ k < y 
       _ < y ^ k * y := Nat.mul_lt_mul_of_le_of_lt (Nat.pow_le_pow_left (Nat.le_of_lt h) k) h hy
       _ = y ^ (k+1) := rfl
 
-/-- Comparing `b^a ≤ n^e₁` and `n^e₂ < b^(c+1)` through the common value
-`n^(e₁e₂)` pins `a·e₂` strictly below `(c+1)·e₁`.  Used both ways round, this
-confines `(a,c)` to a window of width exactly `e₁+e₂` — the whole theorem. -/
-theorem exp_lt {b e₁ e₂ n a c : Nat} (hb : 1 < b) (he₁ : e₁ ≠ 0)
-    (ha : b ^ a ≤ n ^ e₁) (hc' : n ^ e₂ < b ^ (c + 1)) :
-    a * e₂ < (c + 1) * e₁ := by
-  have h1 : b ^ (a * e₂) ≤ n ^ (e₁ * e₂) := by
-    rw [Nat.pow_mul, Nat.pow_mul]; exact Nat.pow_le_pow_left ha e₂
-  have h2 : n ^ (e₂ * e₁) < b ^ ((c + 1) * e₁) := by
-    rw [Nat.pow_mul, Nat.pow_mul]; exact pow_lt_pow_left' hc' e₁ he₁
-  rw [Nat.mul_comm e₁ e₂] at h1
-  exact (Nat.pow_lt_pow_iff_right hb).mp (Nat.lt_of_le_of_lt h1 h2)
+/-- Comparing `b^a ≤ n^e1` and `n^e2 < b^(c+1)` through the common value
+`n^(e1e2)` pins `a·e2` strictly below `(c+1)·e1`.  Used both ways round, this
+confines `(a,c)` to a window of width exactly `e1+e2` — the whole theorem. -/
+theorem exp_lt {b e1 e2 n a c : Nat} (hb : 1 < b) (he1 : e1 ≠ 0)
+    (ha : b ^ a ≤ n ^ e1) (hc' : n ^ e2 < b ^ (c + 1)) :
+    a * e2 < (c + 1) * e1 := by
+  have h1' : b ^ (a * e2) ≤ n ^ (e1 * e2) := by
+    rw [Nat.pow_mul, Nat.pow_mul]; exact Nat.pow_le_pow_left ha e2
+  have h2' : n ^ (e2 * e1) < b ^ ((c + 1) * e1) := by
+    rw [Nat.pow_mul, Nat.pow_mul]; exact pow_lt_pow_left' hc' e1 he1
+  rw [Nat.mul_comm e1 e2] at h1'
+  exact (Nat.pow_lt_pow_iff_right hb).mp (Nat.lt_of_le_of_lt h1' h2')
 
-theorem no_candidate {b e₁ e₂ n a c : Nat}
-    (hb : 1 < b) (he₁ : e₁ ≠ 0) (he₂ : e₂ ≠ 0)
-    (ha : b ^ a ≤ n ^ e₁) (ha' : n ^ e₁ < b ^ (a + 1))
-    (hc : b ^ c ≤ n ^ e₂) (hc' : n ^ e₂ < b ^ (c + 1))
+theorem no_candidate {b e1 e2 n a c : Nat}
+    (hb : 1 < b) (he1 : e1 ≠ 0) (he2 : e2 ≠ 0)
+    (ha : b ^ a ≤ n ^ e1) (ha' : n ^ e1 < b ^ (a + 1))
+    (hc : b ^ c ≤ n ^ e2) (hc' : n ^ e2 < b ^ (c + 1))
     (hlen : (a + 1) + (c + 1) = b)
-    (hdvd : (e₁ + e₂) ∣ e₁ * (b - 1)) : False := by
-  have h₁ : a * e₂ < (c + 1) * e₁ := exp_lt hb he₁ ha hc'
-  have h₂ : c * e₁ < (a + 1) * e₂ := exp_lt hb he₂ hc ha'
-  have h₁' : a * e₂ < c * e₁ + e₁ := by rw [Nat.succ_mul] at h₁; exact h₁
-  have h₂' : c * e₁ < a * e₂ + e₂ := by rw [Nat.succ_mul] at h₂; exact h₂
+    (hdvd : (e1 + e2) ∣ e1 * (b - 1)) : False := by
+  have h1 : a * e2 < (c + 1) * e1 := exp_lt hb he1 ha hc'
+  have h2 : c * e1 < (a + 1) * e2 := exp_lt hb he2 hc ha'
+  have h1' : a * e2 < c * e1 + e1 := by rw [Nat.succ_mul] at h1; exact h1
+  have h2' : c * e1 < a * e2 + e2 := by rw [Nat.succ_mul] at h2; exact h2
   obtain ⟨k, hk⟩ := hdvd
   have hb1 : b - 1 = a + c + 1 := by omega
   rw [hb1] at hk
-  have hA : e₁ * (a + c + 1) = a * e₁ + c * e₁ + e₁ := by
-    rw [Nat.mul_add, Nat.mul_add, Nat.mul_one, Nat.mul_comm e₁ a, Nat.mul_comm e₁ c]
-  have hB : (e₁ + e₂) * (a + 1) = a * e₁ + a * e₂ + (e₁ + e₂) := by
-    rw [Nat.mul_add, Nat.mul_one, Nat.add_mul, Nat.mul_comm e₁ a, Nat.mul_comm e₂ a]
-  have hC : (e₁ + e₂) * (k + 1) = (e₁ + e₂) * k + (e₁ + e₂) := by
+  have hA : e1 * (a + c + 1) = a * e1 + c * e1 + e1 := by
+    rw [Nat.mul_add, Nat.mul_add, Nat.mul_one, Nat.mul_comm e1 a, Nat.mul_comm e1 c]
+  have hB : (e1 + e2) * (a + 1) = a * e1 + a * e2 + (e1 + e2) := by
+    rw [Nat.mul_add, Nat.mul_one, Nat.add_mul, Nat.mul_comm e1 a, Nat.mul_comm e2 a]
+  have hC : (e1 + e2) * (k + 1) = (e1 + e2) * k + (e1 + e2) := by
     rw [Nat.mul_add, Nat.mul_one]
   rw [hA] at hk
-  have hlt1 : (e₁ + e₂) * k < (e₁ + e₂) * (a + 1) := by omega
-  have hlt2 : (e₁ + e₂) * (a + 1) < (e₁ + e₂) * (k + 1) := by omega
-  have hk1 : k < a + 1 := Nat.lt_of_mul_lt_mul_left hlt1
-  have hk2 : a + 1 < k + 1 := Nat.lt_of_mul_lt_mul_left hlt2
+  have hlt1 : (e1 + e2) * k < (e1 + e2) * (a + 1) := by omega
+  have hlt2 : (e1 + e2) * (a + 1) < (e1 + e2) * (k + 1) := by omega
+  have hk1' : k < a + 1 := Nat.lt_of_mul_lt_mul_left hlt1
+  have hk2' : a + 1 < k + 1 := Nat.lt_of_mul_lt_mul_left hlt2
   omega
 
 /--
-**Theorem A.**  If `(e₁+e₂) ∣ e₁*(b-1)` then no `n` has
-`numDigits b (n^e₁) + numDigits b (n^e₂) = b`, so base `b` contains no
-`(e₁,e₂)`-nice number.
+**Theorem A.**  If `(e1+e2) ∣ e1*(b-1)` then no `n` has
+`numDigits b (n^e1) + numDigits b (n^e2) = b`, so base `b` contains no
+`(e1,e2)`-nice number.
 -/
-theorem no_nice_of_dvd {b e₁ e₂ n : Nat}
-    (hb : 1 < b) (he₁ : e₁ ≠ 0) (he₂ : e₂ ≠ 0)
-    (hdvd : (e₁ + e₂) ∣ e₁ * (b - 1)) :
-    numDigits b (n ^ e₁) + numDigits b (n ^ e₂) ≠ b := by
+theorem no_nice_of_dvd {b e1 e2 n : Nat}
+    (hb : 1 < b) (he1 : e1 ≠ 0) (he2 : e2 ≠ 0)
+    (hdvd : (e1 + e2) ∣ e1 * (b - 1)) :
+    numDigits b (n ^ e1) + numDigits b (n ^ e2) ≠ b := by
   intro hsum
   rcases Nat.eq_zero_or_pos n with rfl | hn
-  · rw [Nat.zero_pow (Nat.pos_of_ne_zero he₁), Nat.zero_pow (Nat.pos_of_ne_zero he₂),
+  · rw [Nat.zero_pow (Nat.pos_of_ne_zero he1), Nat.zero_pow (Nat.pos_of_ne_zero he2),
         numDigits_zero] at hsum
     omega
-  have hp1 : 0 < numDigits b (n ^ e₁) := numDigits_pos hb (Nat.pow_pos hn)
-  have hp2 : 0 < numDigits b (n ^ e₂) := numDigits_pos hb (Nat.pow_pos hn)
-  obtain ⟨a, hae⟩ : ∃ a, numDigits b (n ^ e₁) = a + 1 := ⟨numDigits b (n ^ e₁) - 1, by omega⟩
-  obtain ⟨c, hce⟩ : ∃ c, numDigits b (n ^ e₂) = c + 1 := ⟨numDigits b (n ^ e₂) - 1, by omega⟩
+  have hp1' : 0 < numDigits b (n ^ e1) := numDigits_pos hb (Nat.pow_pos hn)
+  have hp2' : 0 < numDigits b (n ^ e2) := numDigits_pos hb (Nat.pow_pos hn)
+  obtain ⟨a, hae⟩ : ∃ a, numDigits b (n ^ e1) = a + 1 := ⟨numDigits b (n ^ e1) - 1, by omega⟩
+  obtain ⟨c, hce⟩ : ∃ c, numDigits b (n ^ e2) = c + 1 := ⟨numDigits b (n ^ e2) - 1, by omega⟩
   obtain ⟨ha, ha'⟩ := bounds_of_numDigits hb _ _ hae
   obtain ⟨hc, hc'⟩ := bounds_of_numDigits hb _ _ hce
-  exact no_candidate hb he₁ he₂ ha ha' hc hc' (by omega) hdvd
+  exact no_candidate hb he1 he2 ha ha' hc hc' (by omega) hdvd
 
 /-! ### Named corollaries -/
 
 /-- Square/cube ("nice") numbers: base `b ≡ 1 (mod 5)` is empty. -/
 theorem nice_no_solution {b n : Nat} (hb : 1 < b) (hmod : b % 5 = 1) :
     numDigits b (n ^ 2) + numDigits b (n ^ 3) ≠ b := by
-  refine no_nice_of_dvd (e₁ := 2) (e₂ := 3) hb (by decide) (by decide) ?_
+  refine no_nice_of_dvd (e1 := 2) (e2 := 3) hb (by decide) (by decide) ?_
   obtain ⟨t, ht⟩ : 5 ∣ (b - 1) := by omega
   exact ⟨2 * t, by omega⟩
 
 /-- The `(1,3)` problem: base `b ≡ 1 (mod 4)` is empty. -/
 theorem one_three_no_solution {b n : Nat} (hb : 1 < b) (hmod : b % 4 = 1) :
     numDigits b (n ^ 1) + numDigits b (n ^ 3) ≠ b := by
-  refine no_nice_of_dvd (e₁ := 1) (e₂ := 3) hb (by decide) (by decide) ?_
+  refine no_nice_of_dvd (e1 := 1) (e2 := 3) hb (by decide) (by decide) ?_
   obtain ⟨t, ht⟩ : 4 ∣ (b - 1) := by omega
   exact ⟨t, by omega⟩
 
 /-- The `(2,4)` problem: base `b ≡ 1 (mod 3)` is empty — a *third* of all bases.
-    This is the `gcd(e₁,e₂) > 1` phenomenon, free from the divisibility form. -/
+    This is the `gcd(e1,e2) > 1` phenomenon, free from the divisibility form. -/
 theorem two_four_no_solution {b n : Nat} (hb : 1 < b) (hmod : b % 3 = 1) :
     numDigits b (n ^ 2) + numDigits b (n ^ 4) ≠ b := by
-  refine no_nice_of_dvd (e₁ := 2) (e₂ := 4) hb (by decide) (by decide) ?_
+  refine no_nice_of_dvd (e1 := 2) (e2 := 4) hb (by decide) (by decide) ?_
   obtain ⟨t, ht⟩ : 3 ∣ (b - 1) := by omega
   exact ⟨t, by omega⟩
 
@@ -284,38 +284,38 @@ theorem pow_mod_two {n : Nat} : ∀ e, e ≠ 0 → n ^ e % 2 = n % 2 := by
       have : n ^ (j + 1) % 2 = (n ^ j % 2) * (n % 2) % 2 := by
         rw [Nat.pow_succ, Nat.mul_mod]
       rw [this, hIH]
-      have h2 : n % 2 = 0 ∨ n % 2 = 1 := by omega
-      rcases h2 with h | h <;> rw [h] <;> decide
+      have h2' : n % 2 = 0 ∨ n % 2 = 1 := by omega
+      rcases h2' with h | h <;> rw [h] <;> decide
 
 /--
-**Theorem B.**  For every exponent pair with `e₁, e₂ ≥ 1`, base `b ≡ 3 (mod 4)`
-contains no `(e₁,e₂)`-nice number: the digit-sum identity
-`2·(digitSum(n^e₁) + digitSum(n^e₂)) = b(b-1)` is already unsatisfiable.
+**Theorem B.**  For every exponent pair with `e1, e2 ≥ 1`, base `b ≡ 3 (mod 4)`
+contains no `(e1,e2)`-nice number: the digit-sum identity
+`2·(digitSum(n^e1) + digitSum(n^e2)) = b(b-1)` is already unsatisfiable.
 -/
-theorem no_nice_of_mod_four {b e₁ e₂ n : Nat}
-    (hb : 1 < b) (he₁ : e₁ ≠ 0) (he₂ : e₂ ≠ 0) (hmod : b % 4 = 3)
-    (hT : 2 * (digitSum b (n ^ e₁) + digitSum b (n ^ e₂)) = b * (b - 1)) : False := by
+theorem no_nice_of_mod_four {b e1 e2 n : Nat}
+    (hb : 1 < b) (he1 : e1 ≠ 0) (he2 : e2 ≠ 0) (hmod : b % 4 = 3)
+    (hT : 2 * (digitSum b (n ^ e1) + digitSum b (n ^ e2)) = b * (b - 1)) : False := by
   have h2m : 2 ∣ (b - 1) := by omega
   -- the two powers are congruent to their digit sums mod b-1 ...
-  have hd1 : n ^ e₁ % (b-1) = digitSum b (n ^ e₁) % (b-1) := digitSum_mod hb _
-  have hd2 : n ^ e₂ % (b-1) = digitSum b (n ^ e₂) % (b-1) := digitSum_mod hb _
+  have hd1' : n ^ e1 % (b-1) = digitSum b (n ^ e1) % (b-1) := digitSum_mod hb _
+  have hd2' : n ^ e2 % (b-1) = digitSum b (n ^ e2) % (b-1) := digitSum_mod hb _
   -- ... hence mod 2, since 2 ∣ b-1
   have step : ∀ x y : Nat, x % (b-1) = y % (b-1) → x % 2 = y % 2 := by
     intro x y h
     rw [← Nat.mod_mod_of_dvd x h2m, ← Nat.mod_mod_of_dvd y h2m, h]
-  have e1 : n ^ e₁ % 2 = digitSum b (n ^ e₁) % 2 := step _ _ hd1
-  have e2 : n ^ e₂ % 2 = digitSum b (n ^ e₂) % 2 := step _ _ hd2
+  have e1' : n ^ e1 % 2 = digitSum b (n ^ e1) % 2 := step _ _ hd1'
+  have e2' : n ^ e2 % 2 = digitSum b (n ^ e2) % 2 := step _ _ hd2'
   -- left side: n^e ≡ n (mod 2) for any e ≥ 1, so the sum of the two is even
-  rw [pow_mod_two e₁ he₁] at e1
-  rw [pow_mod_two e₂ he₂] at e2
-  have hsum_even : (digitSum b (n ^ e₁) + digitSum b (n ^ e₂)) % 2 = 0 := by
-    have := Nat.add_mod (digitSum b (n ^ e₁)) (digitSum b (n ^ e₂)) 2
-    rw [← e1, ← e2] at this
+  rw [pow_mod_two e1 he1] at e1'
+  rw [pow_mod_two e2 he2] at e2'
+  have hsum_even : (digitSum b (n ^ e1) + digitSum b (n ^ e2)) % 2 = 0 := by
+    have := Nat.add_mod (digitSum b (n ^ e1)) (digitSum b (n ^ e2)) 2
+    rw [← e1', ← e2'] at this
     have hn : n % 2 = 0 ∨ n % 2 = 1 := by omega
     rcases hn with h | h <;> rw [h] at this <;> omega
   -- right side: b odd and (b-1)/2 odd force the digit-sum total to be odd
-  obtain ⟨S, hS⟩ : ∃ S, digitSum b (n ^ e₁) + digitSum b (n ^ e₂) = 2 * S := by
-    exact ⟨(digitSum b (n ^ e₁) + digitSum b (n ^ e₂)) / 2, by omega⟩
+  obtain ⟨S, hS⟩ : ∃ S, digitSum b (n ^ e1) + digitSum b (n ^ e2) = 2 * S := by
+    exact ⟨(digitSum b (n ^ e1) + digitSum b (n ^ e2)) / 2, by omega⟩
   obtain ⟨u, hu⟩ : ∃ u, b - 1 = 2 * u := ⟨(b-1)/2, by omega⟩
   have hodd_u : u % 2 = 1 := by omega
   have hodd_b : b % 2 = 1 := by omega
@@ -332,28 +332,28 @@ theorem no_nice_of_mod_four {b e₁ e₂ n : Nat}
 /--
 **Theorem B, residue-set form.**  The same parity obstruction stated the way the
 sieve uses it: for `b ≡ 3 (mod 4)` the residue set
-`R_b = {ρ : ρ^e₁ + ρ^e₂ ≡ T (mod b-1)}`, `2T = b(b-1)`, is **empty**.
+`R_b = {ρ : ρ^e1 + ρ^e2 ≡ T (mod b-1)}`, `2T = b(b-1)`, is **empty**.
 
 `no_nice_of_mod_four` rules out an actual solution's digit sums; this rules out
 the congruence class it would have to live in, which is the statement
-`verify.py`'s gate B used to check over `e₁ ≤ 8`, `e₂ ≤ 9`, `b < 400`.
+`verify.py`'s gate B used to check over `e1 ≤ 8`, `e2 ≤ 9`, `b < 400`.
 -/
-theorem residues_empty_of_mod_four {b e₁ e₂ T ρ : Nat}
-    (hb : 1 < b) (he₁ : e₁ ≠ 0) (he₂ : e₂ ≠ 0) (hmod : b % 4 = 3)
+theorem residues_empty_of_mod_four {b e1 e2 T ρ : Nat}
+    (hb : 1 < b) (he1 : e1 ≠ 0) (he2 : e2 ≠ 0) (hmod : b % 4 = 3)
     (hT : 2 * T = b * (b - 1)) :
-    (ρ ^ e₁ + ρ ^ e₂) % (b - 1) ≠ T % (b - 1) := by
+    (ρ ^ e1 + ρ ^ e2) % (b - 1) ≠ T % (b - 1) := by
   intro h
   have h2m : 2 ∣ (b - 1) := by omega
   have step : ∀ x y : Nat, x % (b-1) = y % (b-1) → x % 2 = y % 2 := by
     intro x y hxy
     rw [← Nat.mod_mod_of_dvd x h2m, ← Nat.mod_mod_of_dvd y h2m, hxy]
-  have hpar : (ρ ^ e₁ + ρ ^ e₂) % 2 = T % 2 := step _ _ h
+  have hpar : (ρ ^ e1 + ρ ^ e2) % 2 = T % 2 := step _ _ h
   -- ρ^e ≡ ρ (mod 2) for e ≥ 1, so the left side is ρ + ρ: even
-  have hl : (ρ ^ e₁ + ρ ^ e₂) % 2 = 0 := by
-    have h1 := pow_mod_two (n := ρ) e₁ he₁
-    have h2 := pow_mod_two (n := ρ) e₂ he₂
-    have hadd := Nat.add_mod (ρ ^ e₁) (ρ ^ e₂) 2
-    rw [h1, h2] at hadd
+  have hl : (ρ ^ e1 + ρ ^ e2) % 2 = 0 := by
+    have h1' := pow_mod_two (n := ρ) e1 he1
+    have h2' := pow_mod_two (n := ρ) e2 he2
+    have hadd := Nat.add_mod (ρ ^ e1) (ρ ^ e2) 2
+    rw [h1', h2'] at hadd
     have hn : ρ % 2 = 0 ∨ ρ % 2 = 1 := by omega
     rcases hn with hq | hq <;> rw [hq] at hadd <;> omega
   -- b odd and (b-1)/2 odd make T = b·(b-1)/2 odd
@@ -375,7 +375,7 @@ theorem base_seven_no_residue (ρ : Nat) : (ρ ^ 2 + ρ ^ 3) % 6 ≠ 21 % 6 :=
 
 /-! ## §3  Proposition D — one base per `n`, and the bands are disjoint
 
-The candidate band of base `b` is `{n : numDigits b (n^e₁) + numDigits b (n^e₂) = b}`.
+The candidate band of base `b` is `{n : numDigits b (n^e1) + numDigits b (n^e2) = b}`.
 Distinct bases have **disjoint** bands, so each `n` is a candidate in at most one
 base and "search more bases" and "search more numbers" are the same axis.
 
@@ -416,22 +416,22 @@ theorem base_unique {b b' x y : Nat} (hb : 1 < b) (hb' : 1 < b')
     (h : numDigits b x + numDigits b y = b)
     (h' : numDigits b' x + numDigits b' y = b') : b = b' := by
   rcases Nat.lt_trichotomy b b' with hlt | heq | hgt
-  · have h1 := numDigits_antitone hb (Nat.le_of_lt hlt) x
-    have h2 := numDigits_antitone hb (Nat.le_of_lt hlt) y
+  · have h1' := numDigits_antitone hb (Nat.le_of_lt hlt) x
+    have h2' := numDigits_antitone hb (Nat.le_of_lt hlt) y
     omega
   · exact heq
-  · have h1 := numDigits_antitone hb' (Nat.le_of_lt hgt) x
-    have h2 := numDigits_antitone hb' (Nat.le_of_lt hgt) y
+  · have h1' := numDigits_antitone hb' (Nat.le_of_lt hgt) x
+    have h2' := numDigits_antitone hb' (Nat.le_of_lt hgt) y
     omega
 
-/-- `n` lies in the base-`b` candidate band for the pair `(e₁,e₂)`. -/
-def InBand (b e₁ e₂ n : Nat) : Prop :=
-  numDigits b (n ^ e₁) + numDigits b (n ^ e₂) = b
+/-- `n` lies in the base-`b` candidate band for the pair `(e1,e2)`. -/
+def InBand (b e1 e2 n : Nat) : Prop :=
+  numDigits b (n ^ e1) + numDigits b (n ^ e2) = b
 
 /-- **Prop D, band form.**  The bands of two distinct bases are disjoint: no `n`
 is a candidate in both.  Holds for every exponent pair, `n` included `0`. -/
-theorem bands_disjoint {b b' e₁ e₂ n : Nat} (hb : 1 < b) (hb' : 1 < b')
-    (hne : b ≠ b') : ¬(InBand b e₁ e₂ n ∧ InBand b' e₁ e₂ n) := by
+theorem bands_disjoint {b b' e1 e2 n : Nat} (hb : 1 < b) (hb' : 1 < b')
+    (hne : b ≠ b') : ¬(InBand b e1 e2 n ∧ InBand b' e1 e2 n) := by
   rintro ⟨h, h'⟩
   exact hne (base_unique hb hb' h h')
 
@@ -444,8 +444,8 @@ is the only known (2,3)-nice number.  Everything below is kernel-checked. -/
 /-- Converse of `bounds_of_numDigits`, so non-vacuity reduces to arithmetic on
 numerals that `decide` can do. -/
 theorem numDigits_eq_of_bounds {b x k : Nat} (hb : 1 < b)
-    (h1 : b ^ k ≤ x) (h2 : x < b ^ (k + 1)) : numDigits b x = k + 1 := by
-  have hx : 0 < x := Nat.lt_of_lt_of_le (Nat.pow_pos (a := b) (n := k) (by omega)) h1
+    (h1' : b ^ k ≤ x) (h2' : x < b ^ (k + 1)) : numDigits b x = k + 1 := by
+  have hx : 0 < x := Nat.lt_of_lt_of_le (Nat.pow_pos (a := b) (n := k) (by omega)) h1'
   obtain ⟨j, hj⟩ : ∃ j, numDigits b x = j + 1 :=
     ⟨numDigits b x - 1, by have := numDigits_pos hb hx; omega⟩
   obtain ⟨g1, g2⟩ := bounds_of_numDigits hb x j hj
@@ -463,10 +463,10 @@ theorem digitSum_step {b x : Nat} (hb : 1 < b) (hx : 0 < x) :
     digitSum b x = x % b + digitSum b (x / b) := by
   rw [digitSum, dif_pos ⟨hb, hx⟩]
 
-/-- 69² = 4761 has 4 base-10 digits. -/
+/-- 69^2 = 4761 has 4 base-10 digits. -/
 theorem nd_sq : numDigits 10 (69 ^ 2) = 4 := numDigits_eq_of_bounds (by decide) (by decide) (by decide)
 
-/-- 69³ = 328509 has 6 base-10 digits. -/
+/-- 69^3 = 328509 has 6 base-10 digits. -/
 theorem nd_cb : numDigits 10 (69 ^ 3) = 6 := numDigits_eq_of_bounds (by decide) (by decide) (by decide)
 
 /-- The length identity really is satisfiable: 4 + 6 = 10. -/
@@ -517,8 +517,8 @@ theorem base_seven_dead' (n : Nat) :
 
 /-! ## §5  Theorem G — the universal last-digit clash
 
-If `x^e₁ ≡ x^e₂ (mod b)` for *every* `x` then the last base-`b` digits of `n^e₁`
-and `n^e₂` coincide for every `n`, one digit value is used twice, and base `b` is
+If `x^e1 ≡ x^e2 (mod b)` for *every* `x` then the last base-`b` digits of `n^e1`
+and `n^e2` coincide for every `n`, one digit value is used twice, and base `b` is
 dead for reasons that have nothing to do with the size of the band.  Theorem G
 classifies the bases where that happens.
 
@@ -526,9 +526,9 @@ Two halves, and only the first needs pandigitality:
 
 * `no_nice_of_universal_clash` — a clashing base contains no pandigital `n`.
 * `clash_iff_dvd_clashMod` — the clashing bases for a pair are **exactly the
-  divisors of one number** `N(e₁,e₂)`, computed here as a finite gcd.
+  divisors of one number** `N(e1,e2)`, computed here as a finite gcd.
 * `clash_prime_pow_iff` — and the prime powers dividing `N` are exactly those
-  with `a ≤ e₁` whose unit group has exponent dividing `e₂-e₁`.  Evaluating that
+  with `a ≤ e1` whose unit group has exponent dividing `e2-e1`.  Evaluating that
   exponent is the classical `λ(p^a)`, the one step left to Mathlib.
 
 This is also the first section that needs pandigitality itself rather than one of
@@ -556,34 +556,34 @@ theorem occ_cons_self (v : Nat) (l : List Nat) : occ v (v :: l) = 1 + occ v l :=
   show (if v = v then 1 else 0) + occ v l = 1 + occ v l
   rw [if_pos rfl]
 
-theorem occ_append (v : Nat) : ∀ l₁ l₂ : List Nat,
-    occ v (l₁ ++ l₂) = occ v l₁ + occ v l₂ := by
-  intro l₁
-  induction l₁ with
-  | nil => intro l₂; show occ v l₂ = 0 + occ v l₂; omega
+theorem occ_append (v : Nat) : ∀ l1 l2 : List Nat,
+    occ v (l1 ++ l2) = occ v l1 + occ v l2 := by
+  intro l1
+  induction l1 with
+  | nil => intro l2; show occ v l2 = 0 + occ v l2; omega
   | cons a t ih =>
-    intro l₂
-    show (if a = v then 1 else 0) + occ v (t ++ l₂)
-        = ((if a = v then 1 else 0) + occ v t) + occ v l₂
+    intro l2
+    show (if a = v then 1 else 0) + occ v (t ++ l2)
+        = ((if a = v then 1 else 0) + occ v t) + occ v l2
     rw [ih]
     omega
 
-/-- `n` is **`(e₁,e₂)`-pandigital in base `b`**: the base-`b` digits of `n^e₁`
-and of `n^e₂`, taken together, contain every value `< b` exactly once.  This is
+/-- `n` is **`(e1,e2)`-pandigital in base `b`**: the base-`b` digits of `n^e1`
+and of `n^e2`, taken together, contain every value `< b` exactly once.  This is
 the definition the rest of the repo searches for; §1-§3 above use only its two
 numerical consequences. -/
-def Pandigital (b e₁ e₂ n : Nat) : Prop :=
-  ∀ v, v < b → occ v (digits b (n ^ e₁) ++ digits b (n ^ e₂)) = 1
+def Pandigital (b e1 e2 n : Nat) : Prop :=
+  ∀ v, v < b → occ v (digits b (n ^ e1) ++ digits b (n ^ e2)) = 1
 
 /-! ### §5.1  A universal clash kills the base -/
 
-/-- Base `b` has a **universal clash** for `(e₁,e₂)` when the last digits of
-`x^e₁` and `x^e₂` agree for every `x`. -/
-def UniversalClash (b e₁ e₂ : Nat) : Prop := ∀ x, x ^ e₁ % b = x ^ e₂ % b
+/-- Base `b` has a **universal clash** for `(e1,e2)` when the last digits of
+`x^e1` and `x^e2` agree for every `x`. -/
+def UniversalClash (b e1 e2 : Nat) : Prop := ∀ x, x ^ e1 % b = x ^ e2 % b
 
 /-- A pandigital `n` is positive: `0` supplies no digit `0` in any base. -/
-theorem pos_of_pandigital {b e₁ e₂ n : Nat} (hb : 1 < b)
-    (hp : Pandigital b e₁ e₂ n) : 0 < n := by
+theorem pos_of_pandigital {b e1 e2 n : Nat} (hb : 1 < b)
+    (hp : Pandigital b e1 e2 n) : 0 < n := by
   rcases Nat.eq_zero_or_pos n with rfl | h
   · exfalso
     have key : ∀ e : Nat, occ 0 (digits b ((0 : Nat) ^ e)) = 0 := by
@@ -601,41 +601,41 @@ theorem pos_of_pandigital {b e₁ e₂ n : Nat} (hb : 1 < b)
 
 /--
 **Theorem G, the operative half.**  A base with a universal clash contains no
-pandigital `n` at all — the last digits of `n^e₁` and `n^e₂` are the same value,
+pandigital `n` at all — the last digits of `n^e1` and `n^e2` are the same value,
 so that value is used twice.  Every exponent pair, every `n`, no search.
 -/
-theorem no_nice_of_universal_clash {b e₁ e₂ n : Nat} (hb : 1 < b)
-    (hclash : UniversalClash b e₁ e₂) : ¬ Pandigital b e₁ e₂ n := by
+theorem no_nice_of_universal_clash {b e1 e2 n : Nat} (hb : 1 < b)
+    (hclash : UniversalClash b e1 e2) : ¬ Pandigital b e1 e2 n := by
   intro hp
   have hn : 0 < n := pos_of_pandigital hb hp
-  have h1 : digits b (n ^ e₁) = n ^ e₁ % b :: digits b (n ^ e₁ / b) :=
+  have h1' : digits b (n ^ e1) = n ^ e1 % b :: digits b (n ^ e1 / b) :=
     digits_step hb (Nat.pow_pos hn)
-  have h2 : digits b (n ^ e₂) = n ^ e₂ % b :: digits b (n ^ e₂ / b) :=
+  have h2' : digits b (n ^ e2) = n ^ e2 % b :: digits b (n ^ e2 / b) :=
     digits_step hb (Nat.pow_pos hn)
-  have hcount := hp (n ^ e₁ % b) (Nat.mod_lt _ (by omega))
-  rw [occ_append, h1, h2, ← hclash n, occ_cons_self, occ_cons_self] at hcount
+  have hcount := hp (n ^ e1 % b) (Nat.mod_lt _ (by omega))
+  rw [occ_append, h1', h2', ← hclash n, occ_cons_self, occ_cons_self] at hcount
   omega
 
 /-! ### §5.2  The classification: the clashing bases are the divisors of one number -/
 
-/-- `gcd_{x < m} (x^e₂ - x^e₁)`. -/
-def clashGcd (e₁ e₂ : Nat) : Nat → Nat
+/-- `gcd_{x < m} (x^e2 - x^e1)`. -/
+def clashGcd (e1 e2 : Nat) : Nat → Nat
   | 0 => 0
-  | m + 1 => Nat.gcd (m ^ e₂ - m ^ e₁) (clashGcd e₁ e₂ m)
+  | m + 1 => Nat.gcd (m ^ e2 - m ^ e1) (clashGcd e1 e2 m)
 
-theorem clashGcd_succ (e₁ e₂ m : Nat) :
-    clashGcd e₁ e₂ (m + 1) = Nat.gcd (m ^ e₂ - m ^ e₁) (clashGcd e₁ e₂ m) := rfl
+theorem clashGcd_succ (e1 e2 m : Nat) :
+    clashGcd e1 e2 (m + 1) = Nat.gcd (m ^ e2 - m ^ e1) (clashGcd e1 e2 m) := rfl
 
-/-- `N(e₁,e₂)` — the modulus of Theorem G.  The range stops at `2^e₂ - 2^e₁`
+/-- `N(e1,e2)` — the modulus of Theorem G.  The range stops at `2^e2 - 2^e1`
 because the `x = 2` term already bounds every clashing base by it. -/
-def clashMod (e₁ e₂ : Nat) : Nat := clashGcd e₁ e₂ (2 ^ e₂ - 2 ^ e₁ + 1)
+def clashMod (e1 e2 : Nat) : Nat := clashGcd e1 e2 (2 ^ e2 - 2 ^ e1 + 1)
 
-/-- `x^e₁ ≤ x^e₂` for `1 ≤ e₁ ≤ e₂`, `x = 0` included. -/
-theorem pow_le_pow_exp {x e₁ e₂ : Nat} (he₁ : 1 ≤ e₁) (he : e₁ ≤ e₂) :
-    x ^ e₁ ≤ x ^ e₂ := by
+/-- `x^e1 ≤ x^e2` for `1 ≤ e1 ≤ e2`, `x = 0` included. -/
+theorem pow_le_pow_exp {x e1 e2 : Nat} (he1 : 1 ≤ e1) (he : e1 ≤ e2) :
+    x ^ e1 ≤ x ^ e2 := by
   rcases Nat.eq_zero_or_pos x with rfl | hx
-  · have h1 : (0 : Nat) ^ e₁ = 0 := Nat.zero_pow (by omega)
-    have h2 : (0 : Nat) ^ e₂ = 0 := Nat.zero_pow (by omega)
+  · have h1' : (0 : Nat) ^ e1 = 0 := Nat.zero_pow (by omega)
+    have h2' : (0 : Nat) ^ e2 = 0 := Nat.zero_pow (by omega)
     omega
   · exact Nat.pow_le_pow_right hx he
 
@@ -655,16 +655,16 @@ theorem dvd_sub_iff_mod_eq {b x y : Nat} (hb : 0 < b) (hyx : y ≤ x) :
     rw [ht] at hdx
     exact ⟨t, by omega⟩
 
-theorem clash_iff_dvd_sub {b e₁ e₂ : Nat} (hb : 0 < b) (he₁ : 1 ≤ e₁) (he : e₁ ≤ e₂) :
-    UniversalClash b e₁ e₂ ↔ ∀ x, b ∣ x ^ e₂ - x ^ e₁ := by
+theorem clash_iff_dvd_sub {b e1 e2 : Nat} (hb : 0 < b) (he1 : 1 ≤ e1) (he : e1 ≤ e2) :
+    UniversalClash b e1 e2 ↔ ∀ x, b ∣ x ^ e2 - x ^ e1 := by
   constructor
   · intro h x
-    exact (dvd_sub_iff_mod_eq hb (pow_le_pow_exp he₁ he)).mpr (h x).symm
+    exact (dvd_sub_iff_mod_eq hb (pow_le_pow_exp he1 he)).mpr (h x).symm
   · intro h x
-    exact ((dvd_sub_iff_mod_eq hb (pow_le_pow_exp he₁ he)).mp (h x)).symm
+    exact ((dvd_sub_iff_mod_eq hb (pow_le_pow_exp he1 he)).mp (h x)).symm
 
-theorem dvd_clashGcd_iff {b e₁ e₂ : Nat} :
-    ∀ m, b ∣ clashGcd e₁ e₂ m ↔ ∀ x, x < m → b ∣ x ^ e₂ - x ^ e₁ := by
+theorem dvd_clashGcd_iff {b e1 e2 : Nat} :
+    ∀ m, b ∣ clashGcd e1 e2 m ↔ ∀ x, x < m → b ∣ x ^ e2 - x ^ e1 := by
   intro m
   induction m with
   | zero =>
@@ -682,50 +682,50 @@ theorem dvd_clashGcd_iff {b e₁ e₂ : Nat} :
       exact Nat.dvd_gcd (h m (by omega)) (ih.mpr (fun x hx => h x (by omega)))
 
 /--
-**Theorem G (classification).**  For `1 ≤ e₁ < e₂` and any `b > 0`, base `b` has
-a universal clash **iff** `b ∣ N(e₁,e₂)`.  So the clashing bases of a pair are
+**Theorem G (classification).**  For `1 ≤ e1 < e2` and any `b > 0`, base `b` has
+a universal clash **iff** `b ∣ N(e1,e2)`.  So the clashing bases of a pair are
 exactly the divisors of a single computable number — divisor-closed, closed under
 lcm, and bounded, all at once.
 -/
-theorem clash_iff_dvd_clashMod {b e₁ e₂ : Nat} (hb : 0 < b) (he₁ : 1 ≤ e₁) (he : e₁ < e₂) :
-    UniversalClash b e₁ e₂ ↔ b ∣ clashMod e₁ e₂ := by
+theorem clash_iff_dvd_clashMod {b e1 e2 : Nat} (hb : 0 < b) (he1 : 1 ≤ e1) (he : e1 < e2) :
+    UniversalClash b e1 e2 ↔ b ∣ clashMod e1 e2 := by
   -- the x = 2 term is at least 2, so it is inside the range and bounds b
-  have hp1 : 2 ^ (e₁ + 1) ≤ 2 ^ e₂ := Nat.pow_le_pow_right (by omega) (by omega)
-  have hp2 : 2 ^ 1 ≤ 2 ^ e₁ := Nat.pow_le_pow_right (by omega) he₁
-  have hp3 : 2 ^ (e₁ + 1) = 2 ^ e₁ * 2 := Nat.pow_succ 2 e₁
+  have hp1' : 2 ^ (e1 + 1) ≤ 2 ^ e2 := Nat.pow_le_pow_right (by omega) (by omega)
+  have hp2' : 2 ^ 1 ≤ 2 ^ e1 := Nat.pow_le_pow_right (by omega) he1
+  have hp3 : 2 ^ (e1 + 1) = 2 ^ e1 * 2 := Nat.pow_succ 2 e1
   have hp4 : (2 : Nat) ^ 1 = 2 := Nat.pow_one 2
-  have hK : 2 ≤ 2 ^ e₂ - 2 ^ e₁ := by omega
+  have hK : 2 ≤ 2 ^ e2 - 2 ^ e1 := by omega
   constructor
   · intro h
     exact (dvd_clashGcd_iff _).mpr
-      (fun x _ => (clash_iff_dvd_sub hb he₁ (Nat.le_of_lt he)).mp h x)
+      (fun x _ => (clash_iff_dvd_sub hb he1 (Nat.le_of_lt he)).mp h x)
   · intro h x
     have hall := (dvd_clashGcd_iff _).mp h
-    have hble : b ≤ 2 ^ e₂ - 2 ^ e₁ := Nat.le_of_dvd (by omega) (hall 2 (by omega))
-    have hmod := (dvd_sub_iff_mod_eq hb (pow_le_pow_exp he₁ (Nat.le_of_lt he))).mp
+    have hble : b ≤ 2 ^ e2 - 2 ^ e1 := Nat.le_of_dvd (by omega) (hall 2 (by omega))
+    have hmod := (dvd_sub_iff_mod_eq hb (pow_le_pow_exp he1 (Nat.le_of_lt he))).mp
       (hall (x % b) (by have := Nat.mod_lt x hb; omega))
-    rw [Nat.pow_mod x e₁ b, Nat.pow_mod x e₂ b]
+    rw [Nat.pow_mod x e1 b, Nat.pow_mod x e2 b]
     exact hmod.symm
 
 /-- Divisor-closure, the half of the structure that is obvious. -/
-theorem clash_of_dvd {b b' e₁ e₂ : Nat} (hbb : b ∣ b') (h : UniversalClash b' e₁ e₂) :
-    UniversalClash b e₁ e₂ := by
+theorem clash_of_dvd {b b' e1 e2 : Nat} (hbb : b ∣ b') (h : UniversalClash b' e1 e2) :
+    UniversalClash b e1 e2 := by
   intro x
-  have h1 : x ^ e₁ % b' % b = x ^ e₂ % b' % b := by rw [h x]
-  rwa [Nat.mod_mod_of_dvd _ hbb, Nat.mod_mod_of_dvd _ hbb] at h1
+  have h1' : x ^ e1 % b' % b = x ^ e2 % b' % b := by rw [h x]
+  rwa [Nat.mod_mod_of_dvd _ hbb, Nat.mod_mod_of_dvd _ hbb] at h1'
 
 /-- Closure under lcm, which is what makes "divisors of one number" possible. -/
-theorem clash_lcm {b b' e₁ e₂ : Nat} (hb : 0 < b) (hb' : 0 < b') (he₁ : 1 ≤ e₁) (he : e₁ < e₂)
-    (h : UniversalClash b e₁ e₂) (h' : UniversalClash b' e₁ e₂) :
-    UniversalClash (Nat.lcm b b') e₁ e₂ := by
-  have hd := (clash_iff_dvd_clashMod hb he₁ he).mp h
-  have hd' := (clash_iff_dvd_clashMod hb' he₁ he).mp h'
-  exact (clash_iff_dvd_clashMod (Nat.lcm_pos hb hb') he₁ he).mpr (Nat.lcm_dvd hd hd')
+theorem clash_lcm {b b' e1 e2 : Nat} (hb : 0 < b) (hb' : 0 < b') (he1 : 1 ≤ e1) (he : e1 < e2)
+    (h : UniversalClash b e1 e2) (h' : UniversalClash b' e1 e2) :
+    UniversalClash (Nat.lcm b b') e1 e2 := by
+  have hd := (clash_iff_dvd_clashMod hb he1 he).mp h
+  have hd' := (clash_iff_dvd_clashMod hb' he1 he).mp h'
+  exact (clash_iff_dvd_clashMod (Nat.lcm_pos hb hb') he1 he).mpr (Nat.lcm_dvd hd hd')
 
 /-! ### §5.3  Which prime powers divide `N`
 
 The local criterion, stated without Carmichael's `λ`: the unit condition is
-"every unit has order dividing `e₂-e₁`", which is what `λ(p^a) ∣ e₂-e₁` says
+"every unit has order dividing `e2-e1`", which is what `λ(p^a) ∣ e2-e1` says
 once the unit group's exponent is known.  That evaluation is the classical
 structure theorem for `(ℤ/p^aℤ)ˣ` and is the only part of Theorem G left
 unformalised. -/
@@ -735,9 +735,9 @@ def IsPrime (p : Nat) : Prop := 2 ≤ p ∧ ∀ k, k ∣ p → k = 1 ∨ k = p
 
 theorem coprime_of_not_dvd {p u : Nat} (hp : IsPrime p) (h : ¬ p ∣ u) :
     Nat.Coprime p u := by
-  rcases hp.2 (Nat.gcd p u) (Nat.gcd_dvd_left p u) with h1 | h1
-  · exact h1
-  · exact absurd (by rw [← h1]; exact Nat.gcd_dvd_right p u) h
+  rcases hp.2 (Nat.gcd p u) (Nat.gcd_dvd_left p u) with h1' | h1'
+  · exact h1'
+  · exact absurd (by rw [← h1']; exact Nat.gcd_dvd_right p u) h
 
 /-- Primality of a numeral: a divisor of `p` is at most `p`, so the unbounded
 quantifier in `IsPrime` becomes a bounded one that `decide` can do. -/
@@ -755,89 +755,89 @@ theorem pow_dvd_pow_of_dvd {a b : Nat} (h : a ∣ b) (n : Nat) : a ^ n ∣ b ^ n
 
 /--
 **Theorem G (local criterion).**  For a prime power `p^a` with `a ≥ 1` and
-`1 ≤ e₁ < e₂`, the universal clash holds mod `p^a` **iff** `a ≤ e₁` and every
-unit mod `p` satisfies `u^(e₂-e₁) ≡ 1 (mod p^a)`.
+`1 ≤ e1 < e2`, the universal clash holds mod `p^a` **iff** `a ≤ e1` and every
+unit mod `p` satisfies `u^(e2-e1) ≡ 1 (mod p^a)`.
 
-The `x = p` half of the proof forces `a ≤ e₁`; the unit half forces the exponent
+The `x = p` half of the proof forces `a ≤ e1`; the unit half forces the exponent
 condition; and the two together suffice, by the dichotomy `p ∣ x` or not.
 -/
-theorem clash_prime_pow_iff {p a e₁ e₂ : Nat} (hp : IsPrime p) (ha : 1 ≤ a)
-    (he₁ : 1 ≤ e₁) (he : e₁ < e₂) :
-    UniversalClash (p ^ a) e₁ e₂ ↔
-      (a ≤ e₁ ∧ ∀ u, ¬ p ∣ u → u ^ (e₂ - e₁) % p ^ a = 1) := by
-  have hp2 : 2 ≤ p := hp.1
-  have hm1 : p ^ 1 ≤ p ^ a := Nat.pow_le_pow_right (by omega) ha
-  have hm : 1 < p ^ a := by rw [Nat.pow_one] at hm1; omega
+theorem clash_prime_pow_iff {p a e1 e2 : Nat} (hp : IsPrime p) (ha : 1 ≤ a)
+    (he1 : 1 ≤ e1) (he : e1 < e2) :
+    UniversalClash (p ^ a) e1 e2 ↔
+      (a ≤ e1 ∧ ∀ u, ¬ p ∣ u → u ^ (e2 - e1) % p ^ a = 1) := by
+  have hp2' : 2 ≤ p := hp.1
+  have hm1' : p ^ 1 ≤ p ^ a := Nat.pow_le_pow_right (by omega) ha
+  have hm : 1 < p ^ a := by rw [Nat.pow_one] at hm1'; omega
   have hmpos : 0 < p ^ a := by omega
-  have hfac : ∀ x : Nat, x ^ e₁ * (x ^ (e₂ - e₁) - 1) = x ^ e₂ - x ^ e₁ := by
+  have hfac : ∀ x : Nat, x ^ e1 * (x ^ (e2 - e1) - 1) = x ^ e2 - x ^ e1 := by
     intro x
-    have hsum : e₁ + (e₂ - e₁) = e₂ := by omega
+    have hsum : e1 + (e2 - e1) = e2 := by omega
     rw [Nat.mul_sub, Nat.mul_one, ← Nat.pow_add, hsum]
   constructor
   · intro hcl
-    have hdvd : ∀ x, p ^ a ∣ x ^ e₂ - x ^ e₁ :=
-      (clash_iff_dvd_sub hmpos he₁ (Nat.le_of_lt he)).mp hcl
+    have hdvd : ∀ x, p ^ a ∣ x ^ e2 - x ^ e1 :=
+      (clash_iff_dvd_sub hmpos he1 (Nat.le_of_lt he)).mp hcl
     refine ⟨?_, ?_⟩
-    · -- x = p: p^a ∣ p^e₁·(p^(e₂-e₁) - 1) and the second factor is prime to p
-      rcases Nat.lt_or_ge e₁ a with hlt | hge
+    · -- x = p: p^a ∣ p^e1·(p^(e2-e1) - 1) and the second factor is prime to p
+      rcases Nat.lt_or_ge e1 a with hlt | hge
       case inr => exact hge
       exfalso
-      have h1 : p ^ (e₁ + 1) ∣ p ^ a := Nat.pow_dvd_pow p (by omega)
-      have h2 : p ^ a ∣ p ^ e₁ * (p ^ (e₂ - e₁) - 1) := by rw [hfac]; exact hdvd p
-      have h3 : p ^ e₁ * p ∣ p ^ e₁ * (p ^ (e₂ - e₁) - 1) := by
-        rw [← Nat.pow_succ p e₁]
-        exact Nat.dvd_trans h1 h2
-      have h4 : p ∣ p ^ (e₂ - e₁) - 1 :=
+      have h1' : p ^ (e1 + 1) ∣ p ^ a := Nat.pow_dvd_pow p (by omega)
+      have h2' : p ^ a ∣ p ^ e1 * (p ^ (e2 - e1) - 1) := by rw [hfac]; exact hdvd p
+      have h3 : p ^ e1 * p ∣ p ^ e1 * (p ^ (e2 - e1) - 1) := by
+        rw [← Nat.pow_succ p e1]
+        exact Nat.dvd_trans h1' h2'
+      have h4 : p ∣ p ^ (e2 - e1) - 1 :=
         (Nat.mul_dvd_mul_iff_left (Nat.pow_pos (show 0 < p by omega))).mp h3
-      have h5 : p ∣ p ^ (e₂ - e₁) := by
-        have := Nat.pow_dvd_pow p (show 1 ≤ e₂ - e₁ by omega)
+      have h5 : p ∣ p ^ (e2 - e1) := by
+        have := Nat.pow_dvd_pow p (show 1 ≤ e2 - e1 by omega)
         rwa [Nat.pow_one] at this
-      have h6 : p ∣ p ^ (e₂ - e₁) - (p ^ (e₂ - e₁) - 1) := Nat.dvd_sub h5 h4
-      have h7 : 1 ≤ p ^ (e₂ - e₁) := Nat.pow_pos (show 0 < p by omega)
-      have h8 : p ^ (e₂ - e₁) - (p ^ (e₂ - e₁) - 1) = 1 := by omega
+      have h6 : p ∣ p ^ (e2 - e1) - (p ^ (e2 - e1) - 1) := Nat.dvd_sub h5 h4
+      have h7 : 1 ≤ p ^ (e2 - e1) := Nat.pow_pos (show 0 < p by omega)
+      have h8 : p ^ (e2 - e1) - (p ^ (e2 - e1) - 1) = 1 := by omega
       rw [h8] at h6
       have := Nat.le_of_dvd Nat.one_pos h6
       omega
-    · -- x = u a unit: cancel u^e₁, which is prime to p
+    · -- x = u a unit: cancel u^e1, which is prime to p
       intro u hu
       have hu0 : 0 < u := by
         rcases Nat.eq_zero_or_pos u with rfl | h
         · exact absurd (Nat.dvd_zero p) hu
         · exact h
-      have hco : Nat.Coprime (p ^ a) (u ^ e₁) :=
-        Nat.Coprime.pow a e₁ (coprime_of_not_dvd hp hu)
-      have h2 : p ^ a ∣ u ^ e₁ * (u ^ (e₂ - e₁) - 1) := by rw [hfac]; exact hdvd u
-      have h3 : p ^ a ∣ u ^ (e₂ - e₁) - 1 := hco.dvd_of_dvd_mul_left h2
+      have hco : Nat.Coprime (p ^ a) (u ^ e1) :=
+        Nat.Coprime.pow a e1 (coprime_of_not_dvd hp hu)
+      have h2' : p ^ a ∣ u ^ e1 * (u ^ (e2 - e1) - 1) := by rw [hfac]; exact hdvd u
+      have h3 : p ^ a ∣ u ^ (e2 - e1) - 1 := hco.dvd_of_dvd_mul_left h2'
       have h5 := (dvd_sub_iff_mod_eq hmpos (Nat.pow_pos hu0)).mp h3
       rwa [Nat.mod_eq_of_lt hm] at h5
   · rintro ⟨hae, hunit⟩ x
     by_cases hpx : p ∣ x
-    · -- p ∣ x: both powers are ≡ 0, since a ≤ e₁ ≤ e₂
-      have h1 : p ^ a ∣ x ^ e₁ :=
-        Nat.dvd_trans (Nat.pow_dvd_pow p hae) (pow_dvd_pow_of_dvd hpx e₁)
-      have h2 : p ^ a ∣ x ^ e₂ :=
-        Nat.dvd_trans (Nat.pow_dvd_pow p (by omega)) (pow_dvd_pow_of_dvd hpx e₂)
-      rw [Nat.dvd_iff_mod_eq_zero.mp h1, Nat.dvd_iff_mod_eq_zero.mp h2]
-    · -- x a unit: multiply the congruence u^(e₂-e₁) ≡ 1 by x^e₁
-      have hd : x ^ (e₂ - e₁) % p ^ a = 1 := hunit x hpx
-      have hsplit : x ^ e₂ = x ^ e₁ * x ^ (e₂ - e₁) := by
+    · -- p ∣ x: both powers are ≡ 0, since a ≤ e1 ≤ e2
+      have h1' : p ^ a ∣ x ^ e1 :=
+        Nat.dvd_trans (Nat.pow_dvd_pow p hae) (pow_dvd_pow_of_dvd hpx e1)
+      have h2' : p ^ a ∣ x ^ e2 :=
+        Nat.dvd_trans (Nat.pow_dvd_pow p (by omega)) (pow_dvd_pow_of_dvd hpx e2)
+      rw [Nat.dvd_iff_mod_eq_zero.mp h1', Nat.dvd_iff_mod_eq_zero.mp h2']
+    · -- x a unit: multiply the congruence u^(e2-e1) ≡ 1 by x^e1
+      have hd : x ^ (e2 - e1) % p ^ a = 1 := hunit x hpx
+      have hsplit : x ^ e2 = x ^ e1 * x ^ (e2 - e1) := by
         rw [← Nat.pow_add]
-        have : e₁ + (e₂ - e₁) = e₂ := by omega
+        have : e1 + (e2 - e1) = e2 := by omega
         rw [this]
       rw [hsplit, Nat.mul_mod, hd, Nat.mul_one, Nat.mod_mod_of_dvd _ (Nat.dvd_refl _)]
 
-/-- The valuation form of Theorem G: `p^a ∣ N(e₁,e₂)` exactly when `a ≤ e₁` and
-every unit mod `p` has order dividing `e₂-e₁`.  Feed in `λ(p^a)` — the exponent
+/-- The valuation form of Theorem G: `p^a ∣ N(e1,e2)` exactly when `a ≤ e1` and
+every unit mod `p` has order dividing `e2-e1`.  Feed in `λ(p^a)` — the exponent
 of `(ℤ/p^aℤ)ˣ` — and this is the report's closed form
-`N = ∏_p p^{a_p}`, `a_p = max{a ≤ e₁ : λ(p^a) ∣ e₂-e₁}`. -/
-theorem prime_pow_dvd_clashMod_iff {p a e₁ e₂ : Nat} (hp : IsPrime p) (ha : 1 ≤ a)
-    (he₁ : 1 ≤ e₁) (he : e₁ < e₂) :
-    p ^ a ∣ clashMod e₁ e₂ ↔ (a ≤ e₁ ∧ ∀ u, ¬ p ∣ u → u ^ (e₂ - e₁) % p ^ a = 1) := by
+`N = ∏_p p^{a_p}`, `a_p = max{a ≤ e1 : λ(p^a) ∣ e2-e1}`. -/
+theorem prime_pow_dvd_clashMod_iff {p a e1 e2 : Nat} (hp : IsPrime p) (ha : 1 ≤ a)
+    (he1 : 1 ≤ e1) (he : e1 < e2) :
+    p ^ a ∣ clashMod e1 e2 ↔ (a ≤ e1 ∧ ∀ u, ¬ p ∣ u → u ^ (e2 - e1) % p ^ a = 1) := by
   have hppos : 0 < p := by have := hp.1; omega
-  exact (clash_iff_dvd_clashMod (Nat.pow_pos hppos) he₁ he).symm.trans
-    (clash_prime_pow_iff hp ha he₁ he)
+  exact (clash_iff_dvd_clashMod (Nat.pow_pos hppos) he1 he).symm.trans
+    (clash_prime_pow_iff hp ha he1 he)
 
-/-! ### §5.4  `N(e₁,e₂)`, computed, and the theorem firing
+/-! ### §5.4  `N(e1,e2)`, computed, and the theorem firing
 
 The values agree with `verify.py`'s Carmichael product `∏ p^{a_p}`, which is the
 form Theorem G is stated in.  These are kernel computations, not `native_decide`. -/
@@ -852,13 +852,13 @@ theorem clashMod_one_seven : clashMod 1 7 = 42 := by decide
 theorem clashMod_two_six : clashMod 2 6 = 60 := by decide
 theorem clashMod_three_seven : clashMod 3 7 = 120 := by decide
 
-/-- Every divisor of `N(e₁,e₂)` is a dead base, for every `n`. -/
-theorem no_pandigital_of_dvd_clashMod {b e₁ e₂ n : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁)
-    (he : e₁ < e₂) (hdvd : b ∣ clashMod e₁ e₂) : ¬ Pandigital b e₁ e₂ n :=
-  no_nice_of_universal_clash hb ((clash_iff_dvd_clashMod (by omega) he₁ he).mpr hdvd)
+/-- Every divisor of `N(e1,e2)` is a dead base, for every `n`. -/
+theorem no_pandigital_of_dvd_clashMod {b e1 e2 n : Nat} (hb : 1 < b) (he1 : 1 ≤ e1)
+    (he : e1 < e2) (hdvd : b ∣ clashMod e1 e2) : ¬ Pandigital b e1 e2 n :=
+  no_nice_of_universal_clash hb ((clash_iff_dvd_clashMod (by omega) he1 he).mpr hdvd)
 
 /-- Theorem G firing where A and B both say nothing: `6 % 4 = 2` so Theorem A
-misses it and `6` is even so Theorem B misses it, but `x ≡ x³ (mod 6)` for every
+misses it and `6` is even so Theorem B misses it, but `x ≡ x^3 (mod 6)` for every
 `x` because `6 ∣ N(1,3) = 6`.  So base 6 has no `(1,3)` pandigital number. -/
 theorem one_three_base_six_dead (n : Nat) : ¬ Pandigital 6 1 3 n :=
   no_pandigital_of_dvd_clashMod (by decide) (by decide) (by decide) (by decide)
@@ -887,7 +887,7 @@ theorem digits_69cb : digits 10 (69 ^ 3) = [9, 0, 5, 8, 2, 3] := by
       digits_step (by decide) (by decide), digits_step (by decide) (by decide),
       digits_zero]
 
-/-- 69 in base 10 really is `(2,3)`-pandigital: `69² = 4761`, `69³ = 328509`,
+/-- 69 in base 10 really is `(2,3)`-pandigital: `69^2 = 4761`, `69^3 = 328509`,
 and the ten digits are `{0,…,9}` once each. -/
 theorem sixtynine_pandigital : Pandigital 10 2 3 69 := by
   have h : ∀ v, v < 10 → occ v ([1, 6, 7, 4] ++ [9, 0, 5, 8, 2, 3]) = 1 := by decide
@@ -904,8 +904,8 @@ theorem base_ten_no_clash : ¬ UniversalClash 10 2 3 := by
   have := Nat.le_of_dvd (by decide) hd
   omega
 
-/-- The local criterion running forwards: `3 = 3¹` clashes for `(1,3)` because
-`1 ≤ e₁` and every unit mod 3 squares to 1. -/
+/-- The local criterion running forwards: `3 = 3^1` clashes for `(1,3)` because
+`1 ≤ e1` and every unit mod 3 squares to 1. -/
 theorem clash_three_one_three : UniversalClash 3 1 3 := by
   refine (clash_prime_pow_iff (p := 3) (a := 1) isPrime_three (by decide) (by decide)
     (by decide)).mpr ⟨by decide, ?_⟩
@@ -917,7 +917,7 @@ theorem clash_three_one_three : UniversalClash 3 1 3 := by
   rcases h3 with h | h <;> rw [h] at hpm <;> omega
 
 /-- And backwards: base 9 does *not* clash for `(1,3)`, because `a = 2` exceeds
-`e₁ = 1`.  No unit-group computation is needed to see it. -/
+`e1 = 1`.  No unit-group computation is needed to see it. -/
 theorem nine_no_clash_one_three : ¬ UniversalClash 9 1 3 := by
   intro h
   have hc := (clash_prime_pow_iff (p := 3) (a := 2) isPrime_three (by decide) (by decide)
@@ -927,7 +927,7 @@ theorem nine_no_clash_one_three : ¬ UniversalClash 9 1 3 := by
 /-! ## §6  Proposition C′ — how complete the congruence sieve is
 
 A *congruence sieve* at modulus `m` prunes a candidate `n` by testing
-`(n^e₁ + n^e₂) mod m` for membership in the set of residues that a pandigital
+`(n^e1 + n^e2) mod m` for membership in the set of residues that a pandigital
 pair can have.  Proposition C′ of the report claims that set is always exactly
 the one the digit-sum congruence already gives — that **no** modulus adds
 information.  This section formalises the two halves of that claim, and they
@@ -1021,9 +1021,9 @@ pair `(x,y)` enters the sieve only through `wsum b j 0` of each digit list — t
 sizes are the sole combinatorial data in §6, and why `j = ord_m(b)` is the only
 feature of `m` that matters.
 -/
-theorem pair_mod_pow_sub_one {b j : Nat} (hb : 1 < b) (hj : 0 < j) (d₁ d₂ : List Nat) :
-    (valOf b d₁ + valOf b d₂) % (b ^ j - 1)
-      = (wsum b j 0 d₁ + wsum b j 0 d₂) % (b ^ j - 1) := by
+theorem pair_mod_pow_sub_one {b j : Nat} (hb : 1 < b) (hj : 0 < j) (d1 d2 : List Nat) :
+    (valOf b d1 + valOf b d2) % (b ^ j - 1)
+      = (wsum b j 0 d1 + wsum b j 0 d2) % (b ^ j - 1) := by
   rw [Nat.add_mod, valOf_mod_pow_sub_one hb hj, valOf_mod_pow_sub_one hb hj, ← Nat.add_mod]
 
 /-- At `j = 1` the weights collapse to `1` and `wsum` is the plain digit sum. -/
@@ -1044,9 +1044,9 @@ theorem valOf_mod_pred {b : Nat} (hb : 1 < b) (ds : List Nat) :
 `x + y ≡ T (mod b-1)`, where `T` is the total of all `b` digits.  Stated on the
 digit lists, so it holds for any notion of solution whose digits are those
 lists — the same convention §1-§3 use. -/
-theorem sieve_sound_mod_pred {b T : Nat} (hb : 1 < b) (d₁ d₂ : List Nat)
-    (hT : d₁.sum + d₂.sum = T) :
-    (valOf b d₁ + valOf b d₂) % (b - 1) = T % (b - 1) := by
+theorem sieve_sound_mod_pred {b T : Nat} (hb : 1 < b) (d1 d2 : List Nat)
+    (hT : d1.sum + d2.sum = T) :
+    (valOf b d1 + valOf b d2) % (b - 1) = T % (b - 1) := by
   rw [Nat.add_mod, valOf_mod_pred hb, valOf_mod_pred hb, ← Nat.add_mod, hT]
 
 /-- `valOf` inverts `digits`, so everything above is about actual numbers and
@@ -1085,7 +1085,7 @@ theorem sieve_sound {b x y T : Nat} (hb : 1 < b)
 /-! ### §6.1  Completeness fails — a machine-checked counterexample
 
 Base 4 with digit lengths `(2,2)`.  That is a genuine `(2,3)` band: `n = 2` has
-`2² = 4 = "10"` and `2³ = 8 = "20"`, two base-4 digits each, and `2 + 2 = 4 = b`,
+`2^2 = 4 = "10"` and `2^3 = 8 = "20"`, two base-4 digits each, and `2 + 2 = 4 = b`,
 so Theorem A's length identity holds and neither A (`4 % 5 ≠ 1`) nor B
 (`4 % 4 ≠ 3`) kills the base.
 
@@ -1096,11 +1096,11 @@ as casting out 3s demands, and mod 5 they are `0, 3, 1`. -/
 
 /-- A number with exactly two base-`b` digits has the digit list you expect.
 Same two-`digits_step` unfolding as `digits_69sq`, done once and generically. -/
-theorem digits_two {b x : Nat} (hb : 1 < b) (h1 : b ≤ x) (h2 : x < b * b) :
+theorem digits_two {b x : Nat} (hb : 1 < b) (h1' : b ≤ x) (h2' : x < b * b) :
     digits b x = [x % b, x / b] := by
   have hx : 0 < x := by omega
-  have hq : 0 < x / b := Nat.div_pos h1 (by omega)
-  have hqb : x / b < b := Nat.div_lt_of_lt_mul h2
+  have hq : 0 < x / b := Nat.div_pos h1' (by omega)
+  have hqb : x / b < b := Nat.div_lt_of_lt_mul h2'
   have hq2 : x / b / b = 0 := Nat.div_eq_of_lt hqb
   rw [digits_step hb hx, digits_step hb hq, hq2, digits_zero, Nat.mod_eq_of_lt hqb]
 
@@ -1180,7 +1180,7 @@ theorem base_four_lengths :
    numDigits_eq_of_bounds (by decide) (by decide) (by decide)⟩
 
 /-- Base 4 is a genuine `(2,3)` band and not an artefact: `n = 2` has
-`2² = "10"` and `2³ = "20"`, two base-4 digits each, so the length identity
+`2^2 = "10"` and `2^3 = "20"`, two base-4 digits each, so the length identity
 `2 + 2 = 4 = b` holds.  Neither Theorem A (`4 % 5 ≠ 1`) nor Theorem B
 (`4 % 4 ≠ 3`) kills the base, so the counterexample sits inside the family this
 repo actually searches. -/
@@ -1225,13 +1225,13 @@ half, which mentions no arithmetic. -/
 theorem mod_add_cancel {b c u v : Nat} (hb : 0 < b) (h : (u + c) % b = (v + c) % b) :
     u % b = v % b := by
   rcases Nat.le_total u v with hle | hle
-  · have h1 : u + c ≤ v + c := by omega
-    have hd : b ∣ v + c - (u + c) := (dvd_sub_iff_mod_eq hb h1).mpr h.symm
+  · have h1' : u + c ≤ v + c := by omega
+    have hd : b ∣ v + c - (u + c) := (dvd_sub_iff_mod_eq hb h1').mpr h.symm
     have he : v + c - (u + c) = v - u := by omega
     rw [he] at hd
     exact ((dvd_sub_iff_mod_eq hb hle).mp hd).symm
-  · have h1 : v + c ≤ u + c := by omega
-    have hd : b ∣ u + c - (v + c) := (dvd_sub_iff_mod_eq hb h1).mpr h
+  · have h1' : v + c ≤ u + c := by omega
+    have hd : b ∣ u + c - (v + c) := (dvd_sub_iff_mod_eq hb h1').mpr h
     have he : u + c - (v + c) = u - v := by omega
     rw [he] at hd
     exact (dvd_sub_iff_mod_eq hb hle).mp hd
@@ -1453,9 +1453,9 @@ theorem cover_exists {b : Nat} (hb : 0 < b) (N : Nat → Nat) :
     · -- the greedy digit overflows, so take all of `N k`
       have hcc : N k < V / b ^ k := Nat.lt_of_not_le hc
       have hbig : N k * b ^ k ≤ V := by
-        have h1 : N k * b ^ k ≤ (V / b ^ k) * b ^ k :=
+        have h1' : N k * b ^ k ≤ (V / b ^ k) * b ^ k :=
           Nat.mul_le_mul_right _ (Nat.le_of_lt hcc)
-        have h2 : (V / b ^ k) * b ^ k ≤ V := Nat.div_mul_le_self V (b ^ k)
+        have h2' : (V / b ^ k) * b ^ k ≤ V := Nat.div_mul_le_self V (b ^ k)
         omega
       have hle : V - N k * b ^ k ≤ sumRange (fun s => N s * b ^ s) k := by omega
       obtain ⟨ν, hν, hsum⟩ := ih (fun t ht => hgap t (by omega)) (V - N k * b ^ k) hle
@@ -1472,8 +1472,8 @@ theorem cover_exists {b : Nat} (hb : 0 < b) (N : Nat → Nat) :
         rw [if_pos rfl]
         omega
 
-theorem sumRange_update {f g : Nat → Nat} {t₀ x : Nat} :
-    ∀ j, t₀ < j → (∀ t, t ≠ t₀ → g t = f t) → x + g t₀ = f t₀ →
+theorem sumRange_update {f g : Nat → Nat} {t0 x : Nat} :
+    ∀ j, t0 < j → (∀ t, t ≠ t0 → g t = f t) → x + g t0 = f t0 →
     x + sumRange g j = sumRange f j := by
   intro j
   induction j with
@@ -1481,9 +1481,9 @@ theorem sumRange_update {f g : Nat → Nat} {t₀ x : Nat} :
   | succ k ih =>
     intro ht hne hx
     show x + (sumRange g k + g k) = sumRange f k + f k
-    rcases Nat.lt_or_ge t₀ k with hlt | hge
+    rcases Nat.lt_or_ge t0 k with hlt | hge
     · rw [hne k (by omega), ← ih hlt hne hx]; omega
-    · have : t₀ = k := by omega
+    · have : t0 = k := by omega
       subst this
       rw [sumRange_congr (f := g) (g := f) _ (fun t htk => hne t (by omega))]
       omega
@@ -1511,13 +1511,13 @@ theorem deal_res : ∀ (l : List Nat) (B : Nat → List Nat) (t : Nat),
   intro l
   induction l with
   | nil => intro B t; rfl
-  | cons t₀ cs ih =>
+  | cons t0 cs ih =>
     intro B t
-    show (deal (fun u => if u = t₀ then (B t₀).tail else B u) cs).2 t = _
+    show (deal (fun u => if u = t0 then (B t0).tail else B u) cs).2 t = _
     rw [ih]
-    show (if t = t₀ then (B t₀).tail else B t).drop (occ t cs)
-        = (B t).drop ((if t₀ = t then 1 else 0) + occ t cs)
-    by_cases h : t = t₀
+    show (if t = t0 then (B t0).tail else B t).drop (occ t cs)
+        = (B t).drop ((if t0 = t then 1 else 0) + occ t cs)
+    by_cases h : t = t0
     · subst h
       rw [if_pos rfl, if_pos rfl,
           show (B t).tail = (B t).drop 1 from by cases B t <;> rfl, List.drop_drop]
@@ -1525,14 +1525,14 @@ theorem deal_res : ∀ (l : List Nat) (B : Nat → List Nat) (t : Nat),
       congr 1
       omega
 
-theorem deal_app : ∀ (l₁ l₂ : List Nat) (B : Nat → List Nat),
-    (deal B (l₁ ++ l₂)).1 = (deal B l₁).1 ++ (deal (deal B l₁).2 l₂).1 := by
-  intro l₁
-  induction l₁ with
-  | nil => intro l₂ B; rfl
+theorem deal_app : ∀ (l1 l2 : List Nat) (B : Nat → List Nat),
+    (deal B (l1 ++ l2)).1 = (deal B l1).1 ++ (deal (deal B l1).2 l2).1 := by
+  intro l1
+  induction l1 with
+  | nil => intro l2 B; rfl
   | cons t cs ih =>
-    intro l₂ B
-    show (B t).headD 0 :: (deal _ (cs ++ l₂)).1
+    intro l2 B
+    show (B t).headD 0 :: (deal _ (cs ++ l2)).1
         = ((B t).headD 0 :: (deal _ cs).1) ++ _
     rw [ih]
     rfl
@@ -1544,28 +1544,28 @@ def wcls (b : Nat) : List Nat → List Nat → Nat
   | t :: cs, d :: ds => b ^ t * d + wcls b cs ds
 
 /-- The bookkeeping shared by the next two lemmas: dealing one slot of class
-`t₀` shortens block `t₀` by its head and leaves the others alone. -/
-theorem deal_step_hyps {j t₀ : Nat} {cs : List Nat} {B : Nat → List Nat}
-    (hmem : ∀ t, t ∈ (t₀ :: cs) → t < j) (hlen : ∀ t, occ t (t₀ :: cs) ≤ (B t).length) :
-    t₀ < j ∧ 0 < (B t₀).length ∧ (∀ t, t ∈ cs → t < j) ∧
-      (∀ t, occ t cs ≤ ((fun u => if u = t₀ then (B t₀).tail else B u) t).length) := by
-  refine ⟨hmem t₀ List.mem_cons_self, ?_, fun t ht => hmem t (List.mem_cons_of_mem _ ht), ?_⟩
-  · have h := hlen t₀
+`t0` shortens block `t0` by its head and leaves the others alone. -/
+theorem deal_step_hyps {j t0 : Nat} {cs : List Nat} {B : Nat → List Nat}
+    (hmem : ∀ t, t ∈ (t0 :: cs) → t < j) (hlen : ∀ t, occ t (t0 :: cs) ≤ (B t).length) :
+    t0 < j ∧ 0 < (B t0).length ∧ (∀ t, t ∈ cs → t < j) ∧
+      (∀ t, occ t cs ≤ ((fun u => if u = t0 then (B t0).tail else B u) t).length) := by
+  refine ⟨hmem t0 List.mem_cons_self, ?_, fun t ht => hmem t (List.mem_cons_of_mem _ ht), ?_⟩
+  · have h := hlen t0
     rw [occ_cons_self] at h
     omega
   · intro t
-    by_cases h : t = t₀
+    by_cases h : t = t0
     · subst h
-      have h1 := hlen t
-      rw [occ_cons_self] at h1
+      have h1' := hlen t
+      rw [occ_cons_self] at h1'
       show occ t cs ≤ (if t = t then (B t).tail else B t).length
       rw [if_pos rfl, show (B t).tail.length = (B t).length - 1 from by cases B t <;> rfl]
       omega
-    · have h1 := hlen t
-      show occ t cs ≤ (if t = t₀ then (B t₀).tail else B t).length
+    · have h1' := hlen t
+      show occ t cs ≤ (if t = t0 then (B t0).tail else B t).length
       rw [if_neg h]
       show occ t cs ≤ (B t).length
-      have : occ t (t₀ :: cs) = (if t₀ = t then 1 else 0) + occ t cs := rfl
+      have : occ t (t0 :: cs) = (if t0 = t then 1 else 0) + occ t cs := rfl
       rw [if_neg (fun hh => h hh.symm)] at this
       omega
 
@@ -1582,23 +1582,23 @@ theorem deal_occ (v j : Nat) : ∀ (l : List Nat) (B : Nat → List Nat),
     show occ v ([] : List Nat) + sumRange (fun t => occ v (B t)) j
         = sumRange (fun t => occ v (B t)) j
     rw [occ_nil, Nat.zero_add]
-  | cons t₀ cs ih =>
+  | cons t0 cs ih =>
     intro B hmem hlen
-    obtain ⟨ht₀, hpos, hmem', hlen'⟩ := deal_step_hyps hmem hlen
-    have key := ih (fun u => if u = t₀ then (B t₀).tail else B u) hmem' hlen'
-    show (if (B t₀).headD 0 = v then 1 else 0)
-        + occ v (deal (fun u => if u = t₀ then (B t₀).tail else B u) cs).1
-        + sumRange (fun t => occ v ((deal (fun u => if u = t₀ then (B t₀).tail else B u) cs).2 t)) j
+    obtain ⟨ht0, hpos, hmem', hlen'⟩ := deal_step_hyps hmem hlen
+    have key := ih (fun u => if u = t0 then (B t0).tail else B u) hmem' hlen'
+    show (if (B t0).headD 0 = v then 1 else 0)
+        + occ v (deal (fun u => if u = t0 then (B t0).tail else B u) cs).1
+        + sumRange (fun t => occ v ((deal (fun u => if u = t0 then (B t0).tail else B u) cs).2 t)) j
       = _
     rw [Nat.add_assoc, key]
-    refine sumRange_update (x := if (B t₀).headD 0 = v then 1 else 0) j ht₀ ?_ ?_
+    refine sumRange_update (x := if (B t0).headD 0 = v then 1 else 0) j ht0 ?_ ?_
     · intro t hne
-      show occ v (if t = t₀ then (B t₀).tail else B t) = occ v (B t)
+      show occ v (if t = t0 then (B t0).tail else B t) = occ v (B t)
       rw [if_neg hne]
-    · show (if (B t₀).headD 0 = v then 1 else 0)
-          + occ v (if t₀ = t₀ then (B t₀).tail else B t₀) = occ v (B t₀)
+    · show (if (B t0).headD 0 = v then 1 else 0)
+          + occ v (if t0 = t0 then (B t0).tail else B t0) = occ v (B t0)
       rw [if_pos rfl]
-      cases hB : B t₀ with
+      cases hB : B t0 with
       | nil => rw [hB] at hpos; exact absurd hpos (by simp)
       | cons x xs => show (if x = v then 1 else 0) + occ v xs = occ v (x :: xs); rfl
 
@@ -1614,25 +1614,25 @@ theorem deal_wcls (b j : Nat) : ∀ (l : List Nat) (B : Nat → List Nat),
     intro B _ _
     show 0 + sumRange (fun t => b ^ t * (B t).sum) j = sumRange (fun t => b ^ t * (B t).sum) j
     rw [Nat.zero_add]
-  | cons t₀ cs ih =>
+  | cons t0 cs ih =>
     intro B hmem hlen
-    obtain ⟨ht₀, hpos, hmem', hlen'⟩ := deal_step_hyps hmem hlen
-    have key := ih (fun u => if u = t₀ then (B t₀).tail else B u) hmem' hlen'
-    show b ^ t₀ * (B t₀).headD 0
-        + wcls b cs (deal (fun u => if u = t₀ then (B t₀).tail else B u) cs).1
-        + sumRange (fun t => b ^ t * ((deal (fun u => if u = t₀ then (B t₀).tail else B u) cs).2 t).sum) j
+    obtain ⟨ht0, hpos, hmem', hlen'⟩ := deal_step_hyps hmem hlen
+    have key := ih (fun u => if u = t0 then (B t0).tail else B u) hmem' hlen'
+    show b ^ t0 * (B t0).headD 0
+        + wcls b cs (deal (fun u => if u = t0 then (B t0).tail else B u) cs).1
+        + sumRange (fun t => b ^ t * ((deal (fun u => if u = t0 then (B t0).tail else B u) cs).2 t).sum) j
       = _
     rw [Nat.add_assoc, key]
-    refine sumRange_update (x := b ^ t₀ * (B t₀).headD 0) j ht₀ ?_ ?_
+    refine sumRange_update (x := b ^ t0 * (B t0).headD 0) j ht0 ?_ ?_
     · intro t hne
-      show b ^ t * (if t = t₀ then (B t₀).tail else B t).sum = b ^ t * (B t).sum
+      show b ^ t * (if t = t0 then (B t0).tail else B t).sum = b ^ t * (B t).sum
       rw [if_neg hne]
-    · show b ^ t₀ * (B t₀).headD 0
-          + b ^ t₀ * (if t₀ = t₀ then (B t₀).tail else B t₀).sum = b ^ t₀ * (B t₀).sum
+    · show b ^ t0 * (B t0).headD 0
+          + b ^ t0 * (if t0 = t0 then (B t0).tail else B t0).sum = b ^ t0 * (B t0).sum
       rw [if_pos rfl, ← Nat.mul_add]
-      cases hB : B t₀ with
+      cases hB : B t0 with
       | nil => rw [hB] at hpos; exact absurd hpos (by simp)
-      | cons x xs => show b ^ t₀ * (x + xs.sum) = b ^ t₀ * (x :: xs).sum; rfl
+      | cons x xs => show b ^ t0 * (x + xs.sum) = b ^ t0 * (x :: xs).sum; rfl
 
 /-- The classes of `n` consecutive slots starting at class `t`. -/
 def clsOf (j : Nat) : Nat → Nat → List Nat
@@ -1681,24 +1681,24 @@ theorem wsum_eq_wcls (b j : Nat) : ∀ (ds : List Nat) (t : Nat),
     rw [ih]
     rfl
 
-theorem wcls_append (b : Nat) : ∀ (l₁ : List Nat) (d₁ : List Nat) (l₂ d₂ : List Nat),
-    l₁.length = d₁.length →
-    wcls b (l₁ ++ l₂) (d₁ ++ d₂) = wcls b l₁ d₁ + wcls b l₂ d₂ := by
-  intro l₁
-  induction l₁ with
+theorem wcls_append (b : Nat) : ∀ (l1 : List Nat) (d1 : List Nat) (l2 d2 : List Nat),
+    l1.length = d1.length →
+    wcls b (l1 ++ l2) (d1 ++ d2) = wcls b l1 d1 + wcls b l2 d2 := by
+  intro l1
+  induction l1 with
   | nil =>
-    intro d₁ l₂ d₂ h
-    have : d₁ = [] := List.eq_nil_of_length_eq_zero h.symm
+    intro d1 l2 d2 h
+    have : d1 = [] := List.eq_nil_of_length_eq_zero h.symm
     subst this
-    show wcls b l₂ d₂ = 0 + wcls b l₂ d₂
+    show wcls b l2 d2 = 0 + wcls b l2 d2
     omega
   | cons t cs ih =>
-    intro d₁ l₂ d₂ h
-    cases d₁ with
+    intro d1 l2 d2 h
+    cases d1 with
     | nil => exact absurd h (by simp)
     | cons d ds =>
-      show b ^ t * d + wcls b (cs ++ l₂) (ds ++ d₂) = b ^ t * d + wcls b cs ds + wcls b l₂ d₂
-      rw [ih ds l₂ d₂ (by simpa using h)]
+      show b ^ t * d + wcls b (cs ++ l2) (ds ++ d2) = b ^ t * d + wcls b cs ds + wcls b l2 d2
+      rw [ih ds l2 d2 (by simpa using h)]
       omega
 
 /-- The `j` classes account for every slot. -/
@@ -1714,14 +1714,14 @@ theorem sumRange_occ_length {j : Nat} : ∀ (l : List Nat), (∀ x, x ∈ l → 
       | zero => rfl
       | succ k ihk => show sumRange _ k + occ k ([] : List Nat) = 0; rw [ihk]; rfl
     exact this j
-  | cons t₀ cs ih =>
+  | cons t0 cs ih =>
     intro hmem
-    have ht₀ : t₀ < j := hmem t₀ List.mem_cons_self
-    have := sumRange_update (f := fun t => occ t (t₀ :: cs)) (g := fun t => occ t cs)
-      (t₀ := t₀) (x := 1) j ht₀
+    have ht0 : t0 < j := hmem t0 List.mem_cons_self
+    have := sumRange_update (f := fun t => occ t (t0 :: cs)) (g := fun t => occ t cs)
+      (t0 := t0) (x := 1) j ht0
       (by intro t hne
-          show occ t cs = occ t (t₀ :: cs)
-          show occ t cs = (if t₀ = t then 1 else 0) + occ t cs
+          show occ t cs = occ t (t0 :: cs)
+          show occ t cs = (if t0 = t then 1 else 0) + occ t cs
           rw [if_neg (fun hh => hne hh.symm)]
           omega)
       (by rw [occ_cons_self])
@@ -1848,22 +1848,22 @@ theorem blk_length {j : Nat} (hj : 0 < j) (c p ν : Nat → Nat)
 
 theorem sum_aOf {j : Nat} (hj : 0 < j) (c p : Nat → Nat)
     (hpc : ∀ t, t < j → p t ≤ c t) : sumRange (aOf j c p) j = sumRange c j := by
-  have h1 : sumRange (aOf j c p) j
+  have h1' : sumRange (aOf j c p) j
       = sumRange p j + sumRange (fun t => c (nxt j t) - p (nxt j t)) j := by
     rw [← sumRange_add]
     exact sumRange_congr j (fun t _ => rfl)
-  rw [h1, sumRange_nxt hj (fun u => c u - p u), ← sumRange_add]
+  rw [h1', sumRange_nxt hj (fun u => c u - p u), ← sumRange_add]
   exact sumRange_congr j (fun t ht => by have := hpc t ht; omega)
 
 theorem blk_occ {j : Nat} (hj : 0 < j) (c p ν : Nat → Nat) (v : Nat) :
     sumRange (fun t => occ v (blk j c p ν t)) j
       = occ v (run 0 (sumRange (aOf j c p) j)) := by
-  have h1 : sumRange (fun t => occ v (blk j c p ν t)) j
+  have h1' : sumRange (fun t => occ v (blk j c p ν t)) j
       = sumRange (fun t => occ v (picked j c p ν t).1) j
         + sumRange (fun t => occ v (picked j c p ν (prv j t)).2) j := by
     rw [← sumRange_add]
     exact sumRange_congr j (fun t _ => occ_append v _ _)
-  rw [h1, sumRange_prv hj (fun t => occ v (picked j c p ν t).2), ← sumRange_add,
+  rw [h1', sumRange_prv hj (fun t => occ v (picked j c p ν t).2), ← sumRange_add,
       sumRange_congr (f := fun t => occ v (picked j c p ν t).1 + occ v (picked j c p ν t).2)
         (g := fun t => occ v (run (offOf j c p t) (aOf j c p t))) j
         (fun t _ => pick_occ v (offOf j c p t) (p t) (qOf j c p t) (ν t)),
@@ -1938,11 +1938,11 @@ theorem geom {b : Nat} (hb : 1 ≤ b) : ∀ j, (b - 1) * cosetSize b j + 1 = b ^
   | succ k ih =>
     show (b - 1) * (cosetSize b k + b ^ k) + 1 = b ^ (k + 1)
     rw [Nat.mul_add]
-    have h1 : (b - 1) * b ^ k + b ^ k = b * b ^ k := by
+    have h1' : (b - 1) * b ^ k + b ^ k = b * b ^ k := by
       rw [← Nat.succ_mul]
       congr 1
       omega
-    rw [Nat.pow_succ, Nat.mul_comm (b ^ k) b, ← h1]
+    rw [Nat.pow_succ, Nat.mul_comm (b ^ k) b, ← h1']
     omega
 
 theorem cosetSize_pos {b j : Nat} (hj : 0 < j) : 0 < cosetSize b j := by
@@ -1977,12 +1977,12 @@ theorem coset_hit {g K z C : Nat} (hK : 0 < K) (h : z % g = C % g) :
     rw [Nat.mul_assoc, ← Nat.mul_add, hDK]
   have hfin : z + g * ((C / g + (K - 1) * (z / g)) % K)
       + g * K * ((C / g + (K - 1) * (z / g)) / K) = C + g * K * (z / g) := by omega
-  have h1 : (z + g * ((C / g + (K - 1) * (z / g)) % K)
+  have h1' : (z + g * ((C / g + (K - 1) * (z / g)) % K)
       + g * K * ((C / g + (K - 1) * (z / g)) / K)) % (g * K)
       = (z + g * ((C / g + (K - 1) * (z / g)) % K)) % (g * K) :=
     Nat.add_mul_mod_self_left _ _ _
-  have h2 : (C + g * K * (z / g)) % (g * K) = C % (g * K) := Nat.add_mul_mod_self_left _ _ _
-  rw [← h1, hfin, h2]
+  have h2' : (C + g * K * (z / g)) % (g * K) = C % (g * K) := Nat.add_mul_mod_self_left _ _ _
+  rw [← h1', hfin, h2']
 
 /-! ### Where the digit `0` lands -/
 
@@ -1999,7 +1999,7 @@ theorem sumRange_eq_zero {f : Nat → Nat} : ∀ n, sumRange f n = 0 → ∀ t, 
       subst this; omega
 
 theorem sumRange_eq_one {f : Nat → Nat} : ∀ n, sumRange f n = 1 →
-    ∃ t₀, t₀ < n ∧ f t₀ = 1 ∧ ∀ t, t < n → t ≠ t₀ → f t = 0 := by
+    ∃ t0, t0 < n ∧ f t0 = 1 ∧ ∀ t, t < n → t ≠ t0 → f t = 0 := by
   intro n
   induction n with
   | zero => intro h; exact absurd h (by simp [sumRange])
@@ -2007,8 +2007,8 @@ theorem sumRange_eq_one {f : Nat → Nat} : ∀ n, sumRange f n = 1 →
     intro h
     have h' : sumRange f k + f k = 1 := h
     rcases Nat.eq_zero_or_pos (f k) with hk | hk
-    · obtain ⟨t₀, ht₀, hf, hz⟩ := ih (by omega)
-      exact ⟨t₀, by omega, hf, fun t ht hne => by
+    · obtain ⟨t0, ht0, hf, hz⟩ := ih (by omega)
+      exact ⟨t0, by omega, hf, fun t ht hne => by
         rcases Nat.lt_or_ge t k with hlt | hge
         · exact hz t hlt hne
         · have : t = k := by omega
@@ -2036,30 +2036,30 @@ theorem nth_ne_zero : ∀ (l : List Nat), occ 0 l = 0 → ∀ m, m < l.length �
     | zero => show (x :: xs).headD 0 ≠ 0; exact hx.1
     | succ i => exact ih hx.2 i (by simpa using hm)
 
-theorem nth_append_left : ∀ (l₁ : List Nat) (l₂ : List Nat) (m : Nat), m < l₁.length →
-    nth (l₁ ++ l₂) m = nth l₁ m := by
-  intro l₁
-  induction l₁ with
-  | nil => intro l₂ m hm; exact absurd hm (by simp)
+theorem nth_append_left : ∀ (l1 : List Nat) (l2 : List Nat) (m : Nat), m < l1.length →
+    nth (l1 ++ l2) m = nth l1 m := by
+  intro l1
+  induction l1 with
+  | nil => intro l2 m hm; exact absurd hm (by simp)
   | cons x xs ih =>
-    intro l₂ m hm
+    intro l2 m hm
     cases m with
     | zero => rfl
-    | succ i => exact ih l₂ i (by simpa using hm)
+    | succ i => exact ih l2 i (by simpa using hm)
 
-theorem nth_append_right : ∀ (l₁ : List Nat) (l₂ : List Nat) (m : Nat), l₁.length ≤ m →
-    nth (l₁ ++ l₂) m = nth l₂ (m - l₁.length) := by
-  intro l₁
-  induction l₁ with
-  | nil => intro l₂ m _; rfl
+theorem nth_append_right : ∀ (l1 : List Nat) (l2 : List Nat) (m : Nat), l1.length ≤ m →
+    nth (l1 ++ l2) m = nth l2 (m - l1.length) := by
+  intro l1
+  induction l1 with
+  | nil => intro l2 m _; rfl
   | cons x xs ih =>
-    intro l₂ m hm
+    intro l2 m hm
     cases m with
     | zero => exact absurd hm (by simp)
     | succ i =>
       have h : xs.length ≤ i := by simpa using hm
-      show nth (xs ++ l₂) i = nth l₂ (i + 1 - (xs.length + 1))
-      rw [ih l₂ i h]
+      show nth (xs ++ l2) i = nth l2 (i + 1 - (xs.length + 1))
+      rw [ih l2 i h]
       congr 1
       omega
 
@@ -2078,6 +2078,8 @@ theorem ins0_sum (k : Nat) (l : List Nat) : (ins0 k l).sum = l.sum := by
   show (l.take k ++ 0 :: l.drop k).sum = l.sum
   rw [List.sum_append]
   show (l.take k).sum + (0 + (l.drop k).sum) = l.sum
+  -- `l₁`/`l₂` are core's own parameter names for `List.sum_append`; this file's
+  -- identifiers are ASCII, but a named argument must spell the callee's.
   have := List.sum_append (l₁ := l.take k) (l₂ := l.drop k)
   rw [List.take_append_drop] at this
   omega
@@ -2230,9 +2232,9 @@ theorem occ_run_lt : ∀ n s v, v < s → occ v (run s n) = 0 := by
 theorem occ_run : ∀ n s v, s ≤ v → v < s + n → occ v (run s n) = 1 := by
   intro n
   induction n with
-  | zero => intro s v h1 h2; omega
+  | zero => intro s v h1' h2'; omega
   | succ k ih =>
-    intro s v h1 h2
+    intro s v h1' h2'
     show (if s = v then 1 else 0) + occ v (run (s+1) k) = 1
     by_cases h : s = v
     · rw [if_pos h, occ_run_lt k (s+1) v (by omega)]
@@ -2254,46 +2256,46 @@ theorem sum_runs (a : Nat → Nat) : ∀ n,
 /-- **Realisation.**  Blocks of the right sizes become a pandigital pair of digit
 lists: value-for-value the same multiset, and block `t` is charged weight `b^t`,
 which is exactly what the block congruence sees. -/
-theorem realise_pair {b j L₁ L₂ : Nat} (hj : 0 < j) (B : Nat → List Nat)
-    (hlen : ∀ t, t < j → (B t).length = occ t (clsOf j 0 L₁) + occ t (clsOf j 0 L₂)) :
-    ((deal B (clsOf j 0 L₁)).1.length = L₁) ∧
-    ((deal (deal B (clsOf j 0 L₁)).2 (clsOf j 0 L₂)).1.length = L₂) ∧
-    (∀ v, occ v ((deal B (clsOf j 0 L₁)).1
-              ++ (deal (deal B (clsOf j 0 L₁)).2 (clsOf j 0 L₂)).1)
+theorem realise_pair {b j L1 L2 : Nat} (hj : 0 < j) (B : Nat → List Nat)
+    (hlen : ∀ t, t < j → (B t).length = occ t (clsOf j 0 L1) + occ t (clsOf j 0 L2)) :
+    ((deal B (clsOf j 0 L1)).1.length = L1) ∧
+    ((deal (deal B (clsOf j 0 L1)).2 (clsOf j 0 L2)).1.length = L2) ∧
+    (∀ v, occ v ((deal B (clsOf j 0 L1)).1
+              ++ (deal (deal B (clsOf j 0 L1)).2 (clsOf j 0 L2)).1)
         = sumRange (fun t => occ v (B t)) j) ∧
-    (wsum b j 0 (deal B (clsOf j 0 L₁)).1
-        + wsum b j 0 (deal (deal B (clsOf j 0 L₁)).2 (clsOf j 0 L₂)).1
+    (wsum b j 0 (deal B (clsOf j 0 L1)).1
+        + wsum b j 0 (deal (deal B (clsOf j 0 L1)).2 (clsOf j 0 L2)).1
       = sumRange (fun t => b ^ t * (B t).sum) j) := by
-  have hmem : ∀ t, t ∈ (clsOf j 0 L₁ ++ clsOf j 0 L₂) → t < j := by
+  have hmem : ∀ t, t ∈ (clsOf j 0 L1 ++ clsOf j 0 L2) → t < j := by
     intro t ht
     rcases List.mem_append.mp ht with h | h
-    · exact clsOf_mem hj L₁ 0 hj t h
-    · exact clsOf_mem hj L₂ 0 hj t h
-  have hocc : ∀ t, occ t (clsOf j 0 L₁ ++ clsOf j 0 L₂) ≤ (B t).length := by
+    · exact clsOf_mem hj L1 0 hj t h
+    · exact clsOf_mem hj L2 0 hj t h
+  have hocc : ∀ t, occ t (clsOf j 0 L1 ++ clsOf j 0 L2) ≤ (B t).length := by
     intro t
     by_cases ht : t < j
     · rw [occ_append, hlen t ht]
       omega
-    · have h1 : occ t (clsOf j 0 L₁ ++ clsOf j 0 L₂) = 0 := by
-        rcases Nat.eq_zero_or_pos (occ t (clsOf j 0 L₁ ++ clsOf j 0 L₂)) with h | h
+    · have h1' : occ t (clsOf j 0 L1 ++ clsOf j 0 L2) = 0 := by
+        rcases Nat.eq_zero_or_pos (occ t (clsOf j 0 L1 ++ clsOf j 0 L2)) with h | h
         · exact h
         · exact absurd (hmem t (mem_of_occ_pos _ t h)) ht
       omega
   have hres : ∀ t, t < j →
-      (deal B (clsOf j 0 L₁ ++ clsOf j 0 L₂)).2 t = [] := by
+      (deal B (clsOf j 0 L1 ++ clsOf j 0 L2)).2 t = [] := by
     intro t ht
     rw [deal_res, occ_append, ← hlen t ht]
     exact List.drop_eq_nil_of_le (by omega)
-  have happ := deal_app (clsOf j 0 L₁) (clsOf j 0 L₂) B
+  have happ := deal_app (clsOf j 0 L1) (clsOf j 0 L2) B
   refine ⟨by rw [deal_len, clsOf_length], by rw [deal_len, clsOf_length], ?_, ?_⟩
   · intro v
     rw [← happ]
-    have h := deal_occ v j (clsOf j 0 L₁ ++ clsOf j 0 L₂) B hmem hocc
+    have h := deal_occ v j (clsOf j 0 L1 ++ clsOf j 0 L2) B hmem hocc
     rw [sumRange_zero j (fun t ht => by rw [hres t ht]; rfl)] at h
     omega
   · rw [wsum_eq_wcls, wsum_eq_wcls, deal_len, deal_len, clsOf_length, clsOf_length,
-        ← wcls_append b (clsOf j 0 L₁) _ _ _ (by rw [deal_len, clsOf_length]), ← happ]
-    have h := deal_wcls b j (clsOf j 0 L₁ ++ clsOf j 0 L₂) B hmem hocc
+        ← wcls_append b (clsOf j 0 L1) _ _ _ (by rw [deal_len, clsOf_length]), ← happ]
+    have h := deal_wcls b j (clsOf j 0 L1 ++ clsOf j 0 L2) B hmem hocc
     rw [sumRange_zero j (fun t ht => by rw [hres t ht]; rfl)] at h
     omega
 
@@ -2378,12 +2380,12 @@ theorem blocks_hit {b j : Nat} (hb : 1 < b) (hj : 0 < j) (c p : Nat → Nat)
       = (b - 1) * W + (b ^ j - 1)
           * ((sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
               / cosetSize b j) := by
-    have h1 : (b - 1) * (sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
+    have h1' : (b - 1) * (sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
         = (b - 1) * (cosetSize b j
             * ((sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
                 / cosetSize b j) + W) := by
       rw [hMV]
-    rw [h1, Nat.mul_add, ← Nat.mul_assoc, hm]
+    rw [h1', Nat.mul_add, ← Nat.mul_assoc, hm]
     omega
   refine mod_add_cancel hmpos (c :=
     (b - 1) * (sumRange (fun t => b ^ t * (p t * offOf j c p t + tri (p t))) j + V)
@@ -2419,54 +2421,54 @@ theorem nth_drop (l : List Nat) (s m : Nat) : nth (l.drop s) m = nth l (s + m) :
 /-- **The digit-list half.**  Blocks of the right sizes, holding each value once
 and keeping `0` off the two leading slots, read out as a genuine pandigital pair
 of digit lists whose sum the sieve sees as `Σ_t b^t S_t`. -/
-theorem blocks_to_pair {b j L₁ L₂ : Nat} (hb : 1 < b) (hj : 0 < j)
-    (hL₁ : 0 < L₁) (hL₂ : 0 < L₂) (B : Nat → List Nat)
-    (hlen : ∀ t, t < j → (B t).length = occ t (clsOf j 0 L₁) + occ t (clsOf j 0 L₂))
+theorem blocks_to_pair {b j L1 L2 : Nat} (hb : 1 < b) (hj : 0 < j)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (B : Nat → List Nat)
+    (hlen : ∀ t, t < j → (B t).length = occ t (clsOf j 0 L1) + occ t (clsOf j 0 L2))
     (hone : ∀ v, v < b → sumRange (fun t => occ v (B t)) j = 1)
-    (hlead₁ : nth (B ((L₁ - 1) % j)) (occ ((L₁ - 1) % j) (clsOf j 0 L₁) - 1) ≠ 0)
-    (hlead₂ : nth (B ((L₂ - 1) % j))
-        (occ ((L₂ - 1) % j) (clsOf j 0 L₁) + occ ((L₂ - 1) % j) (clsOf j 0 L₂) - 1) ≠ 0) :
-    ∃ d₁ d₂ : List Nat,
-      d₁.length = L₁ ∧ d₂.length = L₂ ∧
-      (∀ v, v < b → occ v (d₁ ++ d₂) = 1) ∧
-      nth d₁ (L₁ - 1) ≠ 0 ∧ nth d₂ (L₂ - 1) ≠ 0 ∧
-      (valOf b d₁ + valOf b d₂) % (b ^ j - 1)
+    (hlead1 : nth (B ((L1 - 1) % j)) (occ ((L1 - 1) % j) (clsOf j 0 L1) - 1) ≠ 0)
+    (hlead2 : nth (B ((L2 - 1) % j))
+        (occ ((L2 - 1) % j) (clsOf j 0 L1) + occ ((L2 - 1) % j) (clsOf j 0 L2) - 1) ≠ 0) :
+    ∃ d1 d2 : List Nat,
+      d1.length = L1 ∧ d2.length = L2 ∧
+      (∀ v, v < b → occ v (d1 ++ d2) = 1) ∧
+      nth d1 (L1 - 1) ≠ 0 ∧ nth d2 (L2 - 1) ≠ 0 ∧
+      (valOf b d1 + valOf b d2) % (b ^ j - 1)
         = sumRange (fun t => b ^ t * (B t).sum) j % (b ^ j - 1) := by
-  obtain ⟨hd₁, hd₂, hocc, hw⟩ := realise_pair (b := b) hj B hlen
-  have hsplit₁ : clsOf j 0 L₁ = clsOf j 0 (L₁ - 1) ++ [(L₁ - 1) % j] := by
-    have h := clsOf_snoc hj (L₁ - 1) 0 hj
-    rw [show L₁ - 1 + 1 = L₁ from by omega, Nat.zero_add] at h
+  obtain ⟨hd1, hd2, hocc, hw⟩ := realise_pair (b := b) hj B hlen
+  have hsplit1 : clsOf j 0 L1 = clsOf j 0 (L1 - 1) ++ [(L1 - 1) % j] := by
+    have h := clsOf_snoc hj (L1 - 1) 0 hj
+    rw [show L1 - 1 + 1 = L1 from by omega, Nat.zero_add] at h
     exact h
-  have hsplit₂ : clsOf j 0 L₂ = clsOf j 0 (L₂ - 1) ++ [(L₂ - 1) % j] := by
-    have h := clsOf_snoc hj (L₂ - 1) 0 hj
-    rw [show L₂ - 1 + 1 = L₂ from by omega, Nat.zero_add] at h
+  have hsplit2 : clsOf j 0 L2 = clsOf j 0 (L2 - 1) ++ [(L2 - 1) % j] := by
+    have h := clsOf_snoc hj (L2 - 1) 0 hj
+    rw [show L2 - 1 + 1 = L2 from by omega, Nat.zero_add] at h
     exact h
-  have hu₁ : (clsOf j 0 (L₁ - 1)).length = L₁ - 1 := clsOf_length j (L₁ - 1) 0
-  have hu₂ : (clsOf j 0 (L₂ - 1)).length = L₂ - 1 := clsOf_length j (L₂ - 1) 0
-  have hcnt₁ : occ ((L₁ - 1) % j) (clsOf j 0 L₁)
-      = occ ((L₁ - 1) % j) (clsOf j 0 (L₁ - 1)) + 1 := by
-    rw [hsplit₁, occ_append, occ_single]
-  have hcnt₂ : occ ((L₂ - 1) % j) (clsOf j 0 L₂)
-      = occ ((L₂ - 1) % j) (clsOf j 0 (L₂ - 1)) + 1 := by
-    rw [hsplit₂, occ_append, occ_single]
-  refine ⟨_, _, hd₁, hd₂, fun v hv => by rw [hocc v, hone v hv], ?_, ?_, ?_⟩
-  · have hdl := deal_last B (clsOf j 0 (L₁ - 1)) ((L₁ - 1) % j)
-    rw [hu₁, ← hsplit₁] at hdl
-    rw [hcnt₁] at hlead₁
+  have hu1 : (clsOf j 0 (L1 - 1)).length = L1 - 1 := clsOf_length j (L1 - 1) 0
+  have hu2 : (clsOf j 0 (L2 - 1)).length = L2 - 1 := clsOf_length j (L2 - 1) 0
+  have hcnt1 : occ ((L1 - 1) % j) (clsOf j 0 L1)
+      = occ ((L1 - 1) % j) (clsOf j 0 (L1 - 1)) + 1 := by
+    rw [hsplit1, occ_append, occ_single]
+  have hcnt2 : occ ((L2 - 1) % j) (clsOf j 0 L2)
+      = occ ((L2 - 1) % j) (clsOf j 0 (L2 - 1)) + 1 := by
+    rw [hsplit2, occ_append, occ_single]
+  refine ⟨_, _, hd1, hd2, fun v hv => by rw [hocc v, hone v hv], ?_, ?_, ?_⟩
+  · have hdl := deal_last B (clsOf j 0 (L1 - 1)) ((L1 - 1) % j)
+    rw [hu1, ← hsplit1] at hdl
+    rw [hcnt1] at hlead1
     rw [hdl]
-    simpa using hlead₁
-  · have hdl := deal_last (deal B (clsOf j 0 L₁)).2 (clsOf j 0 (L₂ - 1)) ((L₂ - 1) % j)
-    rw [hu₂, ← hsplit₂] at hdl
+    simpa using hlead1
+  · have hdl := deal_last (deal B (clsOf j 0 L1)).2 (clsOf j 0 (L2 - 1)) ((L2 - 1) % j)
+    rw [hu2, ← hsplit2] at hdl
     rw [hdl, deal_res, nth_drop,
-        show occ ((L₂ - 1) % j) (clsOf j 0 L₁) + occ ((L₂ - 1) % j) (clsOf j 0 (L₂ - 1))
-          = occ ((L₂ - 1) % j) (clsOf j 0 L₁) + occ ((L₂ - 1) % j) (clsOf j 0 L₂) - 1 from by
+        show occ ((L2 - 1) % j) (clsOf j 0 L1) + occ ((L2 - 1) % j) (clsOf j 0 (L2 - 1))
+          = occ ((L2 - 1) % j) (clsOf j 0 L1) + occ ((L2 - 1) % j) (clsOf j 0 L2) - 1 from by
           omega]
-    exact hlead₂
+    exact hlead2
   · rw [pair_mod_pow_sub_one hb hj, hw]
 
 /-- **Theorem C′.**  Suppose the class sizes `c_t` forced by the digit lengths
 satisfy the no-gap conditions for some legal `p`, that `c_t ≥ 2` for every class,
-and that `c_t ≥ 3` at the one class `(L₂-1) % j` holding the second number's
+and that `c_t ≥ 3` at the one class `(L2-1) % j` holding the second number's
 leading slot.  Then every residue mod `b^j - 1` that the digit-sum congruence
 permits is realised by a genuine pandigital pair with those digit lengths —
 leading digits included.  So no modulus of order `j` prunes more than casting
@@ -2476,27 +2478,27 @@ The rider is sharper than REPORT-provability.md §6.3's `c_t ≥ 3` for all `t`,
 and sharpening it was worth doing: the gap between this theorem and the
 conjecture of §6.5 (`c_t ≥ 2` suffices) is now a single class, not every
 class. -/
-theorem theorem_C_prime {b j L₁ L₂ : Nat} (hb : 1 < b) (hj : 0 < j)
-    (hL : L₁ + L₂ = b) (hL₁ : 0 < L₁) (hL₂ : 0 < L₂)
+theorem theorem_C_prime {b j L1 L2 : Nat} (hb : 1 < b) (hj : 0 < j)
+    (hL : L1 + L2 = b) (hL1 : 0 < L1) (hL2 : 0 < L2)
     (c p : Nat → Nat)
-    (hc : ∀ t, c t = occ t (clsOf j 0 L₁) + occ t (clsOf j 0 L₂))
+    (hc : ∀ t, c t = occ t (clsOf j 0 L1) + occ t (clsOf j 0 L2))
     (hpc : ∀ t, t < j → p t ≤ c t)
-    (h2 : ∀ t, t < j → 2 ≤ c t)
-    (h3 : 3 ≤ c ((L₂ - 1) % j))
+    (h2' : ∀ t, t < j → 2 ≤ c t)
+    (h3 : 3 ≤ c ((L2 - 1) % j))
     (hgap : ∀ t, t < j → b ^ t ≤ sumRange (fun s => Nof j c p s * b ^ s) t + 1)
     (hreach : cosetSize b j ≤ sumRange (fun s => Nof j c p s * b ^ s) j + 1)
     {z : Nat} (hz : z % (b - 1) = tri b % (b - 1)) :
-    ∃ d₁ d₂ : List Nat,
-      d₁.length = L₁ ∧ d₂.length = L₂ ∧
-      (∀ v, v < b → occ v (d₁ ++ d₂) = 1) ∧
-      nth d₁ (L₁ - 1) ≠ 0 ∧ nth d₂ (L₂ - 1) ≠ 0 ∧
-      (valOf b d₁ + valOf b d₂) % (b ^ j - 1) = z % (b ^ j - 1) := by
-  have hmem₁ : ∀ x, x ∈ clsOf j 0 L₁ → x < j := clsOf_mem hj L₁ 0 hj
-  have hmem₂ : ∀ x, x ∈ clsOf j 0 L₂ → x < j := clsOf_mem hj L₂ 0 hj
+    ∃ d1 d2 : List Nat,
+      d1.length = L1 ∧ d2.length = L2 ∧
+      (∀ v, v < b → occ v (d1 ++ d2) = 1) ∧
+      nth d1 (L1 - 1) ≠ 0 ∧ nth d2 (L2 - 1) ≠ 0 ∧
+      (valOf b d1 + valOf b d2) % (b ^ j - 1) = z % (b ^ j - 1) := by
+  have hmem1 : ∀ x, x ∈ clsOf j 0 L1 → x < j := clsOf_mem hj L1 0 hj
+  have hmem2 : ∀ x, x ∈ clsOf j 0 L2 → x < j := clsOf_mem hj L2 0 hj
   have hcb : sumRange c j = b := by
-    rw [sumRange_congr (g := fun t => occ t (clsOf j 0 L₁) + occ t (clsOf j 0 L₂)) j
+    rw [sumRange_congr (g := fun t => occ t (clsOf j 0 L1) + occ t (clsOf j 0 L2)) j
           (fun t _ => hc t), sumRange_add,
-        sumRange_occ_length _ hmem₁, sumRange_occ_length _ hmem₂,
+        sumRange_occ_length _ hmem1, sumRange_occ_length _ hmem2,
         clsOf_length, clsOf_length]
     exact hL
   have hrunsum : (run 0 (sumRange c j)).sum = tri b := by rw [hcb, run_sum]; omega
@@ -2507,45 +2509,45 @@ theorem theorem_C_prime {b j L₁ L₂ : Nat} (hb : 1 < b) (hj : 0 < j)
     intro v
     rw [blk_occ hj c p ν v, sum_aOf hj c p hpc, hcb]
   -- the one block holding the digit `0`
-  obtain ⟨t₀, ht₀j, ht₀one, ht₀zero⟩ := sumRange_eq_one j (by
+  obtain ⟨t0, ht0j, ht0one, ht0zero⟩ := sumRange_eq_one j (by
     rw [hBocc 0]; exact occ_run b 0 0 (by omega) (by omega))
-  have hlen0 : (dropZeros (blk j c p ν t₀)).length + 1 = c t₀ := by
-    rw [dropZeros_length _ ht₀one, hBlen t₀ ht₀j]
+  have hlen0 : (dropZeros (blk j c p ν t0)).length + 1 = c t0 := by
+    rw [dropZeros_length _ ht0one, hBlen t0 ht0j]
   -- the two leading slots, and the index chosen for `0`
-  have ht₁j : (L₁ - 1) % j < j := Nat.mod_lt _ hj
-  have ht₂j : (L₂ - 1) % j < j := Nat.mod_lt _ hj
-  have hpos₁ : 1 ≤ occ ((L₁ - 1) % j) (clsOf j 0 L₁) := by
-    have h := clsOf_snoc hj (L₁ - 1) 0 hj
-    rw [show L₁ - 1 + 1 = L₁ from by omega, Nat.zero_add] at h
+  have ht1j : (L1 - 1) % j < j := Nat.mod_lt _ hj
+  have ht2j : (L2 - 1) % j < j := Nat.mod_lt _ hj
+  have hpos1 : 1 ≤ occ ((L1 - 1) % j) (clsOf j 0 L1) := by
+    have h := clsOf_snoc hj (L1 - 1) 0 hj
+    rw [show L1 - 1 + 1 = L1 from by omega, Nat.zero_add] at h
     rw [h, occ_append, occ_single]
     omega
-  have hpos₂ : 1 ≤ occ ((L₂ - 1) % j) (clsOf j 0 L₂) := by
-    have h := clsOf_snoc hj (L₂ - 1) 0 hj
-    rw [show L₂ - 1 + 1 = L₂ from by omega, Nat.zero_add] at h
+  have hpos2 : 1 ≤ occ ((L2 - 1) % j) (clsOf j 0 L2) := by
+    have h := clsOf_snoc hj (L2 - 1) 0 hj
+    rw [show L2 - 1 + 1 = L2 from by omega, Nat.zero_add] at h
     rw [h, occ_append, occ_single]
     omega
-  obtain ⟨k, hkdef⟩ : ∃ k, k = if occ t₀ (clsOf j 0 L₁) = 1 then 1 else 0 := ⟨_, rfl⟩
-  have hk1 : k ≤ 1 := by rw [hkdef]; by_cases h : occ t₀ (clsOf j 0 L₁) = 1 <;> simp [h]
-  have hkle : k ≤ (dropZeros (blk j c p ν t₀)).length := by have := h2 t₀ ht₀j; omega
+  obtain ⟨k, hkdef⟩ : ∃ k, k = if occ t0 (clsOf j 0 L1) = 1 then 1 else 0 := ⟨_, rfl⟩
+  have hk1' : k ≤ 1 := by rw [hkdef]; by_cases h : occ t0 (clsOf j 0 L1) = 1 <;> simp [h]
+  have hkle : k ≤ (dropZeros (blk j c p ν t0)).length := by have := h2' t0 ht0j; omega
   obtain ⟨B, hBdef⟩ : ∃ B : Nat → List Nat, B = fun t =>
-      if t = t₀ then ins0 k (dropZeros (blk j c p ν t₀)) else blk j c p ν t := ⟨_, rfl⟩
-  have hB0 : B t₀ = ins0 k (dropZeros (blk j c p ν t₀)) := by rw [hBdef]; simp
-  have hBn : ∀ t, t ≠ t₀ → B t = blk j c p ν t := by intro t ht; rw [hBdef]; simp [ht]
+      if t = t0 then ins0 k (dropZeros (blk j c p ν t0)) else blk j c p ν t := ⟨_, rfl⟩
+  have hB0 : B t0 = ins0 k (dropZeros (blk j c p ν t0)) := by rw [hBdef]; simp
+  have hBn : ∀ t, t ≠ t0 → B t = blk j c p ν t := by intro t ht; rw [hBdef]; simp [ht]
   -- the modified blocks have the same sizes, the same values and the same sums
-  have hlen : ∀ t, t < j → (B t).length = occ t (clsOf j 0 L₁) + occ t (clsOf j 0 L₂) := by
+  have hlen : ∀ t, t < j → (B t).length = occ t (clsOf j 0 L1) + occ t (clsOf j 0 L2) := by
     intro t ht
-    by_cases h : t = t₀
+    by_cases h : t = t0
     · subst h; rw [hB0, ins0_length hkle, hlen0, hc]
     · rw [hBn t h, hBlen t ht, hc]
   have hBocc' : ∀ v t, occ v (B t) = occ v (blk j c p ν t) := by
     intro v t
-    by_cases h : t = t₀
+    by_cases h : t = t0
     · subst h
       rw [hB0, ins0_occ]
       show (if 0 = v then 1 else 0) + occ v (dropZeros (blk j c p ν t)) = _
       by_cases hv : v = 0
       · subst hv
-        rw [if_pos rfl, dropZeros_occ_zero, ht₀one]
+        rw [if_pos rfl, dropZeros_occ_zero, ht0one]
       · rw [if_neg (fun hh => hv hh.symm), dropZeros_occ (by omega)]
         omega
     · rw [hBn t h]
@@ -2555,38 +2557,38 @@ theorem theorem_C_prime {b j L₁ L₂ : Nat} (hb : 1 < b) (hj : 0 < j)
     exact occ_run b 0 v (by omega) (by omega)
   have hBsum : ∀ t, (B t).sum = (blk j c p ν t).sum := by
     intro t
-    by_cases h : t = t₀
+    by_cases h : t = t0
     · subst h; rw [hB0, ins0_sum, dropZeros_sum]
     · rw [hBn t h]
   -- the two leading digits are non-zero
-  have hnz : ∀ t, t < j → t ≠ t₀ → ∀ m, m < c t → nth (B t) m ≠ 0 := by
+  have hnz : ∀ t, t < j → t ≠ t0 → ∀ m, m < c t → nth (B t) m ≠ 0 := by
     intro t ht hne m hm
     rw [hBn t hne]
-    exact nth_ne_zero _ (ht₀zero t ht hne) m (by rw [hBlen t ht]; exact hm)
-  have hlead₁ : nth (B ((L₁ - 1) % j)) (occ ((L₁ - 1) % j) (clsOf j 0 L₁) - 1) ≠ 0 := by
-    have hlt : occ ((L₁ - 1) % j) (clsOf j 0 L₁) - 1 < c ((L₁ - 1) % j) := by
+    exact nth_ne_zero _ (ht0zero t ht hne) m (by rw [hBlen t ht]; exact hm)
+  have hlead1 : nth (B ((L1 - 1) % j)) (occ ((L1 - 1) % j) (clsOf j 0 L1) - 1) ≠ 0 := by
+    have hlt : occ ((L1 - 1) % j) (clsOf j 0 L1) - 1 < c ((L1 - 1) % j) := by
       rw [hc]; omega
-    by_cases h : (L₁ - 1) % j = t₀
+    by_cases h : (L1 - 1) % j = t0
     · rw [h] at hlt ⊢
       rw [hB0]
       refine ins0_nth_ne (dropZeros_occ_zero _) hkle (by omega) ?_
       rw [← h] at hkdef ⊢
-      by_cases h1 : occ ((L₁ - 1) % j) (clsOf j 0 L₁) = 1 <;> rw [hkdef] <;> simp [h1] <;> omega
-    · exact hnz _ ht₁j h _ hlt
-  have hlead₂ : nth (B ((L₂ - 1) % j))
-      (occ ((L₂ - 1) % j) (clsOf j 0 L₁) + occ ((L₂ - 1) % j) (clsOf j 0 L₂) - 1) ≠ 0 := by
-    have hlt : occ ((L₂ - 1) % j) (clsOf j 0 L₁) + occ ((L₂ - 1) % j) (clsOf j 0 L₂) - 1
-        < c ((L₂ - 1) % j) := by rw [hc]; omega
-    have h3₂ := h3
-    rw [hc] at h3₂
-    by_cases h : (L₂ - 1) % j = t₀
-    · rw [h] at hlt h3₂ ⊢
+      by_cases h1' : occ ((L1 - 1) % j) (clsOf j 0 L1) = 1 <;> rw [hkdef] <;> simp [h1'] <;> omega
+    · exact hnz _ ht1j h _ hlt
+  have hlead2 : nth (B ((L2 - 1) % j))
+      (occ ((L2 - 1) % j) (clsOf j 0 L1) + occ ((L2 - 1) % j) (clsOf j 0 L2) - 1) ≠ 0 := by
+    have hlt : occ ((L2 - 1) % j) (clsOf j 0 L1) + occ ((L2 - 1) % j) (clsOf j 0 L2) - 1
+        < c ((L2 - 1) % j) := by rw [hc]; omega
+    have h32 := h3
+    rw [hc] at h32
+    by_cases h : (L2 - 1) % j = t0
+    · rw [h] at hlt h32 ⊢
       rw [hB0]
       refine ins0_nth_ne (dropZeros_occ_zero _) hkle (by omega) (by omega)
-    · exact hnz _ ht₂j h _ hlt
-  obtain ⟨d₁, d₂, h1, h2, h4, h5, h6, h7⟩ :=
-    blocks_to_pair (b := b) hb hj hL₁ hL₂ B hlen hone hlead₁ hlead₂
-  refine ⟨d₁, d₂, h1, h2, h4, h5, h6, ?_⟩
+    · exact hnz _ ht2j h _ hlt
+  obtain ⟨d1, d2, h1', h2', h4, h5, h6, h7⟩ :=
+    blocks_to_pair (b := b) hb hj hL1 hL2 B hlen hone hlead1 hlead2
+  refine ⟨d1, d2, h1', h2', h4, h5, h6, ?_⟩
   rw [h7, sumRange_congr (g := fun t => b ^ t * (blk j c p ν t).sum) j
         (fun t _ => by rw [hBsum t])]
   exact hX
@@ -2599,8 +2601,8 @@ theorem occ_clsOf_zero {j s n t : Nat} (hj : 0 < j) (hs : s < j) (ht : j ≤ t) 
   · exact h
   · exact absurd (clsOf_mem hj n s hs t (mem_of_occ_pos _ t h)) (by omega)
 
-/-- At base 10, `j = 2`, digit lengths `(4,6)` — the lengths of `69² = 4761` and
-`69³ = 328509` — both classes hold five values. -/
+/-- At base 10, `j = 2`, digit lengths `(4,6)` — the lengths of `69^2 = 4761` and
+`69^3 = 328509` — both classes hold five values. -/
 theorem base_ten_two_classes : ∀ t,
     (if t < 2 then 5 else 0) = occ t (clsOf 2 0 4) + occ t (clsOf 2 0 6) := by
   intro t
@@ -2618,12 +2620,12 @@ number.**  Every residue mod `99` that casting out 9s permits really is the sum
 of a genuine pandigital `(4,6)` pair in base 10, so the modulus `99` — and with
 it every modulus of order 2 — buys nothing over casting out 9s. -/
 theorem base_ten_j_two_complete {z : Nat} (hz : z % 9 = 0) :
-    ∃ d₁ d₂ : List Nat,
-      d₁.length = 4 ∧ d₂.length = 6 ∧
-      (∀ v, v < 10 → occ v (d₁ ++ d₂) = 1) ∧
-      nth d₁ 3 ≠ 0 ∧ nth d₂ 5 ≠ 0 ∧
-      (valOf 10 d₁ + valOf 10 d₂) % 99 = z % 99 := by
-  have h := theorem_C_prime (b := 10) (j := 2) (L₁ := 4) (L₂ := 6)
+    ∃ d1 d2 : List Nat,
+      d1.length = 4 ∧ d2.length = 6 ∧
+      (∀ v, v < 10 → occ v (d1 ++ d2) = 1) ∧
+      nth d1 3 ≠ 0 ∧ nth d2 5 ≠ 0 ∧
+      (valOf 10 d1 + valOf 10 d2) % 99 = z % 99 := by
+  have h := theorem_C_prime (b := 10) (j := 2) (L1 := 4) (L2 := 6)
     (by omega) (by omega) (by omega) (by omega) (by omega)
     (fun t => if t < 2 then 5 else 0) (fun t => if t = 0 then 5 else 0)
     base_ten_two_classes
@@ -2666,20 +2668,20 @@ theorem base_four_clears_the_no_gap :
 
 /-! ## §7  Theorem C — the complete classification of `R_b = ∅`
 
-The residue set `R_b = {ρ : ρ^e₁ + ρ^e₂ ≡ T (mod b-1)}`, `2T = b(b-1)`, is the
+The residue set `R_b = {ρ : ρ^e1 + ρ^e2 ≡ T (mod b-1)}`, `2T = b(b-1)`, is the
 second necessary condition every solution satisfies (§2 refuted it for
 `b ≡ 3 mod 4`).  This section decides emptiness **for every base and every pair**,
 and the answer is entirely 2-adic: writing `b - 1 = 2^a · m` with `m` odd,
 
-> `R_b = ∅`  ⟺  `a = 1`, or (`a ≥ 3` and `e₂ - e₁` even and `e₁ ∤ a - 1`).
+> `R_b = ∅`  ⟺  `a = 1`, or (`a ≥ 3` and `e2 - e1` even and `e1 ∤ a - 1`).
 
 The reason no odd prime enters is `ρ = 0`.  Modulo the odd part of `b-1` the
 target `T` vanishes — `2T = b(b-1)` and `b-1`'s odd part divides `T` — so the odd
 part imposes no condition at all, and the CRT decomposition the informal proof
 reaches for is never needed.  What is left is the 2-part, where `T ≡ 2^(a-1)`,
-and the whole question becomes: which 2-adic valuations can `ρ^e₁ + ρ^e₂` have?
-Exactly `1` (from odd `ρ` with `e₂-e₁` even), whatever `v₂(1 + ρ^(e₂-e₁))` is
-(odd `ρ`, `e₂-e₁` odd — always `≥ 1`), and the multiples of `e₁` (from even `ρ`).
+and the whole question becomes: which 2-adic valuations can `ρ^e1 + ρ^e2` have?
+Exactly `1` (from odd `ρ` with `e2-e1` even), whatever `v_2(1 + ρ^(e2-e1))` is
+(odd `ρ`, `e2-e1` odd — always `≥ 1`), and the multiples of `e1` (from even `ρ`).
 Never `0`, which is Theorem B.
 
 Theorem B is therefore the `a = 1` case of this theorem, and the three "extra"
@@ -2739,14 +2741,14 @@ theorem two_pow_odd_unique {i j U V : Nat} (hU : U % 2 = 1) (hV : V % 2 = 1)
   · obtain ⟨s, hs⟩ : ∃ s, j = i + (s + 1) := ⟨j - i - 1, by omega⟩
     rw [hs, Nat.pow_add, Nat.mul_assoc] at h
     have := Nat.eq_of_mul_eq_mul_left (Nat.pow_pos (by decide) (n := i)) h
-    have h2 : (2 ^ (s+1) * V) % 2 = 0 := by
+    have h2' : (2 ^ (s+1) * V) % 2 = 0 := by
       rw [Nat.pow_succ, Nat.mul_comm (2^s) 2, Nat.mul_assoc, Nat.mul_mod_right]
     omega
   · exact heq
   · obtain ⟨s, hs⟩ : ∃ s, i = j + (s + 1) := ⟨i - j - 1, by omega⟩
     rw [hs, Nat.pow_add, Nat.mul_assoc] at h
     have := Nat.eq_of_mul_eq_mul_left (Nat.pow_pos (by decide) (n := j)) h
-    have h2 : (2 ^ (s+1) * U) % 2 = 0 := by
+    have h2' : (2 ^ (s+1) * U) % 2 = 0 := by
       rw [Nat.pow_succ, Nat.mul_comm (2^s) 2, Nat.mul_assoc, Nat.mul_mod_right]
     omega
 
@@ -2776,12 +2778,12 @@ Both are one line and neither needs `b` again afterwards. -/
 theorem target_eq {b T A : Nat} (hb : 1 < b) (hT : 2 * T = b * (b - 1))
     (hA : 2 * A = b - 1) : T % (b - 1) = A % (b - 1) := by
   have hb1 : b = (b - 1) + 1 := by omega
-  have h2 : 2 * T = ((b-1) + 1) * (b - 1) := by rw [← hb1]; exact hT
-  rw [← hA] at h2
+  have h2' : 2 * T = ((b-1) + 1) * (b - 1) := by rw [← hb1]; exact hT
+  rw [← hA] at h2'
   have hAA : A * (2 * A) = 2 * (A * A) := by rw [Nat.mul_left_comm]
   have hexp : (2 * A + 1) * (2 * A) = 4 * (A * A) + 2 * A := by
     rw [Nat.add_mul, Nat.one_mul, Nat.mul_assoc, hAA]; omega
-  rw [hexp] at h2
+  rw [hexp] at h2'
   have hTv : T = A + (b - 1) * A := by
     have hswap : (b - 1) * A = 2 * (A * A) := by rw [← hA, Nat.mul_assoc]
     omega
@@ -2814,13 +2816,13 @@ theorem residue_of_odd_cofactor {b T w m W S : Nat} (hb : 1 < b) (hT : 2 * T = b
   rw [hval, Nat.add_mul_mod_self_left, target_eq hb hT h2A]
 
 /-- `a = 0`, i.e. `b` even: `ρ = 0`, because then `T ≡ 0 (mod b-1)`. -/
-theorem residue_of_even_base {b e₁ e₂ T : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (he₂ : 1 ≤ e₂)
+theorem residue_of_even_base {b e1 e2 T : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (he2 : 1 ≤ e2)
     (hT : 2 * T = b * (b - 1)) (hbe : b % 2 = 0) :
-    (0 ^ e₁ + 0 ^ e₂) % (b - 1) = T % (b - 1) := by
+    (0 ^ e1 + 0 ^ e2) % (b - 1) = T % (b - 1) := by
   rw [Nat.zero_pow (by omega), Nat.zero_pow (by omega), target_zero hb hT hbe]
   simp
 
-/-- `x + 1 = A`, `2A = M` and `M ∣ A²` make `x` a square root of `1` mod `M`.
+/-- `x + 1 = A`, `2A = M` and `M ∣ A^2` make `x` a square root of `1` mod `M`.
 With `A = M/2` the cross term `2x = M - 2` is the point: it wipes out `-2A`. -/
 theorem sq_one_of_half {x A M K : Nat} (hx1 : x + 1 = A) (h2A : 2 * A = M)
     (hAA : A * A = M * K) (hK : 0 < K) : x ^ 2 % M = 1 % M := by
@@ -2835,8 +2837,8 @@ theorem sq_one_of_half {x A M K : Nat} (hx1 : x + 1 = A) (h2A : 2 * A = M)
 
 /-- a square root of `1` raised to exponents of opposite parity contributes
 `x + 1` — one power gives `x`, the other `1`. -/
-theorem pair_pow_sq_one {x M e₁ e₂ : Nat} (h : x ^ 2 % M = 1 % M) (hpar : e₁ % 2 ≠ e₂ % 2) :
-    (x ^ e₁ + x ^ e₂) % M = (x + 1) % M := by
+theorem pair_pow_sq_one {x M e1 e2 : Nat} (h : x ^ 2 % M = 1 % M) (hpar : e1 % 2 ≠ e2 % 2) :
+    (x ^ e1 + x ^ e2) % M = (x + 1) % M := by
   have hpow := pow_mod_sq_one h
   have hfin : ∀ f g : Nat, f % 2 = 0 → g % 2 = 1 →
       (x ^ f % M + x ^ g % M) % M = (x + 1) % M := by
@@ -2845,18 +2847,18 @@ theorem pair_pow_sq_one {x M e₁ e₂ : Nat} (h : x ^ 2 % M = 1 % M) (hpar : e�
     obtain ⟨l, hl⟩ : ∃ l, g = 2 * l + 1 := ⟨g / 2, by omega⟩
     rw [hk, hl, (hpow k).1, (hpow l).2, ← Nat.add_mod, Nat.add_comm]
   rw [Nat.add_mod]
-  rcases Nat.lt_or_ge (e₁ % 2) (e₂ % 2) with h' | h'
-  · exact hfin e₁ e₂ (by omega) (by omega)
-  · rw [Nat.add_comm (x ^ e₁ % M)]
-    exact hfin e₂ e₁ (by omega) (by omega)
+  rcases Nat.lt_or_ge (e1 % 2) (e2 % 2) with h' | h'
+  · exact hfin e1 e2 (by omega) (by omega)
+  · rw [Nat.add_comm (x ^ e1 % M)]
+    exact hfin e2 e1 (by omega) (by omega)
 
-/-- `a ≥ 2` and `e₂ - e₁` odd: `ρ = (b-1)/2 - 1`, whose square is `1`, so the two
+/-- `a ≥ 2` and `e2 - e1` odd: `ρ = (b-1)/2 - 1`, whose square is `1`, so the two
 powers contribute `ρ` and `1` and their sum is `(b-1)/2 ≡ T`.  Note the witness
 is *not* `≡ 0` mod the odd part of `b-1`: there it is `-1`, and the two opposite
 parities cancel it. -/
-theorem residue_of_odd_gap {b e₁ e₂ T c m : Nat} (hb : 1 < b) (hm : m % 2 = 1)
-    (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ (c + 2) * m) (hpar : e₁ % 2 ≠ e₂ % 2) :
-    ((2 ^ (c+1) * m - 1) ^ e₁ + (2 ^ (c+1) * m - 1) ^ e₂) % (b - 1) = T % (b - 1) := by
+theorem residue_of_odd_gap {b e1 e2 T c m : Nat} (hb : 1 < b) (hm : m % 2 = 1)
+    (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ (c + 2) * m) (hpar : e1 % 2 ≠ e2 % 2) :
+    ((2 ^ (c+1) * m - 1) ^ e1 + (2 ^ (c+1) * m - 1) ^ e2) % (b - 1) = T % (b - 1) := by
   have hmpos : 0 < m := by omega
   have hApos : 0 < 2 ^ (c+1) * m := Nat.mul_pos (Nat.pow_pos (by decide)) hmpos
   have h2A : 2 * (2 ^ (c+1) * m) = b - 1 := by
@@ -2872,22 +2874,22 @@ theorem residue_of_odd_gap {b e₁ e₂ T c m : Nat} (hb : 1 < b) (hm : m % 2 = 
   have hx1 : (2 ^ (c+1) * m - 1) + 1 = 2 ^ (c+1) * m := by omega
   rw [hx1, target_eq hb hT h2A]
 
-/-- `a = 2`: `ρ = m²`, where `b - 1 = 4m`.  An odd square is `1` mod 8, so the
+/-- `a = 2`: `ρ = m^2`, where `b - 1 = 4m`.  An odd square is `1` mod 8, so the
 sum is `m` times something `≡ 2 (mod 4)` — valuation exactly `1 = a - 1`. -/
-theorem residue_of_two_adic_two {b e₁ e₂ T m : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (he₂ : 1 ≤ e₂)
+theorem residue_of_two_adic_two {b e1 e2 T m : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (he2 : 1 ≤ e2)
     (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ 2 * m) :
-    ((m ^ 2) ^ e₁ + (m ^ 2) ^ e₂) % (b - 1) = T % (b - 1) := by
-  obtain ⟨f, rfl⟩ : ∃ f, e₁ = f + 1 := ⟨e₁ - 1, by omega⟩
-  obtain ⟨g, rfl⟩ : ∃ g, e₂ = g + 1 := ⟨e₂ - 1, by omega⟩
+    ((m ^ 2) ^ e1 + (m ^ 2) ^ e2) % (b - 1) = T % (b - 1) := by
+  obtain ⟨f, rfl⟩ : ∃ f, e1 = f + 1 := ⟨e1 - 1, by omega⟩
+  obtain ⟨g, rfl⟩ : ∃ g, e2 = g + 1 := ⟨e2 - 1, by omega⟩
   have hpow : ∀ e : Nat, (m ^ 2) ^ (e+1) = m ^ (2 * e + 1) * m := by
     intro e
     rw [← Nat.pow_mul]
     have hidx : 2 * (e + 1) = (2 * e + 1) + 1 := by omega
     rw [hidx, Nat.pow_succ]
   have hZ : (m ^ (2*f+1) + m ^ (2*g+1)) % 4 = 2 := by
-    have h1 := (pow_mod_sq_one (M := 4) (odd_sq_mod_four hm) f).2
-    have h2 := (pow_mod_sq_one (M := 4) (odd_sq_mod_four hm) g).2
-    rw [Nat.add_mod, h1, h2, ← Nat.add_mod]
+    have h1' := (pow_mod_sq_one (M := 4) (odd_sq_mod_four hm) f).2
+    have h2' := (pow_mod_sq_one (M := 4) (odd_sq_mod_four hm) g).2
+    rw [Nat.add_mod, h1', h2', ← Nat.add_mod]
     omega
   obtain ⟨s, hs⟩ : ∃ s, m ^ (2*f+1) + m ^ (2*g+1) = 2 * (2 * s + 1) :=
     ⟨(m ^ (2*f+1) + m ^ (2*g+1) - 2) / 4, by omega⟩
@@ -2896,41 +2898,41 @@ theorem residue_of_two_adic_two {b e₁ e₂ T m : Nat} (hb : 1 < b) (he₁ : 1 
   rw [hpow f, hpow g, ← Nat.add_mul, hs, Nat.pow_one, Nat.mul_comm m (2 * s + 1),
       ← Nat.mul_assoc]
 
-/-- `a - 1 = e₁·V` with `V ≥ 1`: `ρ = 2^V·m`, where `b - 1 = 2^a·m`.  Here
-`v₂(ρ^e₁ + ρ^e₂) = V·e₁` exactly, because `1 + ρ^(e₂-e₁)` is odd. -/
-theorem residue_of_dvd {b e₁ e₂ T m V : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (hlt : e₁ < e₂)
+/-- `a - 1 = e1·V` with `V ≥ 1`: `ρ = 2^V·m`, where `b - 1 = 2^a·m`.  Here
+`v_2(ρ^e1 + ρ^e2) = V·e1` exactly, because `1 + ρ^(e2-e1)` is odd. -/
+theorem residue_of_dvd {b e1 e2 T m V : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (hlt : e1 < e2)
     (hV : 1 ≤ V) (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1))
-    (hM : b - 1 = 2 ^ (V * e₁ + 1) * m) :
-    ((2 ^ V * m) ^ e₁ + (2 ^ V * m) ^ e₂) % (b - 1) = T % (b - 1) := by
+    (hM : b - 1 = 2 ^ (V * e1 + 1) * m) :
+    ((2 ^ V * m) ^ e1 + (2 ^ V * m) ^ e2) % (b - 1) = T % (b - 1) := by
   obtain ⟨V, rfl⟩ : ∃ V', V = V' + 1 := ⟨V - 1, by omega⟩
-  obtain ⟨f, hf⟩ : ∃ f, e₁ = f + 1 := ⟨e₁ - 1, by omega⟩
-  obtain ⟨d, hd⟩ : ∃ d, e₂ = e₁ + (d + 1) := ⟨e₂ - e₁ - 1, by omega⟩
-  have hlow : (2 ^ (V+1) * m) ^ e₁ = 2 ^ ((V+1) * e₁) * (m * m ^ f) := by
+  obtain ⟨f, hf⟩ : ∃ f, e1 = f + 1 := ⟨e1 - 1, by omega⟩
+  obtain ⟨d, hd⟩ : ∃ d, e2 = e1 + (d + 1) := ⟨e2 - e1 - 1, by omega⟩
+  have hlow : (2 ^ (V+1) * m) ^ e1 = 2 ^ ((V+1) * e1) * (m * m ^ f) := by
     rw [Nat.mul_pow, ← Nat.pow_mul, hf, Nat.pow_succ (m := f), Nat.mul_comm (m ^ f) m]
-  have hhigh : (2 ^ (V+1) * m) ^ e₂
-      = 2 ^ ((V+1) * e₁) * (m * (2 ^ ((V+1) * (d+1)) * (m ^ f * m ^ (d+1)))) := by
-    rw [Nat.mul_pow, ← Nat.pow_mul, hd, Nat.mul_add (V+1) e₁ (d+1),
-        Nat.pow_add 2 ((V+1) * e₁) ((V+1) * (d+1)),
-        Nat.pow_add m e₁ (d+1), hf, Nat.pow_succ (m := f), Nat.mul_comm (m ^ f) m,
+  have hhigh : (2 ^ (V+1) * m) ^ e2
+      = 2 ^ ((V+1) * e1) * (m * (2 ^ ((V+1) * (d+1)) * (m ^ f * m ^ (d+1)))) := by
+    rw [Nat.mul_pow, ← Nat.pow_mul, hd, Nat.mul_add (V+1) e1 (d+1),
+        Nat.pow_add 2 ((V+1) * e1) ((V+1) * (d+1)),
+        Nat.pow_add m e1 (d+1), hf, Nat.pow_succ (m := f), Nat.mul_comm (m ^ f) m,
         Nat.mul_assoc m (m ^ f) (m ^ (d+1)),
         Nat.mul_assoc (2 ^ ((V+1) * (f+1))) (2 ^ ((V+1) * (d+1))) (m * (m ^ f * m ^ (d+1))),
         Nat.mul_left_comm (2 ^ ((V+1) * (d+1))) m (m ^ f * m ^ (d+1))]
-  refine residue_of_odd_cofactor (w := (V+1) * e₁) (m := m)
+  refine residue_of_odd_cofactor (w := (V+1) * e1) (m := m)
     (W := m ^ f + 2 ^ ((V+1) * (d+1)) * (m ^ f * m ^ (d+1))) hb hT ?_ ?_ ?_
-  · rw [hM, Nat.mul_comm (V+1) e₁]
-  · have h1 : m ^ f % 2 = 1 := odd_pow hm f
-    have h2 : (2 ^ ((V+1) * (d+1)) * (m ^ f * m ^ (d+1))) % 2 = 0 := by
+  · rw [hM, Nat.mul_comm (V+1) e1]
+  · have h1' : m ^ f % 2 = 1 := odd_pow hm f
+    have h2' : (2 ^ ((V+1) * (d+1)) * (m ^ f * m ^ (d+1))) % 2 = 0 := by
       obtain ⟨p, hp⟩ : ∃ p, (V+1) * (d+1) = p + 1 :=
         ⟨(V+1)*(d+1) - 1, by
           have := Nat.mul_pos (n := V+1) (m := d+1) (by omega) (by omega); omega⟩
       rw [hp, Nat.pow_succ, Nat.mul_comm (2^p) 2, Nat.mul_assoc, Nat.mul_mod_right]
     omega
-  · rw [hlow, hhigh, ← Nat.mul_add (2 ^ ((V+1) * e₁)),
+  · rw [hlow, hhigh, ← Nat.mul_add (2 ^ ((V+1) * e1)),
         ← Nat.mul_add m (m ^ f) (2 ^ ((V+1) * (d+1)) * (m ^ f * m ^ (d+1)))]
 
 /-! ### §7.3  The dead direction -/
 
-theorem sum_factor (ρ e₁ d : Nat) : ρ ^ e₁ + ρ ^ (e₁ + (d+1)) = ρ ^ e₁ * (1 + ρ ^ (d+1)) := by
+theorem sum_factor (ρ e1 d : Nat) : ρ ^ e1 + ρ ^ (e1 + (d+1)) = ρ ^ e1 * (1 + ρ ^ (d+1)) := by
   rw [Nat.mul_add, Nat.mul_one, Nat.pow_add]
 
 theorem sum_shape {S a' q : Nat} (hdiv : 2 ^ (a'+1) * q + 2 ^ a' = S) :
@@ -2939,42 +2941,42 @@ theorem sum_shape {S a' q : Nat} (hdiv : 2 ^ (a'+1) * q + 2 ^ a' = S) :
     rw [Nat.mul_add, Nat.mul_one, ← Nat.mul_assoc, Nat.pow_succ]
   omega
 
-/-- The 2-adic admissibility condition of Theorem C, in terms of `a = v₂(b-1)`.
-`a ≠ 1` is Theorem B; the rest bites only at `a ≥ 3` with `e₂ - e₁` even. -/
-def LiveTwoAdic (a e₁ e₂ : Nat) : Prop :=
-  a ≠ 1 ∧ (a ≤ 2 ∨ (e₂ - e₁) % 2 = 1 ∨ e₁ ∣ (a - 1))
+/-- The 2-adic admissibility condition of Theorem C, in terms of `a = v_2(b-1)`.
+`a ≠ 1` is Theorem B; the rest bites only at `a ≥ 3` with `e2 - e1` even. -/
+def LiveTwoAdic (a e1 e2 : Nat) : Prop :=
+  a ≠ 1 ∧ (a ≤ 2 ∨ (e2 - e1) % 2 = 1 ∨ e1 ∣ (a - 1))
 
 /-- **Theorem C, necessity.**  A residue exists only in the classes above.  The
-argument is one valuation count: `ρ^e₁ + ρ^e₂ = ρ^e₁·(1 + ρ^(e₂-e₁))` must have
-`v₂` exactly `a - 1`, and the three cases of `ρ` (zero, odd, even) supply the
+argument is one valuation count: `ρ^e1 + ρ^e2 = ρ^e1·(1 + ρ^(e2-e1))` must have
+`v_2` exactly `a - 1`, and the three cases of `ρ` (zero, odd, even) supply the
 three clauses. -/
-theorem live_of_residue {b e₁ e₂ T a m ρ : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (hlt : e₁ < e₂)
+theorem live_of_residue {b e1 e2 T a m ρ : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (hlt : e1 < e2)
     (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ a * m)
-    (hρ : (ρ ^ e₁ + ρ ^ e₂) % (b - 1) = T % (b - 1)) :
-    LiveTwoAdic a e₁ e₂ := by
+    (hρ : (ρ ^ e1 + ρ ^ e2) % (b - 1) = T % (b - 1)) :
+    LiveTwoAdic a e1 e2 := by
   rcases Nat.eq_zero_or_pos a with rfl | hapos
   · exact ⟨by omega, Or.inl (by omega)⟩
   obtain ⟨a', ha'⟩ : ∃ a', a = a' + 1 := ⟨a - 1, by omega⟩
   subst ha'
-  obtain ⟨d, hd⟩ : ∃ d, e₂ = e₁ + (d + 1) := ⟨e₂ - e₁ - 1, by omega⟩
+  obtain ⟨d, hd⟩ : ∃ d, e2 = e1 + (d + 1) := ⟨e2 - e1 - 1, by omega⟩
   -- the sum is `2^(a-1)` times an odd number
   have h2A : 2 * (2 ^ a' * m) = b - 1 := by rw [hM, ← Nat.mul_assoc, ← Nat.pow_succ']
   have hdvd : 2 ^ (a' + 1) ∣ (b - 1) := ⟨m, hM⟩
   have hstep : ∀ x y : Nat, x % (b - 1) = y % (b - 1) → x % 2 ^ (a'+1) = y % 2 ^ (a'+1) := by
     intro x y hxy
     rw [← Nat.mod_mod_of_dvd x hdvd, ← Nat.mod_mod_of_dvd y hdvd, hxy]
-  have hSA : (ρ ^ e₁ + ρ ^ e₂) % 2 ^ (a'+1) = 2 ^ a' := by
+  have hSA : (ρ ^ e1 + ρ ^ e2) % 2 ^ (a'+1) = 2 ^ a' := by
     rw [hstep _ _ (hρ.trans (target_eq hb hT h2A)), half_mod hm]
-  have hSodd : ρ ^ e₁ + ρ ^ e₂ = 2 ^ a' * (2 * ((ρ ^ e₁ + ρ ^ e₂) / 2 ^ (a'+1)) + 1) := by
+  have hSodd : ρ ^ e1 + ρ ^ e2 = 2 ^ a' * (2 * ((ρ ^ e1 + ρ ^ e2) / 2 ^ (a'+1)) + 1) := by
     refine sum_shape ?_
-    have := Nat.div_add_mod (ρ ^ e₁ + ρ ^ e₂) (2 ^ (a'+1))
+    have := Nat.div_add_mod (ρ ^ e1 + ρ ^ e2) (2 ^ (a'+1))
     omega
-  have hUodd : (2 * ((ρ ^ e₁ + ρ ^ e₂) / 2 ^ (a'+1)) + 1) % 2 = 1 := by omega
+  have hUodd : (2 * ((ρ ^ e1 + ρ ^ e2) / 2 ^ (a'+1)) + 1) % 2 = 1 := by omega
   -- `ρ = 0` gives the sum `0`, which has no valuation at all
   rcases Nat.eq_zero_or_pos ρ with rfl | hρpos
-  · have hz : (0:Nat) ^ e₁ + 0 ^ e₂ = 0 := by
+  · have hz : (0:Nat) ^ e1 + 0 ^ e2 = 0 := by
       rw [Nat.zero_pow (by omega), Nat.zero_pow (by omega)]
-    have hpos : 0 < 2 ^ a' * (2 * ((0 ^ e₁ + 0 ^ e₂) / 2 ^ (a'+1)) + 1) :=
+    have hpos : 0 < 2 ^ a' * (2 * ((0 ^ e1 + 0 ^ e2) / 2 ^ (a'+1)) + 1) :=
       Nat.mul_pos (Nat.pow_pos (by decide)) (by omega)
     omega
   obtain ⟨w, u, hu, huodd⟩ := two_adic_split ρ hρpos
@@ -2984,32 +2986,32 @@ theorem live_of_residue {b e₁ e₂ T a m ρ : Nat} (hb : 1 < b) (he₁ : 1 ≤
   · -- `ρ` odd
     have hρodd : ρ % 2 = 1 := by rw [hu] at *; simpa using huodd
     by_cases hpar : (d + 1) % 2 = 0
-    · -- `e₂ - e₁` even: `ρ^(e₂-e₁) ≡ 1 (mod 4)`, so the valuation is exactly 1
+    · -- `e2 - e1` even: `ρ^(e2-e1) ≡ 1 (mod 4)`, so the valuation is exactly 1
       obtain ⟨k, hk⟩ : ∃ k, d + 1 = 2 * k := ⟨(d+1) / 2, by omega⟩
       have hpow4 : ρ ^ (d+1) % 4 = 1 := by
         rw [hk, Nat.pow_mul, pow_mod_one (odd_sq_mod_four hρodd) k]
       obtain ⟨t, ht⟩ : ∃ t, 1 + ρ ^ (d+1) = 2 * (2 * t + 1) := ⟨(ρ ^ (d+1) - 1) / 4, by omega⟩
-      have hfac : ρ ^ e₁ * (1 + ρ ^ (d+1)) = 2 ^ 1 * (ρ ^ e₁ * (2 * t + 1)) := by
+      have hfac : ρ ^ e1 * (1 + ρ ^ (d+1)) = 2 ^ 1 * (ρ ^ e1 * (2 * t + 1)) := by
         rw [ht, Nat.pow_one, Nat.mul_left_comm]
-      have hodd2 : (ρ ^ e₁ * (2 * t + 1)) % 2 = 1 := by
-        rw [Nat.mul_mod, odd_pow hρodd e₁]
+      have hodd2 : (ρ ^ e1 * (2 * t + 1)) % 2 = 1 := by
+        rw [Nat.mul_mod, odd_pow hρodd e1]
         omega
       have := two_pow_odd_unique hodd2 hUodd (hfac.symm.trans hSodd)
       exact ⟨by omega, Or.inl (by omega)⟩
-    · -- `e₂ - e₁` odd: the valuation is unconstrained, but positive
+    · -- `e2 - e1` odd: the valuation is unconstrained, but positive
       have hodd : ρ ^ (d+1) % 2 = 1 := odd_pow hρodd _
       obtain ⟨c, U, hcU, hUo⟩ := two_adic_split (1 + ρ ^ (d+1)) (by omega)
       have hcpos : 0 < c := by
         rcases Nat.eq_zero_or_pos c with rfl | h
         · rw [Nat.pow_zero, Nat.one_mul] at hcU; omega
         · exact h
-      have hfac : ρ ^ e₁ * (1 + ρ ^ (d+1)) = 2 ^ c * (ρ ^ e₁ * U) := by
+      have hfac : ρ ^ e1 * (1 + ρ ^ (d+1)) = 2 ^ c * (ρ ^ e1 * U) := by
         rw [hcU, Nat.mul_left_comm]
-      have hodd2 : (ρ ^ e₁ * U) % 2 = 1 := by
-        rw [Nat.mul_mod, odd_pow hρodd e₁, hUo]
+      have hodd2 : (ρ ^ e1 * U) % 2 = 1 := by
+        rw [Nat.mul_mod, odd_pow hρodd e1, hUo]
       have := two_pow_odd_unique hodd2 hUodd (hfac.symm.trans hSodd)
       exact ⟨by omega, Or.inr (Or.inl (by omega))⟩
-  · -- `ρ` even: `1 + ρ^(e₂-e₁)` is odd, so the valuation is `v₂(ρ)·e₁`
+  · -- `ρ` even: `1 + ρ^(e2-e1)` is odd, so the valuation is `v_2(ρ)·e1`
     have hρeven : ρ % 2 = 0 := by
       rw [hu]
       obtain ⟨p, hp⟩ : ∃ p, w = p + 1 := ⟨w - 1, by omega⟩
@@ -3017,38 +3019,38 @@ theorem live_of_residue {b e₁ e₂ T a m ρ : Nat} (hb : 1 < b) (he₁ : 1 ≤
     have hcof : (1 + ρ ^ (d+1)) % 2 = 1 := by
       have := pow_mod_two (n := ρ) (d+1) (by omega)
       omega
-    have hfac : ρ ^ e₁ * (1 + ρ ^ (d+1)) = 2 ^ (w * e₁) * (u ^ e₁ * (1 + ρ ^ (d+1))) := by
+    have hfac : ρ ^ e1 * (1 + ρ ^ (d+1)) = 2 ^ (w * e1) * (u ^ e1 * (1 + ρ ^ (d+1))) := by
       rw [hu, Nat.mul_pow, ← Nat.pow_mul, Nat.mul_assoc]
-    have hodd2 : (u ^ e₁ * (1 + ρ ^ (d+1))) % 2 = 1 := by
-      rw [Nat.mul_mod, odd_pow huodd e₁, hcof]
+    have hodd2 : (u ^ e1 * (1 + ρ ^ (d+1))) % 2 = 1 := by
+      rw [Nat.mul_mod, odd_pow huodd e1, hcof]
     have hwe := two_pow_odd_unique hodd2 hUodd (hfac.symm.trans hSodd)
-    have : 0 < w * e₁ := Nat.mul_pos hwpos (by omega)
+    have : 0 < w * e1 := Nat.mul_pos hwpos (by omega)
     exact ⟨by omega, Or.inr (Or.inr ⟨w, by rw [Nat.mul_comm]; omega⟩)⟩
 
 /-! ### §7.4  Theorem C -/
 
 /--
-**Theorem C.**  For every base `b > 1`, every pair `1 ≤ e₁ < e₂` and every
+**Theorem C.**  For every base `b > 1`, every pair `1 ≤ e1 < e2` and every
 factorisation `b - 1 = 2^a·m` with `m` odd, the residue set is nonempty **iff**
-`a ≠ 1` and one of `a ≤ 2`, `e₂ - e₁` odd, `e₁ ∣ a - 1` holds.
+`a ≠ 1` and one of `a ≤ 2`, `e2 - e1` odd, `e1 ∣ a - 1` holds.
 
 No odd prime divisor of `b-1` appears anywhere: the classification is a
-condition on `v₂(b-1)` and the pair alone, which is why the dead bases form a
+condition on `v_2(b-1)` and the pair alone, which is why the dead bases form a
 union of congruence classes mod powers of two.
 -/
-theorem residues_nonempty_iff {b e₁ e₂ T a m : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (hlt : e₁ < e₂)
+theorem residues_nonempty_iff {b e1 e2 T a m : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (hlt : e1 < e2)
     (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ a * m) :
-    (∃ ρ, (ρ ^ e₁ + ρ ^ e₂) % (b - 1) = T % (b - 1)) ↔ LiveTwoAdic a e₁ e₂ := by
+    (∃ ρ, (ρ ^ e1 + ρ ^ e2) % (b - 1) = T % (b - 1)) ↔ LiveTwoAdic a e1 e2 := by
   constructor
   · rintro ⟨ρ, hρ⟩
-    exact live_of_residue hb he₁ hlt hm hT hM hρ
+    exact live_of_residue hb he1 hlt hm hT hM hρ
   · rintro ⟨hne, hcases⟩
     rcases Nat.lt_or_ge a 3 with hsmall | hbig
     · have ha : a = 0 ∨ a = 2 := by omega
       rcases ha with rfl | rfl
       · rw [Nat.pow_zero, Nat.one_mul] at hM
-        exact ⟨0, residue_of_even_base hb he₁ (by omega) hT (by omega)⟩
-      · exact ⟨m ^ 2, residue_of_two_adic_two hb he₁ (by omega) hm hT hM⟩
+        exact ⟨0, residue_of_even_base hb he1 (by omega) hT (by omega)⟩
+      · exact ⟨m ^ 2, residue_of_two_adic_two hb he1 (by omega) hm hT hM⟩
     · rcases hcases with h | h | h
       · omega
       · obtain ⟨c, rfl⟩ : ∃ c, a = c + 2 := ⟨a - 2, by omega⟩
@@ -3058,33 +3060,33 @@ theorem residues_nonempty_iff {b e₁ e₂ T a m : Nat} (hb : 1 < b) (he₁ : 1 
           rcases Nat.eq_zero_or_pos V with rfl | h'
           · omega
           · exact h'
-        have hMV : b - 1 = 2 ^ (V * e₁ + 1) * m := by
-          rw [hM, Nat.mul_comm V e₁]
-          have hidx : e₁ * V + 1 = a := by omega
+        have hMV : b - 1 = 2 ^ (V * e1 + 1) * m := by
+          rw [hM, Nat.mul_comm V e1]
+          have hidx : e1 * V + 1 = a := by omega
           rw [hidx]
-        exact ⟨_, residue_of_dvd hb he₁ hlt hVpos hm hT hMV⟩
+        exact ⟨_, residue_of_dvd hb he1 hlt hVpos hm hT hMV⟩
 
 /-- **Theorem C, dead form** — the classification read as a list of dead classes,
 which is how §4 of the report states it. -/
-theorem residues_empty_iff {b e₁ e₂ T a m : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (hlt : e₁ < e₂)
+theorem residues_empty_iff {b e1 e2 T a m : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (hlt : e1 < e2)
     (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ a * m) :
-    (∀ ρ, (ρ ^ e₁ + ρ ^ e₂) % (b - 1) ≠ T % (b - 1))
-      ↔ (a = 1 ∨ (3 ≤ a ∧ (e₂ - e₁) % 2 = 0 ∧ ¬ e₁ ∣ (a - 1))) := by
-  have hiff := residues_nonempty_iff hb he₁ hlt hm hT hM
+    (∀ ρ, (ρ ^ e1 + ρ ^ e2) % (b - 1) ≠ T % (b - 1))
+      ↔ (a = 1 ∨ (3 ≤ a ∧ (e2 - e1) % 2 = 0 ∧ ¬ e1 ∣ (a - 1))) := by
+  have hiff := residues_nonempty_iff hb he1 hlt hm hT hM
   constructor
   · intro hall
-    have hnot : ¬ LiveTwoAdic a e₁ e₂ := fun hl => (hiff.2 hl).elim (fun ρ hρ => hall ρ hρ)
-    by_cases h1 : a = 1
-    · exact Or.inl h1
-    by_cases h2 : a ≤ 2
-    · exact absurd ⟨h1, Or.inl h2⟩ hnot
-    by_cases h3 : (e₂ - e₁) % 2 = 1
-    · exact absurd ⟨h1, Or.inr (Or.inl h3)⟩ hnot
-    by_cases h4 : e₁ ∣ (a - 1)
-    · exact absurd ⟨h1, Or.inr (Or.inr h4)⟩ hnot
+    have hnot : ¬ LiveTwoAdic a e1 e2 := fun hl => (hiff.2 hl).elim (fun ρ hρ => hall ρ hρ)
+    by_cases h1' : a = 1
+    · exact Or.inl h1'
+    by_cases h2' : a ≤ 2
+    · exact absurd ⟨h1', Or.inl h2'⟩ hnot
+    by_cases h3 : (e2 - e1) % 2 = 1
+    · exact absurd ⟨h1', Or.inr (Or.inl h3)⟩ hnot
+    by_cases h4 : e1 ∣ (a - 1)
+    · exact absurd ⟨h1', Or.inr (Or.inr h4)⟩ hnot
     exact Or.inr ⟨by omega, by omega, h4⟩
   · intro hdead ρ hρ
-    obtain ⟨hne, hcases⟩ := live_of_residue hb he₁ hlt hm hT hM hρ
+    obtain ⟨hne, hcases⟩ := live_of_residue hb he1 hlt hm hT hM hρ
     rcases hdead with rfl | ⟨h3, hpar, hnd⟩
     · exact hne rfl
     · rcases hcases with h | h | h
@@ -3095,25 +3097,25 @@ theorem residues_empty_iff {b e₁ e₂ T a m : Nat} (hb : 1 < b) (he₁ : 1 ≤
 /-- The operative form: a base in a dead 2-adic class admits no `n` whose digit
 sums satisfy the identity, hence no solution.  Same shape as
 `no_nice_of_mod_four`, of which this is the generalisation. -/
-theorem no_nice_of_two_adic {b e₁ e₂ a m n : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (hlt : e₁ < e₂)
+theorem no_nice_of_two_adic {b e1 e2 a m n : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (hlt : e1 < e2)
     (hm : m % 2 = 1) (hM : b - 1 = 2 ^ a * m)
-    (hdead : a = 1 ∨ (3 ≤ a ∧ (e₂ - e₁) % 2 = 0 ∧ ¬ e₁ ∣ (a - 1)))
-    (hT : 2 * (digitSum b (n ^ e₁) + digitSum b (n ^ e₂)) = b * (b - 1)) : False := by
-  have hd1 : n ^ e₁ % (b-1) = digitSum b (n ^ e₁) % (b-1) := digitSum_mod hb _
-  have hd2 : n ^ e₂ % (b-1) = digitSum b (n ^ e₂) % (b-1) := digitSum_mod hb _
-  have hsum : (n ^ e₁ + n ^ e₂) % (b-1)
-      = (digitSum b (n ^ e₁) + digitSum b (n ^ e₂)) % (b-1) := by
-    rw [Nat.add_mod, hd1, hd2, ← Nat.add_mod]
-  exact (residues_empty_iff hb he₁ hlt hm hT hM).2 hdead n hsum
+    (hdead : a = 1 ∨ (3 ≤ a ∧ (e2 - e1) % 2 = 0 ∧ ¬ e1 ∣ (a - 1)))
+    (hT : 2 * (digitSum b (n ^ e1) + digitSum b (n ^ e2)) = b * (b - 1)) : False := by
+  have hd1' : n ^ e1 % (b-1) = digitSum b (n ^ e1) % (b-1) := digitSum_mod hb _
+  have hd2' : n ^ e2 % (b-1) = digitSum b (n ^ e2) % (b-1) := digitSum_mod hb _
+  have hsum : (n ^ e1 + n ^ e2) % (b-1)
+      = (digitSum b (n ^ e1) + digitSum b (n ^ e2)) % (b-1) := by
+    rw [Nat.add_mod, hd1', hd2', ← Nat.add_mod]
+  exact (residues_empty_iff hb he1 hlt hm hT hM).2 hdead n hsum
 
 /-! ### §7.5  Non-vacuity, and the theorem firing
 
 The `(2,4)` pair at base 17 is the sharpest example available: `17 % 3 = 2` so
 Theorem A says nothing, `17 % 4 = 1` so Theorem B says nothing, and
-`N(2,4) = 12` with `17 ∤ 12` so Theorem G says nothing.  `v₂(16) = 4`, the gap
+`N(2,4) = 12` with `17 ∤ 12` so Theorem G says nothing.  `v_2(16) = 4`, the gap
 `4 - 2 = 2` is even and `2 ∤ 3`, so Theorem C alone kills it.  Base 33 — the very
-next base with `v₂(b-1) ≥ 3` that A leaves alive — is *not* killed, and the
-witness is exhibited, so the boundary `e₁ ∣ a-1` is sharp and not slack. -/
+next base with `v_2(b-1) ≥ 3` that A leaves alive — is *not* killed, and the
+witness is exhibited, so the boundary `e1 ∣ a-1` is sharp and not slack. -/
 
 /-- `(2,4)` in base 17: no residue at all.  `T = 136`, `2·136 = 17·16`. -/
 theorem two_four_base_seventeen_dead (ρ : Nat) : (ρ ^ 2 + ρ ^ 4) % 16 ≠ 136 % 16 :=
@@ -3121,23 +3123,23 @@ theorem two_four_base_seventeen_dead (ρ : Nat) : (ρ ^ 2 + ρ ^ 4) % 16 ≠ 136
     (by decide) (by decide) (by decide)).2 (Or.inr ⟨by decide, by decide, by decide⟩) ρ
 
 /-- ...and base 33 is alive, with the witness `ρ = 2^2·1 = 4` the theorem
-predicts: `v₂(32) = 5` and `e₁ = 2 ∣ 4`. -/
+predicts: `v_2(32) = 5` and `e1 = 2 ∣ 4`. -/
 theorem two_four_base_thirtythree_live : (4 ^ 2 + 4 ^ 4) % 32 = 528 % 32 := by decide
 
 /-- Base 10 had better be alive, or the theorem would contradict 69.
-`v₂(9) = 0`, so the `a = 0` clause applies and `ρ = 0` is a residue — as is 69
+`v_2(9) = 0`, so the `a = 0` clause applies and `ρ = 0` is a residue — as is 69
 itself, which is the residue the solution actually lives in. -/
 theorem base_ten_live : LiveTwoAdic 0 2 3 := ⟨by decide, Or.inl (by decide)⟩
 
 theorem base_ten_residue : (69 ^ 2 + 69 ^ 3) % 9 = 45 % 9 := by decide
 
-/-- Theorem B is the `a = 1` case: `b ≡ 3 (mod 4)` is exactly `v₂(b-1) = 1`.
+/-- Theorem B is the `a = 1` case: `b ≡ 3 (mod 4)` is exactly `v_2(b-1) = 1`.
 Re-deriving `residues_empty_of_mod_four` from Theorem C, for every pair. -/
-theorem residues_empty_of_mod_four_of_C {b e₁ e₂ T ρ : Nat}
-    (hb : 1 < b) (he₁ : 1 ≤ e₁) (hlt : e₁ < e₂) (hmod : b % 4 = 3)
+theorem residues_empty_of_mod_four_of_C {b e1 e2 T ρ : Nat}
+    (hb : 1 < b) (he1 : 1 ≤ e1) (hlt : e1 < e2) (hmod : b % 4 = 3)
     (hT : 2 * T = b * (b - 1)) :
-    (ρ ^ e₁ + ρ ^ e₂) % (b - 1) ≠ T % (b - 1) := by
-  refine (residues_empty_iff (a := 1) (m := (b-1)/2) hb he₁ hlt (by omega) hT ?_).2
+    (ρ ^ e1 + ρ ^ e2) % (b - 1) ≠ T % (b - 1) := by
+  refine (residues_empty_iff (a := 1) (m := (b-1)/2) hb he1 hlt (by omega) hT ?_).2
     (Or.inl rfl) ρ
   rw [Nat.pow_one]
   omega
@@ -3147,11 +3149,11 @@ theorem residues_empty_of_mod_four_of_C {b e₁ e₂ T ρ : Nat}
 `n^e` alone pandigital is the `E = e` member of the family, and §14 of the
 report recommends it as the best compute target — which makes "which bases are
 live" load-bearing there.  The same valuation count answers it, and more simply,
-because `v₂(ρ^e) = e·v₂(ρ)` with no cofactor `1 + ρ^d` to think about:
+because `v_2(ρ^e) = e·v_2(ρ)` with no cofactor `1 + ρ^d` to think about:
 
 > `R_b = ∅`  ⟺  `a ≥ 1` and `e ∤ a - 1`.
 
-Note `a = 1` is **live** here — Theorem B needs the sum `ρ^e₁ + ρ^e₂ ≡ 2ρ`, and a
+Note `a = 1` is **live** here — Theorem B needs the sum `ρ^e1 + ρ^e2 ≡ 2ρ`, and a
 single exponent has no partner to pair with — which is why `b ≡ 3 (mod 4)`
 survives for `n^4` and not for `(1,3)`. -/
 
@@ -3172,7 +3174,7 @@ theorem residue_single_of_even_base {b e T : Nat} (hb : 1 < b) (he : 1 ≤ e)
 
 /-- **Theorem C, single-exponent form.**  (`a - 1` is truncated subtraction, so
 the `a = 0` disjunct is formally implied by the second; it is kept because the
-mathematics has two cases — even base, and `v₂(b-1) ≡ 1 mod e` — not one.) -/
+mathematics has two cases — even base, and `v_2(b-1) ≡ 1 mod e` — not one.) -/
 theorem residues_single_nonempty_iff {b e T a m : Nat} (hb : 1 < b) (he : 1 ≤ e)
     (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ a * m) :
     (∃ ρ, ρ ^ e % (b - 1) = T % (b - 1)) ↔ (a = 0 ∨ e ∣ (a - 1)) := by
@@ -3215,9 +3217,9 @@ theorem residues_single_nonempty_iff {b e T a m : Nat} (hb : 1 < b) (he : 1 ≤ 
         have hidx : e * V + 1 = a := by omega
         rw [hidx]
 
-/-- `n⁴` in base 29 has no residue: `v₂(28) = 2` and `4 ∤ 1`.  This is one of the
+/-- `n^4` in base 29 has no residue: `v_2(28) = 2` and `4 ∤ 1`.  This is one of the
 bases §14 of the report lists as killed, and base 8 — where the only known
-solution `42⁴` lives — is even, hence `a = 0`, hence live. -/
+solution `42^4` lives — is even, hence `a = 0`, hence live. -/
 theorem single_four_base_twentynine_dead (ρ : Nat) : ρ ^ 4 % 28 ≠ 406 % 28 := by
   intro h
   rcases (residues_single_nonempty_iff (b := 29) (e := 4) (a := 2) (m := 7)
@@ -3225,12 +3227,12 @@ theorem single_four_base_twentynine_dead (ρ : Nat) : ρ ^ 4 % 28 ≠ 406 % 28 :
     revert h' <;> decide
 
 /-- ...and base 33 is live, with the residue `2^1·1 = 2` the theorem predicts:
-`v₂(32) = 5` and `4 ∣ 4`. -/
+`v_2(32) = 5` and `4 ∣ 4`. -/
 theorem single_four_base_thirtythree_live : (2:Nat) ^ 4 % 32 = 528 % 32 := by decide
 
 /-! ## §8  Theorem F — the `2/E` greedy construction
 
-`n mod b^(i+1)` pins digit `i` of `n^e₁` *and* digit `i` of `n^e₂`: two slots per
+`n mod b^(i+1)` pins digit `i` of `n^e1` *and* digit `i` of `n^e2`: two slots per
 digit of `n`, the conservation law the whole repository runs on.  Theorem F turns
 that budget into a construction.  Build `n` from the bottom; at level `i` the new
 digit `x` moves each of the two slots along an arithmetic progression, and if the
@@ -3291,8 +3293,8 @@ theorem slot_mem_digits {b : Nat} (hb : 1 < b) :
 
 /-! ### §8.1  The digit ladder
 
-`(r + x·bⁱ)^e ≡ r^e + e·r^(e-1)·x·bⁱ (mod b^(i+1))` for `i ≥ 1`: every binomial
-term from `x²b^{2i}` up is divisible by `b^(i+1)`, because `2i ≥ i+1`.  This is the
+`(r + x·b^i)^e ≡ r^e + e·r^(e-1)·x·b^i (mod b^(i+1))` for `i ≥ 1`: every binomial
+term from `x^2b^{2i}` up is divisible by `b^(i+1)`, because `2i ≥ i+1`.  This is the
 same recurrence the CUDA and Vulkan kernels advance the digit with. -/
 
 theorem add_pow_ladder {b i : Nat} (hi : 1 ≤ i) (r x : Nat) : ∀ e,
@@ -3311,7 +3313,7 @@ theorem add_pow_ladder {b i : Nat} (hi : 1 ≤ i) (r x : Nat) : ∀ e,
     | 0 => simp
     | (e' + 1) =>
       -- `E = e'+1 ≥ 1`, so `r^(E-1) * r = r^E` and the cross term is a genuine
-      -- multiple of `bⁱ·bⁱ`.
+      -- multiple of `b^i·b^i`.
       have key : (r ^ (e' + 1) + (e' + 1) * r ^ e' * x * b ^ i) * (r + x * b ^ i)
           = (r ^ (e' + 2) + (e' + 2) * r ^ (e' + 1) * x * b ^ i)
             + ((e' + 1) * r ^ e' * x * x) * (b ^ i * b ^ i) := by
@@ -3353,7 +3355,7 @@ theorem slot_step {b i : Nat} (hb : 0 < b) (hi : 1 ≤ i) (r x e : Nat) :
 /-! ### §8.2  Two injectivity lemmas
 
 The progressions are bijections when their common differences are units, and the
-*difference* of the two progressions is a bijection when `α₁ - α₂` is — which is
+*difference* of the two progressions is a bijection when `α1 - α2` is — which is
 the side condition Theorem F carries, here supplied as an explicit unit `β`. -/
 
 /-- `x ↦ (A + α·x) mod b` is injective on `{0,…,b-1}` when `α` is a unit. -/
@@ -3362,52 +3364,52 @@ theorem lin_inj {b α A x y : Nat} (hb : 0 < b) (hα : Nat.Coprime b α)
   rcases Nat.le_total x y with hle | hle
   · obtain ⟨t, rfl⟩ : ∃ t, y = x + t := ⟨y - x, by omega⟩
     have hmul : α * (x + t) = α * x + α * t := Nat.mul_add α x t
-    have h1 : A + α * x ≤ A + α * (x + t) := by omega
+    have h1' : A + α * x ≤ A + α * (x + t) := by omega
     have hd : b ∣ A + α * (x + t) - (A + α * x) :=
-      (dvd_sub_iff_mod_eq hb h1).mpr h.symm
+      (dvd_sub_iff_mod_eq hb h1').mpr h.symm
     have he : A + α * (x + t) - (A + α * x) = α * t := by omega
     rw [he] at hd
     have ht : t = 0 := Nat.eq_zero_of_dvd_of_lt (hα.dvd_of_dvd_mul_left hd) (by omega)
     omega
   · obtain ⟨t, rfl⟩ : ∃ t, x = y + t := ⟨x - y, by omega⟩
     have hmul : α * (y + t) = α * y + α * t := Nat.mul_add α y t
-    have h1 : A + α * y ≤ A + α * (y + t) := by omega
+    have h1' : A + α * y ≤ A + α * (y + t) := by omega
     have hd : b ∣ A + α * (y + t) - (A + α * y) :=
-      (dvd_sub_iff_mod_eq hb h1).mpr h
+      (dvd_sub_iff_mod_eq hb h1').mpr h
     have he : A + α * (y + t) - (A + α * y) = α * t := by omega
     rw [he] at hd
     have ht : t = 0 := Nat.eq_zero_of_dvd_of_lt (hα.dvd_of_dvd_mul_left hd) (by omega)
     omega
 
 /-- The two progressions collide for at most one digit `x`.  This is the side
-condition of Theorem F: `α₁ - α₂` must be a unit, supplied as `β` with
-`α₂ + β ≡ α₁`. -/
-theorem clash_inj {b α₁ α₂ β A₁ A₂ x y : Nat} (hb : 0 < b) (hβ : Nat.Coprime b β)
-    (hsep : (α₂ + β) % b = α₁ % b) (hx : x < b) (hy : y < b)
-    (h₁ : (A₁ + α₁ * x) % b = (A₂ + α₂ * x) % b)
-    (h₂ : (A₁ + α₁ * y) % b = (A₂ + α₂ * y) % b) : x = y := by
-  -- add the two collision equations, so that `A₁`, `A₂` cancel
-  have hsum : (A₁ + α₁ * x + (A₂ + α₂ * y)) % b = (A₂ + α₂ * x + (A₁ + α₁ * y)) % b := by
-    rw [Nat.add_mod, h₁, ← h₂, ← Nat.add_mod]
-  have hcomm₁ : A₁ + α₁ * x + (A₂ + α₂ * y) = α₁ * x + α₂ * y + (A₁ + A₂) := by omega
-  have hcomm₂ : A₂ + α₂ * x + (A₁ + α₁ * y) = α₂ * x + α₁ * y + (A₁ + A₂) := by omega
-  rw [hcomm₁, hcomm₂] at hsum
-  have hcancel : (α₁ * x + α₂ * y) % b = (α₂ * x + α₁ * y) % b := mod_add_cancel hb hsum
-  -- replace `α₁` by `α₂ + β`
-  have hsub : ∀ z, (α₁ * z) % b = (α₂ * z + β * z) % b := by
+condition of Theorem F: `α1 - α2` must be a unit, supplied as `β` with
+`α2 + β ≡ α1`. -/
+theorem clash_inj {b α1 α2 β A1 A2 x y : Nat} (hb : 0 < b) (hβ : Nat.Coprime b β)
+    (hsep : (α2 + β) % b = α1 % b) (hx : x < b) (hy : y < b)
+    (h1 : (A1 + α1 * x) % b = (A2 + α2 * x) % b)
+    (h2 : (A1 + α1 * y) % b = (A2 + α2 * y) % b) : x = y := by
+  -- add the two collision equations, so that `A1`, `A2` cancel
+  have hsum : (A1 + α1 * x + (A2 + α2 * y)) % b = (A2 + α2 * x + (A1 + α1 * y)) % b := by
+    rw [Nat.add_mod, h1, ← h2, ← Nat.add_mod]
+  have hcomm1 : A1 + α1 * x + (A2 + α2 * y) = α1 * x + α2 * y + (A1 + A2) := by omega
+  have hcomm2 : A2 + α2 * x + (A1 + α1 * y) = α2 * x + α1 * y + (A1 + A2) := by omega
+  rw [hcomm1, hcomm2] at hsum
+  have hcancel : (α1 * x + α2 * y) % b = (α2 * x + α1 * y) % b := mod_add_cancel hb hsum
+  -- replace `α1` by `α2 + β`
+  have hsub : ∀ z, (α1 * z) % b = (α2 * z + β * z) % b := by
     intro z
     rw [Nat.mul_mod, ← hsep, ← Nat.mul_mod, Nat.add_mul]
-  have hL : (α₁ * x + α₂ * y) % b = (α₂ * x + α₂ * y + β * x) % b := by
+  have hL : (α1 * x + α2 * y) % b = (α2 * x + α2 * y + β * x) % b := by
     rw [Nat.add_mod, hsub x, ← Nat.add_mod]
     congr 1
     omega
-  have hR : (α₂ * x + α₁ * y) % b = (α₂ * x + α₂ * y + β * y) % b := by
+  have hR : (α2 * x + α1 * y) % b = (α2 * x + α2 * y + β * y) % b := by
     rw [Nat.add_mod, hsub y, ← Nat.add_mod]
     congr 1
     omega
   rw [hL, hR] at hcancel
-  have hL' : α₂ * x + α₂ * y + β * x = β * x + (α₂ * x + α₂ * y) := by omega
-  have hR' : α₂ * x + α₂ * y + β * y = β * y + (α₂ * x + α₂ * y) := by omega
+  have hL' : α2 * x + α2 * y + β * x = β * x + (α2 * x + α2 * y) := by omega
+  have hR' : α2 * x + α2 * y + β * y = β * y + (α2 * x + α2 * y) := by omega
   rw [hL', hR'] at hcancel
   have hfin : (β * x) % b = (β * y) % b := mod_add_cancel hb hcancel
   exact lin_inj (A := 0) hb hβ hx hy (by rw [Nat.zero_add, Nat.zero_add]; exact hfin)
@@ -3544,12 +3546,12 @@ digit having to be nonzero. -/
 /-- The pigeonhole, over abstract slot maps: two maps injective on `{0,…,b-1}`
 whose coincidence set has at most one element leave a nonzero digit avoiding `U`
 in both, as soon as `2|U| + 2 < b`. -/
-theorem exists_good_digit {b : Nat} (hb : 0 < b) (s₁ s₂ : Nat → Nat)
-    (hinj₁ : ∀ x, x < b → ∀ y, y < b → s₁ x = s₁ y → x = y)
-    (hinj₂ : ∀ x, x < b → ∀ y, y < b → s₂ x = s₂ y → x = y)
-    (hclash : ∀ x, x < b → ∀ y, y < b → s₁ x = s₂ x → s₁ y = s₂ y → x = y)
+theorem exists_good_digit {b : Nat} (hb : 0 < b) (s1 s2 : Nat → Nat)
+    (hinj1 : ∀ x, x < b → ∀ y, y < b → s1 x = s1 y → x = y)
+    (hinj2 : ∀ x, x < b → ∀ y, y < b → s2 x = s2 y → x = y)
+    (hclash : ∀ x, x < b → ∀ y, y < b → s1 x = s2 x → s1 y = s2 y → x = y)
     (U : List Nat) (hcount : 2 * U.length + 2 < b) :
-    ∃ x, 0 < x ∧ x < b ∧ s₁ x ∉ U ∧ s₂ x ∉ U ∧ s₁ x ≠ s₂ x := by
+    ∃ x, 0 < x ∧ x < b ∧ s1 x ∉ U ∧ s2 x ∉ U ∧ s1 x ≠ s2 x := by
   have hrange : ∀ x ∈ List.range b, x < b := fun x hx => List.mem_range.mp hx
   -- each of the four losses is bounded
   have hz : List.countP (fun x => x == 0) (List.range b) ≤ 1 := by
@@ -3557,58 +3559,58 @@ theorem exists_good_digit {b : Nat} (hb : 0 < b) (s₁ s₂ : Nat → Nat)
     intro x _ y _ hx hy
     simp only [beq_iff_eq] at hx hy
     omega
-  have hm₁ : List.countP (fun x => memb (s₁ x) U) (List.range b) ≤ U.length :=
+  have hm1 : List.countP (fun x => memb (s1 x) U) (List.range b) ≤ U.length :=
     countP_memb_le List.nodup_range
-      (fun x hx y hy h => hinj₁ x (hrange x hx) y (hrange y hy) h) U
-  have hm₂ : List.countP (fun x => memb (s₂ x) U) (List.range b) ≤ U.length :=
+      (fun x hx y hy h => hinj1 x (hrange x hx) y (hrange y hy) h) U
+  have hm2 : List.countP (fun x => memb (s2 x) U) (List.range b) ≤ U.length :=
     countP_memb_le List.nodup_range
-      (fun x hx y hy h => hinj₂ x (hrange x hx) y (hrange y hy) h) U
-  have hc : List.countP (fun x => s₁ x == s₂ x) (List.range b) ≤ 1 := by
+      (fun x hx y hy h => hinj2 x (hrange x hx) y (hrange y hy) h) U
+  have hc : List.countP (fun x => s1 x == s2 x) (List.range b) ≤ 1 := by
     refine countP_le_one _ List.nodup_range ?_
     intro x hx y hy hpx hpy
     simp only [beq_iff_eq] at hpx hpy
     exact hclash x (hrange x hx) y (hrange y hy) hpx hpy
   -- so the bad digits do not exhaust the base
-  have hsum₁ := countP_or_le (fun x => (x == 0) || memb (s₁ x) U)
-      (fun x => memb (s₂ x) U || (s₁ x == s₂ x)) (List.range b)
-  have hsum₂ := countP_or_le (fun x => x == 0) (fun x => memb (s₁ x) U) (List.range b)
-  have hsum₃ := countP_or_le (fun x => memb (s₂ x) U) (fun x => s₁ x == s₂ x) (List.range b)
+  have hsum1 := countP_or_le (fun x => (x == 0) || memb (s1 x) U)
+      (fun x => memb (s2 x) U || (s1 x == s2 x)) (List.range b)
+  have hsum2 := countP_or_le (fun x => x == 0) (fun x => memb (s1 x) U) (List.range b)
+  have hsum3 := countP_or_le (fun x => memb (s2 x) U) (fun x => s1 x == s2 x) (List.range b)
   have hlen : (List.range b).length = b := List.length_range
   have hsplit := countP_split
-    (fun x => ((x == 0) || memb (s₁ x) U) || (memb (s₂ x) U || (s₁ x == s₂ x)))
+    (fun x => ((x == 0) || memb (s1 x) U) || (memb (s2 x) U || (s1 x == s2 x)))
     (List.range b)
   have hpos : 0 < List.countP
-      (fun x => !(((x == 0) || memb (s₁ x) U) || (memb (s₂ x) U || (s₁ x == s₂ x))))
+      (fun x => !(((x == 0) || memb (s1 x) U) || (memb (s2 x) U || (s1 x == s2 x))))
       (List.range b) := by omega
   obtain ⟨x, hxmem, hxbad⟩ := exists_of_countP_pos _ hpos
   have hxb : x < b := hrange x hxmem
   simp only [Bool.not_or, Bool.and_eq_true, Bool.not_eq_true', beq_eq_false_iff_ne] at hxbad
-  obtain ⟨⟨hx0, hu₁⟩, hu₂, hne⟩ := hxbad
+  obtain ⟨⟨hx0, hu1⟩, hu2, hne⟩ := hxbad
   refine ⟨x, Nat.pos_of_ne_zero hx0, hxb, ?_, ?_, hne⟩
   · intro hmem
-    rw [(memb_iff _ U).mpr hmem] at hu₁
-    exact Bool.noConfusion hu₁
+    rw [(memb_iff _ U).mpr hmem] at hu1
+    exact Bool.noConfusion hu1
   · intro hmem
-    rw [(memb_iff _ U).mpr hmem] at hu₂
-    exact Bool.noConfusion hu₂
+    rw [(memb_iff _ U).mpr hmem] at hu2
+    exact Bool.noConfusion hu2
 
 /-! ### §8.5  The greedy induction
 
 The invariant carried up the levels: `r` has exactly `i` digits, its last digit is
 the chosen unit `ρ` (so every progression's common difference stays the same), and
 `U` is the list of the `2i` slot values already placed — pairwise distinct, all
-`< b`, and each genuinely a slot of `r^e₁` or of `r^e₂`. -/
+`< b`, and each genuinely a slot of `r^e1` or of `r^e2`. -/
 
 /-- The greedy state after `i` levels. -/
-def GreedyInv (b e₁ e₂ ρ i r : Nat) (U : List Nat) : Prop :=
+def GreedyInv (b e1 e2 ρ i r : Nat) (U : List Nat) : Prop :=
   b ^ (i - 1) ≤ r ∧ r < b ^ i ∧ r % b = ρ ∧
   U.length = 2 * i ∧ U.Nodup ∧ (∀ v ∈ U, v < b) ∧
-  (∀ v ∈ U, ∃ j, j < i ∧ (v = slot b j (r ^ e₁) ∨ v = slot b j (r ^ e₂)))
+  (∀ v ∈ U, ∃ j, j < i ∧ (v = slot b j (r ^ e1) ∨ v = slot b j (r ^ e2)))
 
 /-- Level 0: the starting digit `ρ`, whose two slots already differ. -/
-theorem greedy_base {b e₁ e₂ ρ : Nat} (hb : 1 < b) (hρ : 0 < ρ) (hρb : ρ < b)
-    (hstart : ρ ^ e₁ % b ≠ ρ ^ e₂ % b) :
-    GreedyInv b e₁ e₂ ρ 1 ρ [ρ ^ e₁ % b, ρ ^ e₂ % b] := by
+theorem greedy_base {b e1 e2 ρ : Nat} (hb : 1 < b) (hρ : 0 < ρ) (hρb : ρ < b)
+    (hstart : ρ ^ e1 % b ≠ ρ ^ e2 % b) :
+    GreedyInv b e1 e2 ρ 1 ρ [ρ ^ e1 % b, ρ ^ e2 % b] := by
   refine ⟨?_, ?_, Nat.mod_eq_of_lt hρb, rfl, ?_, ?_, ?_⟩
   · rw [show (1 : Nat) - 1 = 0 from rfl, Nat.pow_zero]; omega
   · rw [Nat.pow_one]; exact hρb
@@ -3634,13 +3636,13 @@ theorem greedy_base {b e₁ e₂ ρ : Nat} (hb : 1 < b) (hρ : 0 < ρ) (hρb : �
 /-- One level of the greedy.  `4i + 2 < b` is the whole content: `2i` used values,
 each killing at most one digit in each of the two progressions, plus the one digit
 where the progressions collide and the one that would make the leading digit `0`. -/
-theorem greedy_step {b e₁ e₂ ρ β i r : Nat} (hb : 1 < b)
-    (hce₁ : Nat.Coprime b e₁) (hce₂ : Nat.Coprime b e₂) (hcρ : Nat.Coprime b ρ)
+theorem greedy_step {b e1 e2 ρ β i r : Nat} (hb : 1 < b)
+    (hce1 : Nat.Coprime b e1) (hce2 : Nat.Coprime b e2) (hcρ : Nat.Coprime b ρ)
     (hβ : Nat.Coprime b β)
-    (hsep : (e₂ * ρ ^ (e₂ - 1) + β) % b = e₁ * ρ ^ (e₁ - 1) % b)
+    (hsep : (e2 * ρ ^ (e2 - 1) + β) % b = e1 * ρ ^ (e1 - 1) % b)
     (hi : 1 ≤ i) (hcount : 4 * i + 2 < b)
-    (U : List Nat) (hinv : GreedyInv b e₁ e₂ ρ i r U) :
-    ∃ r' U', GreedyInv b e₁ e₂ ρ (i + 1) r' U' := by
+    (U : List Nat) (hinv : GreedyInv b e1 e2 ρ i r U) :
+    ∃ r' U', GreedyInv b e1 e2 ρ (i + 1) r' U' := by
   obtain ⟨hlo, hhi, hmod, hlen, hnd, hltb, hslot⟩ := hinv
   have hb0 : 0 < b := by omega
   have hbi : 0 < b ^ i := Nat.pow_pos hb0
@@ -3654,26 +3656,26 @@ theorem greedy_step {b e₁ e₂ ρ β i r : Nat} (hb : 1 < b)
   have hα : ∀ e : Nat, (e * r ^ (e - 1)) % b = (e * ρ ^ (e - 1)) % b := by
     intro e
     rw [Nat.mul_mod, Nat.pow_mod, hmod, ← Nat.mul_mod]
-  have hcα₁ : Nat.Coprime b (e₁ * r ^ (e₁ - 1)) := hce₁.mul_right (hcr.pow_right _)
-  have hcα₂ : Nat.Coprime b (e₂ * r ^ (e₂ - 1)) := hce₂.mul_right (hcr.pow_right _)
-  have hsep' : (e₂ * r ^ (e₂ - 1) + β) % b = e₁ * r ^ (e₁ - 1) % b := by
-    rw [Nat.add_mod, hα e₂, ← Nat.add_mod, hsep, ← hα e₁]
+  have hcα1 : Nat.Coprime b (e1 * r ^ (e1 - 1)) := hce1.mul_right (hcr.pow_right _)
+  have hcα2 : Nat.Coprime b (e2 * r ^ (e2 - 1)) := hce2.mul_right (hcr.pow_right _)
+  have hsep' : (e2 * r ^ (e2 - 1) + β) % b = e1 * r ^ (e1 - 1) % b := by
+    rw [Nat.add_mod, hα e2, ← Nat.add_mod, hsep, ← hα e1]
   -- the pigeonhole picks the next digit
-  obtain ⟨x, hx0, hxb, hxu₁, hxu₂, hxne⟩ :=
+  obtain ⟨x, hx0, hxb, hxu1, hxu2, hxne⟩ :=
     exists_good_digit hb0
-      (fun x => (slot b i (r ^ e₁) + e₁ * r ^ (e₁ - 1) * x) % b)
-      (fun x => (slot b i (r ^ e₂) + e₂ * r ^ (e₂ - 1) * x) % b)
-      (fun x hx y hy h => lin_inj hb0 hcα₁ hx hy h)
-      (fun x hx y hy h => lin_inj hb0 hcα₂ hx hy h)
-      (fun x hx y hy h₁ h₂ => clash_inj hb0 hβ hsep' hx hy h₁ h₂)
+      (fun x => (slot b i (r ^ e1) + e1 * r ^ (e1 - 1) * x) % b)
+      (fun x => (slot b i (r ^ e2) + e2 * r ^ (e2 - 1) * x) % b)
+      (fun x hx y hy h => lin_inj hb0 hcα1 hx hy h)
+      (fun x hx y hy h => lin_inj hb0 hcα2 hx hy h)
+      (fun x hx y hy h1 h2 => clash_inj hb0 hβ hsep' hx hy h1 h2)
       U (by omega)
   refine ⟨r + x * b ^ i,
-    slot b i ((r + x * b ^ i) ^ e₁) :: slot b i ((r + x * b ^ i) ^ e₂) :: U, ?_⟩
+    slot b i ((r + x * b ^ i) ^ e1) :: slot b i ((r + x * b ^ i) ^ e2) :: U, ?_⟩
   -- the two new slots are exactly the two progression values
-  have hs₁ : slot b i ((r + x * b ^ i) ^ e₁)
-      = (slot b i (r ^ e₁) + e₁ * r ^ (e₁ - 1) * x) % b := slot_step hb0 hi r x e₁
-  have hs₂ : slot b i ((r + x * b ^ i) ^ e₂)
-      = (slot b i (r ^ e₂) + e₂ * r ^ (e₂ - 1) * x) % b := slot_step hb0 hi r x e₂
+  have hs1 : slot b i ((r + x * b ^ i) ^ e1)
+      = (slot b i (r ^ e1) + e1 * r ^ (e1 - 1) * x) % b := slot_step hb0 hi r x e1
+  have hs2 : slot b i ((r + x * b ^ i) ^ e2)
+      = (slot b i (r ^ e2) + e2 * r ^ (e2 - 1) * x) % b := slot_step hb0 hi r x e2
   -- the earlier slots are untouched: `r' ≡ r (mod b^(j+1))` for every `j < i`
   have hlow : ∀ j, j < i → ∀ e, slot b j ((r + x * b ^ i) ^ e) = slot b j (r ^ e) := by
     intro j hj e
@@ -3699,14 +3701,14 @@ theorem greedy_step {b e₁ e₂ ρ β i r : Nat} (hb : 1 < b)
     refine ⟨?_, ?_, hnd⟩
     · intro h
       rcases List.mem_cons.mp h with heq | hmem
-      · rw [hs₁, hs₂] at heq; exact hxne heq
-      · rw [hs₁] at hmem; exact hxu₁ hmem
-    · rw [hs₂]; exact hxu₂
+      · rw [hs1, hs2] at heq; exact hxne heq
+      · rw [hs1] at hmem; exact hxu1 hmem
+    · rw [hs2]; exact hxu2
   · intro v hv
     rcases List.mem_cons.mp hv with rfl | hv'
-    · rw [hs₁]; exact Nat.mod_lt _ hb0
+    · rw [hs1]; exact Nat.mod_lt _ hb0
     · rcases List.mem_cons.mp hv' with rfl | hv''
-      · rw [hs₂]; exact Nat.mod_lt _ hb0
+      · rw [hs2]; exact Nat.mod_lt _ hb0
       · exact hltb v hv''
   · intro v hv
     rcases List.mem_cons.mp hv with rfl | hv'
@@ -3714,17 +3716,17 @@ theorem greedy_step {b e₁ e₂ ρ β i r : Nat} (hb : 1 < b)
     · rcases List.mem_cons.mp hv' with rfl | hv''
       · exact ⟨i, by omega, Or.inr rfl⟩
       · obtain ⟨j, hj, hval⟩ := hslot v hv''
-        exact ⟨j, by omega, by rw [hlow j hj e₁, hlow j hj e₂]; exact hval⟩
+        exact ⟨j, by omega, by rw [hlow j hj e1, hlow j hj e2]; exact hval⟩
 
 /-- The greedy runs to depth `d`. -/
-theorem greedy_reaches {b e₁ e₂ ρ β d : Nat} (hb : 1 < b)
-    (hce₁ : Nat.Coprime b e₁) (hce₂ : Nat.Coprime b e₂)
+theorem greedy_reaches {b e1 e2 ρ β d : Nat} (hb : 1 < b)
+    (hce1 : Nat.Coprime b e1) (hce2 : Nat.Coprime b e2)
     (hρ : 0 < ρ) (hρb : ρ < b) (hcρ : Nat.Coprime b ρ)
-    (hstart : ρ ^ e₁ % b ≠ ρ ^ e₂ % b) (hβ : Nat.Coprime b β)
-    (hsep : (e₂ * ρ ^ (e₂ - 1) + β) % b = e₁ * ρ ^ (e₁ - 1) % b)
+    (hstart : ρ ^ e1 % b ≠ ρ ^ e2 % b) (hβ : Nat.Coprime b β)
+    (hsep : (e2 * ρ ^ (e2 - 1) + β) % b = e1 * ρ ^ (e1 - 1) % b)
     (hd : 1 ≤ d) (hcount : 4 * (d - 1) + 2 < b) :
-    ∃ r U, GreedyInv b e₁ e₂ ρ d r U := by
-  have main : ∀ i, 1 ≤ i → i ≤ d → ∃ r U, GreedyInv b e₁ e₂ ρ i r U := by
+    ∃ r U, GreedyInv b e1 e2 ρ d r U := by
+  have main : ∀ i, 1 ≤ i → i ≤ d → ∃ r U, GreedyInv b e1 e2 ρ i r U := by
     intro i
     induction i with
     | zero => intro h; omega
@@ -3733,7 +3735,7 @@ theorem greedy_reaches {b e₁ e₂ ρ β d : Nat} (hb : 1 < b)
       rcases Nat.eq_zero_or_pos i with rfl | hi
       · exact ⟨ρ, _, greedy_base hb hρ hρb hstart⟩
       · obtain ⟨r, U, hinv⟩ := ih hi (by omega)
-        exact greedy_step hb hce₁ hce₂ hcρ hβ hsep hi (by omega) U hinv
+        exact greedy_step hb hce1 hce2 hcρ hβ hsep hi (by omega) U hinv
   exact main d hd (Nat.le_refl d)
 
 /-! ### §8.6  Theorem F
@@ -3746,43 +3748,43 @@ a *constructive* argument can reach, not what is typical. -/
 /--
 **Theorem F, slot form** — the statement the `2/E` accounting is really about:
 some `d`-digit `n` has `2d` *pairwise distinct* values among the low `d` slots of
-`n^e₁` and of `n^e₂`.  The deficiency bound below is its corollary.
+`n^e1` and of `n^e2`.  The deficiency bound below is its corollary.
 -/
-theorem greedy_distinct_slots {b e₁ e₂ ρ β d : Nat} (hb : 1 < b)
-    (hce₁ : Nat.Coprime b e₁) (hce₂ : Nat.Coprime b e₂)
+theorem greedy_distinct_slots {b e1 e2 ρ β d : Nat} (hb : 1 < b)
+    (hce1 : Nat.Coprime b e1) (hce2 : Nat.Coprime b e2)
     (hρ : 0 < ρ) (hρb : ρ < b) (hcρ : Nat.Coprime b ρ)
-    (hstart : ρ ^ e₁ % b ≠ ρ ^ e₂ % b) (hβ : Nat.Coprime b β)
-    (hsep : (e₂ * ρ ^ (e₂ - 1) + β) % b = e₁ * ρ ^ (e₁ - 1) % b)
+    (hstart : ρ ^ e1 % b ≠ ρ ^ e2 % b) (hβ : Nat.Coprime b β)
+    (hsep : (e2 * ρ ^ (e2 - 1) + β) % b = e1 * ρ ^ (e1 - 1) % b)
     (hd : 1 ≤ d) (hcount : 4 * (d - 1) + 2 < b) :
     ∃ n, ∃ U : List Nat, b ^ (d - 1) ≤ n ∧ n < b ^ d ∧ U.length = 2 * d ∧ U.Nodup ∧
-      ∀ v ∈ U, ∃ j, j < d ∧ (v = slot b j (n ^ e₁) ∨ v = slot b j (n ^ e₂)) := by
+      ∀ v ∈ U, ∃ j, j < d ∧ (v = slot b j (n ^ e1) ∨ v = slot b j (n ^ e2)) := by
   obtain ⟨r, U, hlo, hhi, hmod, hlen, hnd, hltb, hslot⟩ :=
-    greedy_reaches hb hce₁ hce₂ hρ hρb hcρ hstart hβ hsep hd hcount
+    greedy_reaches hb hce1 hce2 hρ hρb hcρ hstart hβ hsep hd hcount
   exact ⟨r, U, hlo, hhi, hlen, hnd, hslot⟩
 
-/-- How many of the `b` digit values appear nowhere in `n^e₁` or `n^e₂`. -/
-def deficiency (b e₁ e₂ n : Nat) : Nat :=
-  List.countP (fun v => !memb v (digits b (n ^ e₁) ++ digits b (n ^ e₂))) (List.range b)
+/-- How many of the `b` digit values appear nowhere in `n^e1` or `n^e2`. -/
+def deficiency (b e1 e2 n : Nat) : Nat :=
+  List.countP (fun v => !memb v (digits b (n ^ e1) ++ digits b (n ^ e2))) (List.range b)
 
 /--
-**Theorem F.**  Fix a base `b` and exponents `e₁, e₂` with `gcd(e₁e₂, b) = 1`, a
+**Theorem F.**  Fix a base `b` and exponents `e1, e2` with `gcd(e1e2, b) = 1`, a
 starting digit `ρ` — a unit whose two last digits already differ — and a unit `β`
 witnessing that the two progressions have invertible difference
-(`e₂ρ^(e₂-1) + β ≡ e₁ρ^(e₁-1)`).  If `4(d-1) + 2 < b`, then some `d`-digit `n`
+(`e2ρ^(e2-1) + β ≡ e1ρ^(e1-1)`).  If `4(d-1) + 2 < b`, then some `d`-digit `n`
 has combined digit deficiency at most `b - 2d`.
 
-Since `d ≈ b/E` with `E = e₁+e₂`, the counting condition is `4b/E < b`, i.e.
+Since `d ≈ b/E` with `E = e1+e2`, the counting condition is `4b/E < b`, i.e.
 `E ≥ 5` up to the rounding, and the bound is `b(1 - 2/E) + O(1)`.
 -/
-theorem theorem_F {b e₁ e₂ ρ β d : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) (he₂ : 1 ≤ e₂)
-    (hce₁ : Nat.Coprime b e₁) (hce₂ : Nat.Coprime b e₂)
+theorem theorem_F {b e1 e2 ρ β d : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (he2 : 1 ≤ e2)
+    (hce1 : Nat.Coprime b e1) (hce2 : Nat.Coprime b e2)
     (hρ : 0 < ρ) (hρb : ρ < b) (hcρ : Nat.Coprime b ρ)
-    (hstart : ρ ^ e₁ % b ≠ ρ ^ e₂ % b) (hβ : Nat.Coprime b β)
-    (hsep : (e₂ * ρ ^ (e₂ - 1) + β) % b = e₁ * ρ ^ (e₁ - 1) % b)
+    (hstart : ρ ^ e1 % b ≠ ρ ^ e2 % b) (hβ : Nat.Coprime b β)
+    (hsep : (e2 * ρ ^ (e2 - 1) + β) % b = e1 * ρ ^ (e1 - 1) % b)
     (hd : 1 ≤ d) (hcount : 4 * (d - 1) + 2 < b) :
-    ∃ n, b ^ (d - 1) ≤ n ∧ n < b ^ d ∧ deficiency b e₁ e₂ n + 2 * d ≤ b := by
+    ∃ n, b ^ (d - 1) ≤ n ∧ n < b ^ d ∧ deficiency b e1 e2 n + 2 * d ≤ b := by
   obtain ⟨r, U, hlo, hhi, hmod, hlen, hnd, hltb, hslot⟩ :=
-    greedy_reaches hb hce₁ hce₂ hρ hρb hcρ hstart hβ hsep hd hcount
+    greedy_reaches hb hce1 hce2 hρ hρb hcρ hstart hβ hsep hd hcount
   refine ⟨r, hlo, hhi, ?_⟩
   have hb0 : 0 < b := by omega
   have hr1 : 1 ≤ r := Nat.le_trans (Nat.pow_pos hb0) hlo
@@ -3793,29 +3795,29 @@ theorem theorem_F {b e₁ e₂ ρ β d : Nat} (hb : 1 < b) (he₁ : 1 ≤ e₁) 
       Nat.le_trans hlo (by simpa using Nat.pow_le_pow_right hr1 he)
     have := le_numDigits_of_pow_le hb this
     omega
-  -- every used value is a digit of `r^e₁` or of `r^e₂`
-  have hmem : ∀ v ∈ U, v ∈ digits b (r ^ e₁) ++ digits b (r ^ e₂) := by
+  -- every used value is a digit of `r^e1` or of `r^e2`
+  have hmem : ∀ v ∈ U, v ∈ digits b (r ^ e1) ++ digits b (r ^ e2) := by
     intro v hv
     obtain ⟨j, hj, hval⟩ := hslot v hv
     refine List.mem_append.mpr ?_
     rcases hval with rfl | rfl
-    · exact Or.inl (slot_mem_digits hb _ j (by have := hnum e₁ he₁; omega))
-    · exact Or.inr (slot_mem_digits hb _ j (by have := hnum e₂ he₂; omega))
+    · exact Or.inl (slot_mem_digits hb _ j (by have := hnum e1 he1; omega))
+    · exact Or.inr (slot_mem_digits hb _ j (by have := hnum e2 he2; omega))
   -- so `U` embeds in the digits-that-occur sublist of `range b`
   have hsub : U ⊆ (List.range b).filter
-      (fun v => memb v (digits b (r ^ e₁) ++ digits b (r ^ e₂))) := by
+      (fun v => memb v (digits b (r ^ e1) ++ digits b (r ^ e2))) := by
     intro v hv
     refine List.mem_filter.mpr ⟨List.mem_range.mpr (hltb v hv), ?_⟩
     exact (memb_iff v _).mpr (hmem v hv)
   have hle : U.length ≤ ((List.range b).filter
-      (fun v => memb v (digits b (r ^ e₁) ++ digits b (r ^ e₂)))).length :=
+      (fun v => memb v (digits b (r ^ e1) ++ digits b (r ^ e2)))).length :=
     List.Nodup.length_le_of_subset hnd hsub
   have hcount' := countP_eq_length_filter
-    (fun v => memb v (digits b (r ^ e₁) ++ digits b (r ^ e₂))) (List.range b)
+    (fun v => memb v (digits b (r ^ e1) ++ digits b (r ^ e2))) (List.range b)
   have hsplit := countP_split
-    (fun v => memb v (digits b (r ^ e₁) ++ digits b (r ^ e₂))) (List.range b)
+    (fun v => memb v (digits b (r ^ e1) ++ digits b (r ^ e2))) (List.range b)
   have hlenr : (List.range b).length = b := List.length_range
-  show List.countP (fun v => !memb v (digits b (r ^ e₁) ++ digits b (r ^ e₂)))
+  show List.countP (fun v => !memb v (digits b (r ^ e1) ++ digits b (r ^ e2)))
     (List.range b) + 2 * d ≤ b
   omega
 
@@ -3836,14 +3838,14 @@ theorem deficiency_sixtynine : deficiency 10 2 3 69 = 0 := by
 /-- Theorem F at base 13, `(2,3)`: a 3-digit `n` whose six low slots are distinct. -/
 theorem F_base_thirteen :
     ∃ n, 13 ^ 2 ≤ n ∧ n < 13 ^ 3 ∧ deficiency 13 2 3 n + 6 ≤ 13 :=
-  theorem_F (b := 13) (e₁ := 2) (e₂ := 3) (ρ := 2) (β := 5) (d := 3)
+  theorem_F (b := 13) (e1 := 2) (e2 := 3) (ρ := 2) (β := 5) (d := 3)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
 
 /-- Theorem F at base 65, `(2,3)`: 26 of the 65 digit values are forced to occur. -/
 theorem F_base_sixtyfive :
     ∃ n, 65 ^ 12 ≤ n ∧ n < 65 ^ 13 ∧ deficiency 65 2 3 n + 26 ≤ 65 :=
-  theorem_F (b := 65) (e₁ := 2) (e₂ := 3) (ρ := 2) (β := 57) (d := 13)
+  theorem_F (b := 65) (e1 := 2) (e2 := 3) (ρ := 2) (β := 57) (d := 13)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
 
@@ -3852,13 +3854,13 @@ for `E = 3, 4`, but `4(d-1) + 2 < b` is sharper than `4b/E < b` and `E = 4` clea
 it at every base where the arithmetic side conditions hold. `E = 3` never does. -/
 theorem F_base_fortyseven :
     ∃ n, 47 ^ 11 ≤ n ∧ n < 47 ^ 12 ∧ deficiency 47 1 3 n + 24 ≤ 47 :=
-  theorem_F (b := 47) (e₁ := 1) (e₂ := 3) (ρ := 2) (β := 36) (d := 12)
+  theorem_F (b := 47) (e1 := 1) (e2 := 3) (ρ := 2) (β := 36) (d := 12)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
 
-/-- The conclusion is a genuine selection, not a property of the range: `169 = 13²`
+/-- The conclusion is a genuine selection, not a property of the range: `169 = 13^2`
 lies in the very interval `F_base_thirteen` quantifies over, and it fails the
-bound.  `169² = 13⁴` and `169³ = 13⁶`, so between them they show two digit values
+bound.  `169^2 = 13^4` and `169^3 = 13^6`, so between them they show two digit values
 and miss eleven. -/
 theorem digits_169sq : digits 13 (169 ^ 2) = [0, 0, 0, 0, 1] := by
   show digits 13 28561 = [0, 0, 0, 0, 1]
@@ -3892,7 +3894,7 @@ theorem odd_of_coprime_two {x : Nat} (hx : Nat.Coprime 2 x) : x % 2 = 1 := by
 
 /--
 **Where Theorem F stops, and it is a theorem rather than the edge of a scan: no
-even base is ever covered.**  If `b` is even then `gcd(e₁e₂, b) = 1` forces both
+even base is ever covered.**  If `b` is even then `gcd(e1e2, b) = 1` forces both
 exponents odd and `gcd(ρ, b) = 1` forces `ρ` odd, so both progression differences
 `e·ρ^(e-1)` are odd and their gap is even — no unit `β` can separate them.
 
@@ -3900,10 +3902,10 @@ This is the honest limitation: the whole `(1,3)` family the repository actually
 searches (bases 38, 40, 42, 46) is even, and so is `(2,3)` base 34.  `(2,3)` base
 57 is odd but loses the coprimality instead, `3 ∣ 57`.
 -/
-theorem no_even_base {b e₁ e₂ ρ β : Nat} (hbe : b % 2 = 0)
-    (hce₁ : Nat.Coprime b e₁) (hce₂ : Nat.Coprime b e₂) (hcρ : Nat.Coprime b ρ)
+theorem no_even_base {b e1 e2 ρ β : Nat} (hbe : b % 2 = 0)
+    (hce1 : Nat.Coprime b e1) (hce2 : Nat.Coprime b e2) (hcρ : Nat.Coprime b ρ)
     (hβ : Nat.Coprime b β)
-    (hsep : (e₂ * ρ ^ (e₂ - 1) + β) % b = e₁ * ρ ^ (e₁ - 1) % b) : False := by
+    (hsep : (e2 * ρ ^ (e2 - 1) + β) % b = e1 * ρ ^ (e1 - 1) % b) : False := by
   have hdvd : (2 : Nat) ∣ b := Nat.dvd_of_mod_eq_zero hbe
   have ho : ∀ e : Nat, Nat.Coprime b e → (e * ρ ^ (e - 1)) % 2 = 1 := by
     intro e hce
@@ -3911,12 +3913,12 @@ theorem no_even_base {b e₁ e₂ ρ β : Nat} (hbe : b % 2 = 0)
     have hr : ρ % 2 = 1 := odd_of_coprime_two (hcρ.coprime_dvd_left hdvd)
     rw [Nat.mul_mod, he, odd_pow hr]
   -- reduce the separation identity mod 2, where both differences are odd
-  have h2 : (e₂ * ρ ^ (e₂ - 1) + β) % 2 = e₁ * ρ ^ (e₁ - 1) % 2 := by
+  have h2' : (e2 * ρ ^ (e2 - 1) + β) % 2 = e1 * ρ ^ (e1 - 1) % 2 := by
     rw [← Nat.mod_mod_of_dvd _ hdvd, hsep, Nat.mod_mod_of_dvd _ hdvd]
-  rw [Nat.add_mod, ho e₂ hce₂, ho e₁ hce₁] at h2
+  rw [Nat.add_mod, ho e2 hce2, ho e1 hce1] at h2'
   have hβodd : β % 2 = 1 := odd_of_coprime_two (hβ.coprime_dvd_left hdvd)
-  rw [hβodd] at h2
-  exact absurd h2 (by decide)
+  rw [hβodd] at h2'
+  exact absurd h2' (by decide)
 
 /-- The two `(2,3)` bases this repository benchmarks, and why each is outside. -/
 theorem base_thirtyfour_is_even : 34 % 2 = 0 := by decide
@@ -3930,7 +3932,7 @@ Everything provable about this problem comes from three places, and all three ar
 
   * the length identity, which confines `n` to a band;
   * casting out `b-1`s, which confines `n mod (b-1)`;
-  * `n mod b^k`, which pins slot `i < k` of `n^e₁` *and* of `n^e₂` (§8's two slots
+  * `n mod b^k`, which pins slot `i < k` of `n^e1` *and* of `n^e2` (§8's two slots
     per digit), and pandigitality makes those `2k` values pairwise distinct.
 
 Counting the `n` that survive all three is an upper bound on the number of nice
@@ -3978,11 +3980,11 @@ theorem lowSlots_mod {b : Nat} (hb : 0 < b) :
   | succ j ih =>
     intro x
     have hsplit : b ^ (j + 1) = b * b ^ j := by rw [Nat.pow_succ, Nat.mul_comm]
-    have h1 : x % b ^ (j + 1) % b = x % b := by
+    have h1' : x % b ^ (j + 1) % b = x % b := by
       rw [hsplit]; exact Nat.mod_mul_right_mod x b (b ^ j)
-    have h2 : x % b ^ (j + 1) / b = x / b % b ^ j := by
+    have h2' : x % b ^ (j + 1) / b = x / b % b ^ j := by
       rw [hsplit]; exact Nat.mod_mul_right_div_self x b (b ^ j)
-    rw [lowSlots_succ, lowSlots_succ, h1, h2, ih (x / b)]
+    rw [lowSlots_succ, lowSlots_succ, h1', h2', ih (x / b)]
 
 /-- A `k` below the digit count really does name `k` digits: `digits` splits as the
 low `k` slots followed by the digits of what is left. -/
@@ -4057,40 +4059,40 @@ theorem mem_run : ∀ n s v, v ∈ run s n → s ≤ v ∧ v < s + n := by
 theorem mem_run_of : ∀ n s v, s ≤ v → v < s + n → v ∈ run s n := by
   intro n
   induction n with
-  | zero => intro s v h1 h2; omega
+  | zero => intro s v h1' h2'; omega
   | succ m ih =>
-    intro s v h1 h2
+    intro s v h1' h2'
     show v ∈ s :: run (s + 1) m
-    rcases Nat.eq_or_lt_of_le h1 with rfl | h
+    rcases Nat.eq_or_lt_of_le h1' with rfl | h
     · exact List.Mem.head _
     · exact List.Mem.tail _ (ih (s + 1) v (by omega) (by omega))
 
 /-! ### §9.2  The filters, as one decidable test -/
 
 /-- The `2k` low slots of the pair, in one list. -/
-def lowPair (b e₁ e₂ k r : Nat) : List Nat :=
-  lowSlots b k (r ^ e₁) ++ lowSlots b k (r ^ e₂)
+def lowPair (b e1 e2 k r : Nat) : List Nat :=
+  lowSlots b k (r ^ e1) ++ lowSlots b k (r ^ e2)
 
-/-- `Q_k`: the low `k` slots of `r^e₁` and `r^e₂` are `2k` pairwise-distinct values.
+/-- `Q_k`: the low `k` slots of `r^e1` and `r^e2` are `2k` pairwise-distinct values.
 Costs `b^k` to tabulate, and `k = 1` is Theorem G. -/
-def lowOK (b e₁ e₂ k r : Nat) : Bool :=
-  allb (fun v => decide (occ v (lowPair b e₁ e₂ k r) ≤ 1)) (run 0 b)
+def lowOK (b e1 e2 k r : Nat) : Bool :=
+  allb (fun v => decide (occ v (lowPair b e1 e2 k r) ≤ 1)) (run 0 b)
 
 /-- `R_b`: casting out `b-1`s. -/
-def resOK (b e₁ e₂ T r : Nat) : Bool :=
-  decide ((r ^ e₁ + r ^ e₂) % (b - 1) = T % (b - 1))
+def resOK (b e1 e2 T r : Nat) : Bool :=
+  decide ((r ^ e1 + r ^ e2) % (b - 1) = T % (b - 1))
 
 /-- Everything the two congruence filters know about `n`.  Its period is
 `(b-1)·b^k` (`adm_period`), which is what turns Theorem H into a closed form. -/
-def adm (b e₁ e₂ k T n : Nat) : Bool :=
-  resOK b e₁ e₂ T (n % (b - 1)) && lowOK b e₁ e₂ k (n % b ^ k)
+def adm (b e1 e2 k T n : Nat) : Bool :=
+  resOK b e1 e2 T (n % (b - 1)) && lowOK b e1 e2 k (n % b ^ k)
 
 /-- Pandigitality, as a `Bool`, so it can be counted. -/
-def isPandigital (b e₁ e₂ n : Nat) : Bool :=
-  allb (fun v => decide (occ v (digits b (n ^ e₁) ++ digits b (n ^ e₂)) = 1)) (run 0 b)
+def isPandigital (b e1 e2 n : Nat) : Bool :=
+  allb (fun v => decide (occ v (digits b (n ^ e1) ++ digits b (n ^ e2)) = 1)) (run 0 b)
 
-theorem isPandigital_iff {b e₁ e₂ n : Nat} :
-    isPandigital b e₁ e₂ n = true ↔ Pandigital b e₁ e₂ n := by
+theorem isPandigital_iff {b e1 e2 n : Nat} :
+    isPandigital b e1 e2 n = true ↔ Pandigital b e1 e2 n := by
   constructor
   · intro h v hv
     have hd := allb_mem _ h v (mem_run_of b 0 v (by omega) (by omega))
@@ -4099,7 +4101,7 @@ theorem isPandigital_iff {b e₁ e₂ n : Nat} :
     refine allb_of_mem _ ?_
     intro v hv
     have hvb : v < b := by have := (mem_run b 0 v hv).2; omega
-    show decide (occ v (digits b (n ^ e₁) ++ digits b (n ^ e₂)) = 1) = true
+    show decide (occ v (digits b (n ^ e1) ++ digits b (n ^ e2)) = 1) = true
     exact decide_eq_true (hp v hvb)
 
 /-! ### §9.3  Pandigitality implies each filter -/
@@ -4142,16 +4144,16 @@ theorem sumRange_occ_wsum {j : Nat} : ∀ (l : List Nat), (∀ x, x ∈ l → x 
         show sumRange _ m + m * occ m ([] : List Nat) = 0
         rw [ihm]; rfl
     exact h j
-  | cons t₀ cs ih =>
+  | cons t0 cs ih =>
     intro hmem
-    have ht₀ : t₀ < j := hmem t₀ List.mem_cons_self
-    have hupd := sumRange_update (f := fun t => t * occ t (t₀ :: cs))
-      (g := fun t => t * occ t cs) (t₀ := t₀) (x := t₀) j ht₀
+    have ht0 : t0 < j := hmem t0 List.mem_cons_self
+    have hupd := sumRange_update (f := fun t => t * occ t (t0 :: cs))
+      (g := fun t => t * occ t cs) (t0 := t0) (x := t0) j ht0
       (by intro t hne
-          show t * occ t cs = t * occ t (t₀ :: cs)
-          show t * occ t cs = t * ((if t₀ = t then 1 else 0) + occ t cs)
+          show t * occ t cs = t * occ t (t0 :: cs)
+          show t * occ t cs = t * ((if t0 = t then 1 else 0) + occ t cs)
           rw [if_neg (fun hh => hne hh.symm), Nat.zero_add])
-      (by show t₀ + t₀ * occ t₀ cs = t₀ * occ t₀ (t₀ :: cs)
+      (by show t0 + t0 * occ t0 cs = t0 * occ t0 (t0 :: cs)
           rw [occ_cons_self, Nat.mul_add, Nat.mul_one])
     rw [← hupd, ih (fun x hx => hmem x (List.mem_cons_of_mem _ hx))]
     rfl
@@ -4175,90 +4177,90 @@ theorem two_sumRange_id : ∀ n, 2 * sumRange (fun t => t) (n + 1) = (n + 1) * n
       _ = (m + 1 + 1) * (m + 1) := Nat.mul_comm _ _
 
 /-- The length identity, derived from pandigitality rather than assumed. -/
-theorem pandigital_length {b e₁ e₂ n : Nat} (hb : 1 < b) (hp : Pandigital b e₁ e₂ n) :
-    numDigits b (n ^ e₁) + numDigits b (n ^ e₂) = b := by
-  have hmem : ∀ x, x ∈ digits b (n ^ e₁) ++ digits b (n ^ e₂) → x < b := by
+theorem pandigital_length {b e1 e2 n : Nat} (hb : 1 < b) (hp : Pandigital b e1 e2 n) :
+    numDigits b (n ^ e1) + numDigits b (n ^ e2) = b := by
+  have hmem : ∀ x, x ∈ digits b (n ^ e1) ++ digits b (n ^ e2) → x < b := by
     intro x hx
     rcases List.mem_append.mp hx with h | h
     · exact digits_lt hb _ x h
     · exact digits_lt hb _ x h
-  have h1 := sumRange_occ_length (j := b) (digits b (n ^ e₁) ++ digits b (n ^ e₂)) hmem
-  have h2 : sumRange (fun t => occ t (digits b (n ^ e₁) ++ digits b (n ^ e₂))) b
+  have h1' := sumRange_occ_length (j := b) (digits b (n ^ e1) ++ digits b (n ^ e2)) hmem
+  have h2' : sumRange (fun t => occ t (digits b (n ^ e1) ++ digits b (n ^ e2))) b
       = sumRange (fun _ => 1) b :=
     sumRange_congr b (fun t ht => hp t ht)
-  rw [h2, sumRange_one] at h1
+  rw [h2', sumRange_one] at h1'
   rw [← digits_length hb, ← digits_length hb, ← List.length_append]
   omega
 
 /-- The digit-sum identity, likewise. -/
-theorem pandigital_digitSum {b e₁ e₂ n : Nat} (hb : 1 < b) (hp : Pandigital b e₁ e₂ n) :
-    2 * (digitSum b (n ^ e₁) + digitSum b (n ^ e₂)) = b * (b - 1) := by
-  have hmem : ∀ x, x ∈ digits b (n ^ e₁) ++ digits b (n ^ e₂) → x < b := by
+theorem pandigital_digitSum {b e1 e2 n : Nat} (hb : 1 < b) (hp : Pandigital b e1 e2 n) :
+    2 * (digitSum b (n ^ e1) + digitSum b (n ^ e2)) = b * (b - 1) := by
+  have hmem : ∀ x, x ∈ digits b (n ^ e1) ++ digits b (n ^ e2) → x < b := by
     intro x hx
     rcases List.mem_append.mp hx with h | h
     · exact digits_lt hb _ x h
     · exact digits_lt hb _ x h
-  have h1 := sumRange_occ_wsum (j := b) (digits b (n ^ e₁) ++ digits b (n ^ e₂)) hmem
-  have h2 : sumRange (fun t => t * occ t (digits b (n ^ e₁) ++ digits b (n ^ e₂))) b
+  have h1' := sumRange_occ_wsum (j := b) (digits b (n ^ e1) ++ digits b (n ^ e2)) hmem
+  have h2' : sumRange (fun t => t * occ t (digits b (n ^ e1) ++ digits b (n ^ e2))) b
       = sumRange (fun t => t) b :=
     sumRange_congr b (fun t ht => by rw [hp t ht, Nat.mul_one])
-  rw [h2] at h1
+  rw [h2'] at h1'
   have hb1 : b - 1 + 1 = b := by omega
   have h3 := two_sumRange_id (b - 1)
-  rw [hb1, h1, List.sum_append, ← digitSum_eq_sum hb, ← digitSum_eq_sum hb] at h3
+  rw [hb1, h1', List.sum_append, ← digitSum_eq_sum hb, ← digitSum_eq_sum hb] at h3
   exact h3
 
 /-! ### §9.4  The band, from the length identity alone
 
-No jump structure and no roots: `n^e₁ < b^L₁` and `n^e₂ < b^L₂` multiply to
+No jump structure and no roots: `n^e1 < b^L1` and `n^e2 < b^L2` multiply to
 `n^E < b^b`, and the lower bounds multiply to `b^(b-2) ≤ n^E`.  That is a slightly
 wider interval than the exact band — the union of the exact band with its two
 neighbouring length splits — and it costs nothing to prove. -/
 
-theorem pandigital_pow_bounds {b e₁ e₂ n : Nat} (hb : 1 < b) (hp : Pandigital b e₁ e₂ n) :
-    b ^ (b - 2) ≤ n ^ (e₁ + e₂) ∧ n ^ (e₁ + e₂) < b ^ b := by
+theorem pandigital_pow_bounds {b e1 e2 n : Nat} (hb : 1 < b) (hp : Pandigital b e1 e2 n) :
+    b ^ (b - 2) ≤ n ^ (e1 + e2) ∧ n ^ (e1 + e2) < b ^ b := by
   have hn : 0 < n := pos_of_pandigital hb hp
   have hlen := pandigital_length hb hp
-  have hp₁ : 0 < n ^ e₁ := Nat.pow_pos hn
-  have hp₂ : 0 < n ^ e₂ := Nat.pow_pos hn
-  obtain ⟨j₁, hj₁⟩ : ∃ j, numDigits b (n ^ e₁) = j + 1 :=
-    ⟨numDigits b (n ^ e₁) - 1, by have := numDigits_pos hb hp₁; omega⟩
-  obtain ⟨j₂, hj₂⟩ : ∃ j, numDigits b (n ^ e₂) = j + 1 :=
-    ⟨numDigits b (n ^ e₂) - 1, by have := numDigits_pos hb hp₂; omega⟩
-  obtain ⟨lo₁, hi₁⟩ := bounds_of_numDigits hb _ j₁ hj₁
-  obtain ⟨lo₂, hi₂⟩ := bounds_of_numDigits hb _ j₂ hj₂
-  have hsum : j₁ + j₂ = b - 2 := by omega
-  have hsum' : (j₁ + 1) + (j₂ + 1) = b := by omega
-  have hmul : n ^ e₁ * n ^ e₂ = n ^ (e₁ + e₂) := (Nat.pow_add n e₁ e₂).symm
+  have hp1 : 0 < n ^ e1 := Nat.pow_pos hn
+  have hp2 : 0 < n ^ e2 := Nat.pow_pos hn
+  obtain ⟨j1, hj1⟩ : ∃ j, numDigits b (n ^ e1) = j + 1 :=
+    ⟨numDigits b (n ^ e1) - 1, by have := numDigits_pos hb hp1; omega⟩
+  obtain ⟨j2, hj2⟩ : ∃ j, numDigits b (n ^ e2) = j + 1 :=
+    ⟨numDigits b (n ^ e2) - 1, by have := numDigits_pos hb hp2; omega⟩
+  obtain ⟨lo1, hi1⟩ := bounds_of_numDigits hb _ j1 hj1
+  obtain ⟨lo2, hi2⟩ := bounds_of_numDigits hb _ j2 hj2
+  have hsum : j1 + j2 = b - 2 := by omega
+  have hsum' : (j1 + 1) + (j2 + 1) = b := by omega
+  have hmul : n ^ e1 * n ^ e2 = n ^ (e1 + e2) := (Nat.pow_add n e1 e2).symm
   refine ⟨?_, ?_⟩
-  · calc b ^ (b - 2) = b ^ j₁ * b ^ j₂ := by rw [← Nat.pow_add, hsum]
-      _ ≤ n ^ e₁ * n ^ e₂ := Nat.mul_le_mul lo₁ lo₂
-      _ = n ^ (e₁ + e₂) := hmul
-  · have hstep : n ^ e₁ * n ^ e₂ < b ^ (j₁ + 1) * b ^ (j₂ + 1) := by
-      calc n ^ e₁ * n ^ e₂ ≤ n ^ e₁ * b ^ (j₂ + 1) :=
-            Nat.mul_le_mul_left _ (Nat.le_of_lt hi₂)
-        _ < b ^ (j₁ + 1) * b ^ (j₂ + 1) :=
-            Nat.mul_lt_mul_of_lt_of_le hi₁ (Nat.le_refl _) (Nat.pow_pos (by omega))
-    calc n ^ (e₁ + e₂) = n ^ e₁ * n ^ e₂ := hmul.symm
-      _ < b ^ (j₁ + 1) * b ^ (j₂ + 1) := hstep
+  · calc b ^ (b - 2) = b ^ j1 * b ^ j2 := by rw [← Nat.pow_add, hsum]
+      _ ≤ n ^ e1 * n ^ e2 := Nat.mul_le_mul lo1 lo2
+      _ = n ^ (e1 + e2) := hmul
+  · have hstep : n ^ e1 * n ^ e2 < b ^ (j1 + 1) * b ^ (j2 + 1) := by
+      calc n ^ e1 * n ^ e2 ≤ n ^ e1 * b ^ (j2 + 1) :=
+            Nat.mul_le_mul_left _ (Nat.le_of_lt hi2)
+        _ < b ^ (j1 + 1) * b ^ (j2 + 1) :=
+            Nat.mul_lt_mul_of_lt_of_le hi1 (Nat.le_refl _) (Nat.pow_pos (by omega))
+    calc n ^ (e1 + e2) = n ^ e1 * n ^ e2 := hmul.symm
+      _ < b ^ (j1 + 1) * b ^ (j2 + 1) := hstep
       _ = b ^ b := by rw [← Nat.pow_add, hsum']
 
-theorem pandigital_gt {b e₁ e₂ n lo : Nat} (hb : 1 < b) (hp : Pandigital b e₁ e₂ n)
-    (hlo : lo ^ (e₁ + e₂) < b ^ (b - 2)) : lo < n := by
+theorem pandigital_gt {b e1 e2 n lo : Nat} (hb : 1 < b) (hp : Pandigital b e1 e2 n)
+    (hlo : lo ^ (e1 + e2) < b ^ (b - 2)) : lo < n := by
   rcases Nat.lt_or_ge lo n with h | h
   · exact h
   · exfalso
-    have h1 : n ^ (e₁ + e₂) ≤ lo ^ (e₁ + e₂) := Nat.pow_le_pow_left h _
-    have h2 := (pandigital_pow_bounds hb hp).1
+    have h1' : n ^ (e1 + e2) ≤ lo ^ (e1 + e2) := Nat.pow_le_pow_left h _
+    have h2' := (pandigital_pow_bounds hb hp).1
     omega
 
-theorem pandigital_lt {b e₁ e₂ n hi : Nat} (hb : 1 < b) (hp : Pandigital b e₁ e₂ n)
-    (hhi : b ^ b ≤ hi ^ (e₁ + e₂)) : n < hi := by
+theorem pandigital_lt {b e1 e2 n hi : Nat} (hb : 1 < b) (hp : Pandigital b e1 e2 n)
+    (hhi : b ^ b ≤ hi ^ (e1 + e2)) : n < hi := by
   rcases Nat.lt_or_ge n hi with h | h
   · exact h
   · exfalso
-    have h1 : hi ^ (e₁ + e₂) ≤ n ^ (e₁ + e₂) := Nat.pow_le_pow_left h _
-    have h2 := (pandigital_pow_bounds hb hp).2
+    have h1' : hi ^ (e1 + e2) ≤ n ^ (e1 + e2) := Nat.pow_le_pow_left h _
+    have h2' := (pandigital_pow_bounds hb hp).2
     omega
 
 /-- `k` digits, from `b^(k-1) ≤ x`.  §3's `le_numDigits_of_pow_le` shifted by one so
@@ -4270,19 +4272,19 @@ theorem numDigits_ge {b k x : Nat} (hb : 1 < b) (hk : 0 < k)
 
 /-! ### §9.5  The two filters fire -/
 
-theorem pandigital_resOK {b e₁ e₂ T n : Nat} (hb : 1 < b) (hT : 2 * T = b * (b - 1))
-    (hp : Pandigital b e₁ e₂ n) : resOK b e₁ e₂ T (n % (b - 1)) = true := by
-  have hds : digitSum b (n ^ e₁) + digitSum b (n ^ e₂) = T := by
+theorem pandigital_resOK {b e1 e2 T n : Nat} (hb : 1 < b) (hT : 2 * T = b * (b - 1))
+    (hp : Pandigital b e1 e2 n) : resOK b e1 e2 T (n % (b - 1)) = true := by
+  have hds : digitSum b (n ^ e1) + digitSum b (n ^ e2) = T := by
     have := pandigital_digitSum hb hp; omega
-  have hs := sieve_sound (b := b) (x := n ^ e₁) (y := n ^ e₂) (T := T) hb hds
-  have hmod : ((n % (b - 1)) ^ e₁ + (n % (b - 1)) ^ e₂) % (b - 1)
-      = (n ^ e₁ + n ^ e₂) % (b - 1) := by
+  have hs := sieve_sound (b := b) (x := n ^ e1) (y := n ^ e2) (T := T) hb hds
+  have hmod : ((n % (b - 1)) ^ e1 + (n % (b - 1)) ^ e2) % (b - 1)
+      = (n ^ e1 + n ^ e2) % (b - 1) := by
     rw [Nat.add_mod, ← Nat.pow_mod, ← Nat.pow_mod, ← Nat.add_mod]
   exact decide_eq_true (hmod.trans hs)
 
-theorem pandigital_lowOK {b e₁ e₂ k n : Nat} (hb : 1 < b)
-    (hk₁ : k ≤ numDigits b (n ^ e₁)) (hk₂ : k ≤ numDigits b (n ^ e₂))
-    (hp : Pandigital b e₁ e₂ n) : lowOK b e₁ e₂ k (n % b ^ k) = true := by
+theorem pandigital_lowOK {b e1 e2 k n : Nat} (hb : 1 < b)
+    (hk1 : k ≤ numDigits b (n ^ e1)) (hk2 : k ≤ numDigits b (n ^ e2))
+    (hp : Pandigital b e1 e2 n) : lowOK b e1 e2 k (n % b ^ k) = true := by
   have hb0 : 0 < b := by omega
   have hslot : ∀ e, lowSlots b k ((n % b ^ k) ^ e) = lowSlots b k (n ^ e) := by
     intro e
@@ -4292,12 +4294,12 @@ theorem pandigital_lowOK {b e₁ e₂ k n : Nat} (hb : 1 < b)
   intro v hv
   have hvb : v < b := by have := (mem_run b 0 v hv).2; omega
   refine decide_eq_true ?_
-  show occ v (lowSlots b k ((n % b ^ k) ^ e₁) ++ lowSlots b k ((n % b ^ k) ^ e₂)) ≤ 1
-  rw [hslot e₁, hslot e₂, occ_append]
+  show occ v (lowSlots b k ((n % b ^ k) ^ e1) ++ lowSlots b k ((n % b ^ k) ^ e2)) ≤ 1
+  rw [hslot e1, hslot e2, occ_append]
   have hone := hp v hvb
   rw [occ_append] at hone
-  have a1 := occ_lowSlots_le hb hk₁ v
-  have a2 := occ_lowSlots_le hb hk₂ v
+  have a1 := occ_lowSlots_le hb hk1 v
+  have a2 := occ_lowSlots_le hb hk2 v
   omega
 
 /-! ### §9.6  Counting a periodic test on a segment -/
@@ -4364,11 +4366,11 @@ theorem countP_run_le {p : Nat → Bool} {W : Nat} (hW : 0 < W) (hper : ∀ x, p
         have he : W = len + (W - len) := by omega
         calc run s W = run s (len + (W - len)) := by rw [← he]
           _ = run s len ++ run (s + len) (W - len) := run_add s len (W - len)
-      have h1 : List.countP p (run s len) ≤ List.countP p (run 0 W) := by
+      have h1' : List.countP p (run s len) ≤ List.countP p (run 0 W) := by
         rw [← countP_run_window hper s, hsplit, List.countP_append]
         omega
-      have h2 : 1 ≤ (len + W - 1) / W := (Nat.le_div_iff_mul_le hW).mpr (by omega)
-      calc List.countP p (run s len) ≤ List.countP p (run 0 W) := h1
+      have h2' : 1 ≤ (len + W - 1) / W := (Nat.le_div_iff_mul_le hW).mpr (by omega)
+      calc List.countP p (run s len) ≤ List.countP p (run 0 W) := h1'
         _ ≤ List.countP p (run 0 W) * ((len + W - 1) / W) :=
             Nat.le_mul_of_pos_right _ (by omega)
     · have hsplit : run s len = run s W ++ run (s + W) (len - W) := by
@@ -4377,75 +4379,75 @@ theorem countP_run_le {p : Nat → Bool} {W : Nat} (hW : 0 < W) (hper : ∀ x, p
           _ = run s W ++ run (s + W) (len - W) := run_add s W (len - W)
       have hIH := ih (len - W) (by omega) (s + W)
       have hdiv : (len + W - 1) / W = (len - W + W - 1) / W + 1 := by
-        have h1 : len + W - 1 = (len - W + W - 1) + W := by omega
-        rw [h1, Nat.add_div_right _ hW]
+        have h1' : len + W - 1 = (len - W + W - 1) + W := by omega
+        rw [h1', Nat.add_div_right _ hW]
       rw [hsplit, List.countP_append, countP_run_window hper s, hdiv,
           Nat.mul_add, Nat.mul_one]
       omega
 
-theorem adm_period {b e₁ e₂ k T : Nat} (hb : 1 < b) (x : Nat) :
-    adm b e₁ e₂ k T (x + (b - 1) * b ^ k) = adm b e₁ e₂ k T x := by
-  have h1 : (x + (b - 1) * b ^ k) % (b - 1) = x % (b - 1) :=
+theorem adm_period {b e1 e2 k T : Nat} (hb : 1 < b) (x : Nat) :
+    adm b e1 e2 k T (x + (b - 1) * b ^ k) = adm b e1 e2 k T x := by
+  have h1' : (x + (b - 1) * b ^ k) % (b - 1) = x % (b - 1) :=
     Nat.add_mul_mod_self_left x (b - 1) (b ^ k)
-  have h2 : (x + (b - 1) * b ^ k) % b ^ k = x % b ^ k := by
+  have h2' : (x + (b - 1) * b ^ k) % b ^ k = x % b ^ k := by
     rw [Nat.mul_comm]
     exact Nat.add_mul_mod_self_left x (b ^ k) (b - 1)
-  show (resOK b e₁ e₂ T ((x + (b - 1) * b ^ k) % (b - 1))
-        && lowOK b e₁ e₂ k ((x + (b - 1) * b ^ k) % b ^ k))
-      = (resOK b e₁ e₂ T (x % (b - 1)) && lowOK b e₁ e₂ k (x % b ^ k))
-  rw [h1, h2]
+  show (resOK b e1 e2 T ((x + (b - 1) * b ^ k) % (b - 1))
+        && lowOK b e1 e2 k ((x + (b - 1) * b ^ k) % b ^ k))
+      = (resOK b e1 e2 T (x % (b - 1)) && lowOK b e1 e2 k (x % b ^ k))
+  rw [h1', h2']
 
 /-! ### §9.7  Theorem H -/
 
 /--
-**Theorem H (T4 of REPORT §11).**  Every `(e₁,e₂)`-pandigital `n` lies in the crude
+**Theorem H (T4 of REPORT §11).**  Every `(e1,e2)`-pandigital `n` lies in the crude
 band `(lo, hi)` and passes the admissibility test `adm`, which depends on `n` only
 through `n mod (b-1)` and `n mod b^k`.
 
 `hlo` and `hhi` are the band: any `lo` below it and any `hi` at or above its top.
-`hk₁`/`hk₂` say only that the powers of the smallest surviving `n` already have `k`
+`hk1`/`hk2` say only that the powers of the smallest surviving `n` already have `k`
 digits, which is what makes the low-`k`-slot filter legitimate — without them the
 padding zeros of `lowSlots` would be counted as digits.
 -/
-theorem theorem_H {b e₁ e₂ k T lo hi n : Nat} (hb : 1 < b) (hk : 0 < k)
+theorem theorem_H {b e1 e2 k T lo hi n : Nat} (hb : 1 < b) (hk : 0 < k)
     (hT : 2 * T = b * (b - 1))
-    (hlo : lo ^ (e₁ + e₂) < b ^ (b - 2)) (hhi : b ^ b ≤ hi ^ (e₁ + e₂))
-    (hk₁ : b ^ (k - 1) ≤ (lo + 1) ^ e₁) (hk₂ : b ^ (k - 1) ≤ (lo + 1) ^ e₂)
-    (hp : Pandigital b e₁ e₂ n) :
-    (lo < n ∧ n < hi) ∧ adm b e₁ e₂ k T n = true := by
+    (hlo : lo ^ (e1 + e2) < b ^ (b - 2)) (hhi : b ^ b ≤ hi ^ (e1 + e2))
+    (hk1 : b ^ (k - 1) ≤ (lo + 1) ^ e1) (hk2 : b ^ (k - 1) ≤ (lo + 1) ^ e2)
+    (hp : Pandigital b e1 e2 n) :
+    (lo < n ∧ n < hi) ∧ adm b e1 e2 k T n = true := by
   have hgt := pandigital_gt hb hp hlo
   have hlt := pandigital_lt hb hp hhi
   have hle : lo + 1 ≤ n := by omega
-  have hd₁ : k ≤ numDigits b (n ^ e₁) :=
-    numDigits_ge hb hk (Nat.le_trans hk₁ (Nat.pow_le_pow_left hle _))
-  have hd₂ : k ≤ numDigits b (n ^ e₂) :=
-    numDigits_ge hb hk (Nat.le_trans hk₂ (Nat.pow_le_pow_left hle _))
+  have hd1 : k ≤ numDigits b (n ^ e1) :=
+    numDigits_ge hb hk (Nat.le_trans hk1 (Nat.pow_le_pow_left hle _))
+  have hd2 : k ≤ numDigits b (n ^ e2) :=
+    numDigits_ge hb hk (Nat.le_trans hk2 (Nat.pow_le_pow_left hle _))
   refine ⟨⟨hgt, hlt⟩, ?_⟩
-  show (resOK b e₁ e₂ T (n % (b - 1)) && lowOK b e₁ e₂ k (n % b ^ k)) = true
-  rw [pandigital_resOK hb hT hp, pandigital_lowOK hb hd₁ hd₂ hp]
+  show (resOK b e1 e2 T (n % (b - 1)) && lowOK b e1 e2 k (n % b ^ k)) = true
+  rw [pandigital_resOK hb hT hp, pandigital_lowOK hb hd1 hd2 hp]
   rfl
 
 /--
 **Theorem H, counting form.**  At most `countP adm` numbers of the crude band are
 nice.  This is the quantity `nice-provability/bound.py` evaluates.
 -/
-theorem theorem_H_count {b e₁ e₂ k T lo hi : Nat} (hb : 1 < b) (hk : 0 < k)
+theorem theorem_H_count {b e1 e2 k T lo hi : Nat} (hb : 1 < b) (hk : 0 < k)
     (hT : 2 * T = b * (b - 1))
-    (hlo : lo ^ (e₁ + e₂) < b ^ (b - 2)) (hhi : b ^ b ≤ hi ^ (e₁ + e₂))
-    (hk₁ : b ^ (k - 1) ≤ (lo + 1) ^ e₁) (hk₂ : b ^ (k - 1) ≤ (lo + 1) ^ e₂) :
-    List.countP (isPandigital b e₁ e₂) (run (lo + 1) (hi - lo - 1))
-      ≤ List.countP (adm b e₁ e₂ k T) (run (lo + 1) (hi - lo - 1)) :=
+    (hlo : lo ^ (e1 + e2) < b ^ (b - 2)) (hhi : b ^ b ≤ hi ^ (e1 + e2))
+    (hk1 : b ^ (k - 1) ≤ (lo + 1) ^ e1) (hk2 : b ^ (k - 1) ≤ (lo + 1) ^ e2) :
+    List.countP (isPandigital b e1 e2) (run (lo + 1) (hi - lo - 1))
+      ≤ List.countP (adm b e1 e2 k T) (run (lo + 1) (hi - lo - 1)) :=
   countP_mono (fun x hx =>
-    (theorem_H hb hk hT hlo hhi hk₁ hk₂ (isPandigital_iff.mp hx)).2) _
+    (theorem_H hb hk hT hlo hhi hk1 hk2 (isPandigital_iff.mp hx)).2) _
 
 /--
 **Theorem H, closed form.**  `adm` has period `W = (b-1)·b^k`, so the count over the
 band is at most the count over one window times `⌈band/W⌉` — `O(b^k)` work, with no
 reference to the band beyond its length.
 -/
-theorem theorem_H_closed {b e₁ e₂ k T lo hi : Nat} (hb : 1 < b) :
-    List.countP (adm b e₁ e₂ k T) (run (lo + 1) (hi - lo - 1))
-      ≤ List.countP (adm b e₁ e₂ k T) (run 0 ((b - 1) * b ^ k))
+theorem theorem_H_closed {b e1 e2 k T lo hi : Nat} (hb : 1 < b) :
+    List.countP (adm b e1 e2 k T) (run (lo + 1) (hi - lo - 1))
+      ≤ List.countP (adm b e1 e2 k T) (run 0 ((b - 1) * b ^ k))
         * ((hi - lo - 1 + (b - 1) * b ^ k - 1) / ((b - 1) * b ^ k)) := by
   refine countP_run_le ?_ (adm_period hb) _ _
   have hp : 0 < b ^ k := Nat.pow_pos (by omega)
@@ -4475,7 +4477,7 @@ theorem base_ten_survivors : (run 40 60).filter (adm 10 2 3 4 45) = [69] := by d
 
 /-- **69 is the only `(2,3)`-nice number in base 10.** -/
 theorem sixtynine_unique {n : Nat} (hp : Pandigital 10 2 3 n) : n = 69 := by
-  have h := theorem_H (b := 10) (e₁ := 2) (e₂ := 3) (k := 4) (T := 45) (lo := 39) (hi := 100)
+  have h := theorem_H (b := 10) (e1 := 2) (e2 := 3) (k := 4) (T := 45) (lo := 39) (hi := 100)
     (by decide) (by decide) (by decide) base_ten_lo base_ten_hi (by decide) (by decide) hp
   have hmem : n ∈ run 40 60 := mem_run_of 60 40 n (by omega) (by omega)
   have hfil : n ∈ (run 40 60).filter (adm 10 2 3 4 45) :=
@@ -4499,7 +4501,7 @@ set_option maxRecDepth 4000 in
 theorem base_seventeen_window : List.countP (adm 17 2 3 1 136) (run 0 272) = 15 := by decide
 
 theorem base_seventeen_all {n : Nat} (hp : Pandigital 17 2 3 n) : n ∈ run 4913 10347 := by
-  have h := theorem_H (b := 17) (e₁ := 2) (e₂ := 3) (k := 1) (T := 136)
+  have h := theorem_H (b := 17) (e1 := 2) (e2 := 3) (k := 1) (T := 136)
     (lo := 4912) (hi := 15260) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) hp
   exact mem_run_of 10347 4913 n (by omega) (by omega)
@@ -4510,21 +4512,21 @@ theorem base_seventeen_bound :
     List.countP (isPandigital 17 2 3) (run 4913 10347) ≤ 585 := by
   have hlen : 15260 - 4912 - 1 = 10347 := rfl
   have hstart : (4912 : Nat) + 1 = 4913 := rfl
-  have h1 := theorem_H_count (b := 17) (e₁ := 2) (e₂ := 3) (k := 1) (T := 136)
+  have h1' := theorem_H_count (b := 17) (e1 := 2) (e2 := 3) (k := 1) (T := 136)
     (lo := 4912) (hi := 15260) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide)
-  have h2 := theorem_H_closed (b := 17) (e₁ := 2) (e₂ := 3) (k := 1) (T := 136)
+  have h2' := theorem_H_closed (b := 17) (e1 := 2) (e2 := 3) (k := 1) (T := 136)
     (lo := 4912) (hi := 15260) (by decide)
-  rw [hstart, hlen] at h1 h2
+  rw [hstart, hlen] at h1' h2'
   have hW : (17 - 1) * 17 ^ 1 = 272 := rfl
-  rw [hW, base_seventeen_window] at h2
+  rw [hW, base_seventeen_window] at h2'
   have h3 : (10347 + 272 - 1) / 272 = 39 := rfl
-  rw [h3] at h2
+  rw [h3] at h2'
   omega
 
 /-! ## §10  Infinitude — the reduction, the divergence, and the one missing input
 
-Whether there are infinitely many `(e₁,e₂)`-nice numbers is **open**, and §10 of
+Whether there are infinitely many `(e1,e2)`-nice numbers is **open**, and §10 of
 REPORT-provability argues that it is far out of reach: it is a statement about all
 `b` digits of two powers at once, where the state of the art handles one digit
 statistic (Mauduit–Rivat) or one *missing* digit in a base above `10^23` (Maynard).
@@ -4540,10 +4542,10 @@ half that is provable and the half that is not, and prove the first half in full
     any `M`, along an explicit infinite family of bases, unconditionally and with no
     asymptotic notation.  The band is **exhibited** — `b^q` consecutive candidates,
     §10.1 — rather than estimated, and `b^b ≤ 4^b·b!` comes from
-    `b!·b^b ≤ (2b)! ≤ 4^b·(b!)²`: two inductions, no Stirling, no reals.
+    `b!·b^b ≤ (2b)! ≤ 4^b·(b!)^2`: two inductions, no Stirling, no reals.
   * **Theorem K** (`conditional_infinitude`) — `ModelPositive → infinitude`, where
     `ModelPositive` says that a base of that family whose heuristic count exceeds one
-    fixed `M₀` hosts a solution.  That is the only input left.
+    fixed `M0` hosts a solution.  That is the only input left.
   * **The guard** (`divergence_is_not_existence`) — and it is not a formality.  For
     `(2,3)` the bases `b = 20s+7` sit in the *same* family, their heuristic counts
     diverge at the same rate, and **every one of them is provably empty** (Theorem B:
@@ -4557,7 +4559,7 @@ half that is provable and the half that is not, and prove the first half in full
 `b! ≥ b^b/c^b` for a *constant* `c` is what makes the heuristic diverge — the
 `b^(b/E)` band beats `c^b` for every constant `c` — so the sharp `c = e` of Stirling
 is not needed and `c = 4` is free: `(2b)!` contains `b` factors above `b`, and
-`(2b)! ≤ 4^b·(b!)²` is an induction whose only arithmetic step is
+`(2b)! ≤ 4^b·(b!)^2` is an induction whose only arithmetic step is
 `(2b+1) ≤ (2b+2)`. -/
 
 def fact : Nat → Nat
@@ -4587,42 +4589,42 @@ theorem prod_shuffle (x P F : Nat) :
     (2 * x) * ((2 * x) * (P * (F * F))) = P * 4 * ((x * F) * (x * F)) := by
   simp [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
 
-/-- `(2b)! ≤ 4^b·(b!)²` — the central-binomial bound, proved directly so that no
+/-- `(2b)! ≤ 4^b·(b!)^2` — the central-binomial bound, proved directly so that no
 binomial coefficients are needed. -/
 theorem fact_two_mul_le (b : Nat) : fact (2 * b) ≤ 4 ^ b * (fact b * fact b) := by
   induction b with
   | zero => decide
   | succ b ih =>
-    have e1 : 2 * (b + 1) = 2 * b + 1 + 1 := by omega
-    have e2 : 2 * b + 1 + 1 = 2 * (b + 1) := by omega
-    rw [e1, fact_succ, fact_succ]
+    have e1' : 2 * (b + 1) = 2 * b + 1 + 1 := by omega
+    have e2' : 2 * b + 1 + 1 = 2 * (b + 1) := by omega
+    rw [e1', fact_succ, fact_succ]
     calc (2 * b + 1 + 1) * ((2 * b + 1) * fact (2 * b))
         ≤ (2 * b + 1 + 1) * ((2 * b + 1 + 1) * (4 ^ b * (fact b * fact b))) :=
           Nat.mul_le_mul (Nat.le_refl _) (Nat.mul_le_mul (by omega) ih)
       _ = 4 ^ (b + 1) * (fact (b + 1) * fact (b + 1)) := by
-          rw [e2, fact_succ, Nat.pow_succ]
+          rw [e2', fact_succ, Nat.pow_succ]
           exact prod_shuffle (b + 1) (4 ^ b) (fact b)
 
 /-- **`b^b ≤ 4^b · b!`.**  The whole analytic content of Theorem J, in one
-cancellation: `b!·b^b ≤ (2b)! ≤ 4^b·(b!)²`. -/
+cancellation: `b!·b^b ≤ (2b)! ≤ 4^b·(b!)^2`. -/
 theorem pow_self_le_fact (b : Nat) : b ^ b ≤ 4 ^ b * fact b := by
-  have h1 : fact b * b ^ b ≤ fact (2 * b) := by
+  have h1' : fact b * b ^ b ≤ fact (2 * b) := by
     have h := fact_mul_pow_le b b
     have e : b + b = 2 * b := by omega
     rwa [e] at h
-  have h2 : fact b * b ^ b ≤ fact b * (4 ^ b * fact b) := by
-    calc fact b * b ^ b ≤ fact (2 * b) := h1
+  have h2' : fact b * b ^ b ≤ fact b * (4 ^ b * fact b) := by
+    calc fact b * b ^ b ≤ fact (2 * b) := h1'
       _ ≤ 4 ^ b * (fact b * fact b) := fact_two_mul_le b
       _ = fact b * (4 ^ b * fact b) := by
           simp [Nat.mul_comm, Nat.mul_assoc]
-  exact Nat.le_of_mul_le_mul_left h2 (fact_pos b)
+  exact Nat.le_of_mul_le_mul_left h2' (fact_pos b)
 
 /-! ### §10.1  A base whose band is exhibited, not estimated
 
 For any `b` with `E ∣ b-2`, put `q = (b-2)/E`.  Then `b^q` is in the band, and so is
 every `n` below `2b^q`, because `n^e < 2^e·b^(qe) ≤ b^(qe+1)` as soon as `2^e ≤ b`.
 That is `b^q` consecutive candidates with no root extraction anywhere — a factor
-`⌊b^(1/e₂)⌋-1` short of the true band, which is nothing on the scale of `b^q`. -/
+`⌊b^(1/e2)⌋-1` short of the true band, which is nothing on the scale of `b^q`. -/
 
 theorem numDigits_pow_of_interval {b q e n : Nat} (hb : 1 < b) (he : 0 < e)
     (hpow : 2 ^ e ≤ b) (hlo : b ^ q ≤ n) (hhi : n < 2 * b ^ q) :
@@ -4636,15 +4638,15 @@ theorem numDigits_pow_of_interval {b q e n : Nat} (hb : 1 < b) (he : 0 < e)
       _ ≤ b * b ^ (q * e) := Nat.mul_le_mul hpow (Nat.le_refl _)
       _ = b ^ (q * e + 1) := by rw [Nat.pow_succ, Nat.mul_comm]
 
-/-- **The band, exhibited.**  With `q·E + 2 = b` and `2^e₁, 2^e₂ ≤ b`, every one of
+/-- **The band, exhibited.**  With `q·E + 2 = b` and `2^e1, 2^e2 ≤ b`, every one of
 the `b^q` integers in `[b^q, 2b^q)` is a candidate in base `b`. -/
-theorem band_of_interval {b e₁ e₂ q n : Nat} (hb : 1 < b) (he₁ : 0 < e₁) (he₂ : 0 < e₂)
-    (h1 : 2 ^ e₁ ≤ b) (h2 : 2 ^ e₂ ≤ b) (hq : q * (e₁ + e₂) + 2 = b)
-    (hlo : b ^ q ≤ n) (hhi : n < 2 * b ^ q) : InBand b e₁ e₂ n := by
-  have hd : q * (e₁ + e₂) = q * e₁ + q * e₂ := Nat.left_distrib q e₁ e₂
-  show numDigits b (n ^ e₁) + numDigits b (n ^ e₂) = b
-  rw [numDigits_pow_of_interval hb he₁ h1 hlo hhi,
-      numDigits_pow_of_interval hb he₂ h2 hlo hhi]
+theorem band_of_interval {b e1 e2 q n : Nat} (hb : 1 < b) (he1 : 0 < e1) (he2 : 0 < e2)
+    (h1' : 2 ^ e1 ≤ b) (h2' : 2 ^ e2 ≤ b) (hq : q * (e1 + e2) + 2 = b)
+    (hlo : b ^ q ≤ n) (hhi : n < 2 * b ^ q) : InBand b e1 e2 n := by
+  have hd : q * (e1 + e2) = q * e1 + q * e2 := Nat.left_distrib q e1 e2
+  show numDigits b (n ^ e1) + numDigits b (n ^ e2) = b
+  rw [numDigits_pow_of_interval hb he1 h1' hlo hhi,
+      numDigits_pow_of_interval hb he2 h2' hlo hhi]
   omega
 
 /-! ### §10.2  The heuristic count of that base, and why it diverges
@@ -4664,19 +4666,19 @@ theorem lt_pow_four (k : Nat) : k < 4 ^ k := by
 
 theorem yield_ge {b q M E : Nat} (hq : q * E + 2 = b)
     (hbig : 4 ^ (2 * E) ≤ b) (hM : M + 4 ≤ b) : M * b ^ b ≤ b ^ q * fact b := by
-  have h1 : 4 ^ (2 * E * q) ≤ b ^ q := by
+  have h1' : 4 ^ (2 * E * q) ≤ b ^ q := by
     calc 4 ^ (2 * E * q) = (4 ^ (2 * E)) ^ q := by rw [Nat.pow_mul]
       _ ≤ b ^ q := Nat.pow_le_pow_left hbig q
   have hcomm : 2 * E * q = 2 * (q * E) := by rw [Nat.mul_assoc, Nat.mul_comm E q]
   have hexp : 2 * E * q = (b - 4) + b := by rw [hcomm]; omega
-  have h2 : M * 4 ^ b ≤ 4 ^ (2 * E * q) := by
+  have h2' : M * 4 ^ b ≤ 4 ^ (2 * E * q) := by
     rw [hexp, Nat.pow_add]
     exact Nat.mul_le_mul (Nat.le_trans (by omega) (Nat.le_of_lt (lt_pow_four (b - 4))))
       (Nat.le_refl _)
   calc M * b ^ b ≤ M * (4 ^ b * fact b) :=
         Nat.mul_le_mul (Nat.le_refl M) (pow_self_le_fact b)
     _ = M * 4 ^ b * fact b := (Nat.mul_assoc _ _ _).symm
-    _ ≤ b ^ q * fact b := Nat.mul_le_mul (Nat.le_trans h2 h1) (Nat.le_refl _)
+    _ ≤ b ^ q * fact b := Nat.mul_le_mul (Nat.le_trans h2' h1') (Nat.le_refl _)
 
 /--
 **Theorem J.**  For every exponent pair and every `M`, there are arbitrarily large
@@ -4685,69 +4687,69 @@ their band, and whose heuristic count `|band|·b!/b^b` exceeds `M`.
 
 No hypothesis, no asymptotics, and the band is produced rather than estimated.
 -/
-theorem model_diverges (e₁ e₂ M B : Nat) (he₁ : 0 < e₁) (he₂ : 0 < e₂) :
-    ∃ b q, B < b ∧ 1 < b ∧ b % 2 = 0 ∧ q * (e₁ + e₂) + 2 = b ∧
-      (∀ n, b ^ q ≤ n → n < 2 * b ^ q → InBand b e₁ e₂ n) ∧
+theorem model_diverges (e1 e2 M B : Nat) (he1 : 0 < e1) (he2 : 0 < e2) :
+    ∃ b q, B < b ∧ 1 < b ∧ b % 2 = 0 ∧ q * (e1 + e2) + 2 = b ∧
+      (∀ n, b ^ q ≤ n → n < 2 * b ^ q → InBand b e1 e2 n) ∧
       M * b ^ b ≤ b ^ q * fact b := by
-  obtain ⟨t, ht⟩ : ∃ t, t = B + M + 4 ^ (2 * (e₁ + e₂)) + 2 ^ e₁ + 2 ^ e₂ + 4 := ⟨_, rfl⟩
-  have hE : 1 ≤ e₁ + e₂ := by omega
+  obtain ⟨t, ht⟩ : ∃ t, t = B + M + 4 ^ (2 * (e1 + e2)) + 2 ^ e1 + 2 ^ e2 + 4 := ⟨_, rfl⟩
+  have hE : 1 ≤ e1 + e2 := by omega
   -- `omega` does not know that a power is nonnegative, so say so.
-  have hq1 : 1 ≤ 4 ^ (2 * (e₁ + e₂)) := Nat.one_le_pow _ _ (by omega)
-  have hq2 : 1 ≤ 2 ^ e₁ := Nat.one_le_pow _ _ (by omega)
-  have hq3 : 1 ≤ 2 ^ e₂ := Nat.one_le_pow _ _ (by omega)
-  have ht1 : 2 * t * 1 ≤ 2 * t * (e₁ + e₂) := Nat.mul_le_mul (Nat.le_refl _) hE
-  have ht2 : 2 * t * (e₁ + e₂) = 2 * (t * (e₁ + e₂)) := by rw [Nat.mul_assoc]
-  have hb1 : 1 < 2 * t * (e₁ + e₂) + 2 := by omega
-  have hbB : B < 2 * t * (e₁ + e₂) + 2 := by omega
-  have hbe : (2 * t * (e₁ + e₂) + 2) % 2 = 0 := by omega
-  have hp1 : 2 ^ e₁ ≤ 2 * t * (e₁ + e₂) + 2 := by omega
-  have hp2 : 2 ^ e₂ ≤ 2 * t * (e₁ + e₂) + 2 := by omega
-  have hbig : 4 ^ (2 * (e₁ + e₂)) ≤ 2 * t * (e₁ + e₂) + 2 := by omega
-  have hM : M + 4 ≤ 2 * t * (e₁ + e₂) + 2 := by omega
-  exact ⟨2 * t * (e₁ + e₂) + 2, 2 * t, hbB, hb1, hbe, rfl,
-    fun n hlo hhi => band_of_interval hb1 he₁ he₂ hp1 hp2 rfl hlo hhi,
+  have hq1 : 1 ≤ 4 ^ (2 * (e1 + e2)) := Nat.one_le_pow _ _ (by omega)
+  have hq2 : 1 ≤ 2 ^ e1 := Nat.one_le_pow _ _ (by omega)
+  have hq3 : 1 ≤ 2 ^ e2 := Nat.one_le_pow _ _ (by omega)
+  have ht1 : 2 * t * 1 ≤ 2 * t * (e1 + e2) := Nat.mul_le_mul (Nat.le_refl _) hE
+  have ht2 : 2 * t * (e1 + e2) = 2 * (t * (e1 + e2)) := by rw [Nat.mul_assoc]
+  have hb1 : 1 < 2 * t * (e1 + e2) + 2 := by omega
+  have hbB : B < 2 * t * (e1 + e2) + 2 := by omega
+  have hbe : (2 * t * (e1 + e2) + 2) % 2 = 0 := by omega
+  have hp1' : 2 ^ e1 ≤ 2 * t * (e1 + e2) + 2 := by omega
+  have hp2' : 2 ^ e2 ≤ 2 * t * (e1 + e2) + 2 := by omega
+  have hbig : 4 ^ (2 * (e1 + e2)) ≤ 2 * t * (e1 + e2) + 2 := by omega
+  have hM : M + 4 ≤ 2 * t * (e1 + e2) + 2 := by omega
+  exact ⟨2 * t * (e1 + e2) + 2, 2 * t, hbB, hb1, hbe, rfl,
+    fun n hlo hhi => band_of_interval hb1 he1 he2 hp1' hp2' rfl hlo hhi,
     yield_ge rfl hbig hM⟩
 
 /-! ### §10.3  The family is not one of the dead classes
 
 Theorem A cannot touch it — its band is exhibited above — and for **even** members
 neither can B nor C: `b` even makes `b-1` odd, so `T ≡ 0 (mod b-1)` and `ρ = 0` is a
-residue.  That is Theorem C's `v₂(b-1) = 0` case, and it is why §10.2 builds the
+residue.  That is Theorem C's `v_2(b-1) = 0` case, and it is why §10.2 builds the
 family out of even bases in the first place. -/
 
-theorem resOK_zero_of_even {b e₁ e₂ T : Nat} (hb : 1 < b) (hev : b % 2 = 0)
-    (he₁ : 0 < e₁) (he₂ : 0 < e₂) (hT : 2 * T = b * (b - 1)) :
-    resOK b e₁ e₂ T 0 = true := by
+theorem resOK_zero_of_even {b e1 e2 T : Nat} (hb : 1 < b) (hev : b % 2 = 0)
+    (he1 : 0 < e1) (he2 : 0 < e2) (hT : 2 * T = b * (b - 1)) :
+    resOK b e1 e2 T 0 = true := by
   obtain ⟨c, hc⟩ : ∃ c, b = 2 * c := ⟨b / 2, by omega⟩
-  have h2 : 2 * T = 2 * (c * (b - 1)) := by rw [hT, hc, Nat.mul_assoc]
-  have hT' : T = c * (b - 1) := Nat.eq_of_mul_eq_mul_left (by omega) h2
+  have h2' : 2 * T = 2 * (c * (b - 1)) := by rw [hT, hc, Nat.mul_assoc]
+  have hT' : T = c * (b - 1) := Nat.eq_of_mul_eq_mul_left (by omega) h2'
   have hmod : T % (b - 1) = 0 := by rw [hT', Nat.mul_mod_left]
-  have hz : (0 : Nat) ^ e₁ + 0 ^ e₂ = 0 := by
-    rw [Nat.zero_pow he₁, Nat.zero_pow he₂]
+  have hz : (0 : Nat) ^ e1 + 0 ^ e2 = 0 := by
+    rw [Nat.zero_pow he1, Nat.zero_pow he2]
   show decide _ = true
   refine decide_eq_true ?_
   rw [hz, hmod, Nat.zero_mod]
 
-/-- And Theorem G misses it as well: the clashing bases all divide `N(e₁,e₂)`, so
+/-- And Theorem G misses it as well: the clashing bases all divide `N(e1,e2)`, so
 only finitely many of them exist and the family runs past all of them.  With the
 band exhibited (Theorem A), `ρ = 0` a residue (B, C) and no clash (G), **none of
 the four proved obstructions touches §10.2's family**. -/
-theorem no_clash_of_large {b e₁ e₂ : Nat} (hb : 0 < b) (he₁ : 1 ≤ e₁) (he : e₁ < e₂)
-    (hN : 0 < clashMod e₁ e₂) (hgt : clashMod e₁ e₂ < b) : ¬ UniversalClash b e₁ e₂ := by
+theorem no_clash_of_large {b e1 e2 : Nat} (hb : 0 < b) (he1 : 1 ≤ e1) (he : e1 < e2)
+    (hN : 0 < clashMod e1 e2) (hgt : clashMod e1 e2 < b) : ¬ UniversalClash b e1 e2 := by
   intro h
-  have hd := (clash_iff_dvd_clashMod hb he₁ he).mp h
+  have hd := (clash_iff_dvd_clashMod hb he1 he).mp h
   have := Nat.le_of_dvd hN hd
   omega
 
 /-! ### §10.4  Theorem I — infinitude of numbers is infinitude of bases -/
 
-/-- There are infinitely many `(e₁,e₂)`-nice numbers. -/
-def InfinitelyManyNice (e₁ e₂ : Nat) : Prop :=
-  ∀ N, ∃ b n, N < n ∧ 1 < b ∧ Pandigital b e₁ e₂ n
+/-- There are infinitely many `(e1,e2)`-nice numbers. -/
+def InfinitelyManyNice (e1 e2 : Nat) : Prop :=
+  ∀ N, ∃ b n, N < n ∧ 1 < b ∧ Pandigital b e1 e2 n
 
-/-- Infinitely many bases host an `(e₁,e₂)`-nice number. -/
-def InfinitelyManyNiceBases (e₁ e₂ : Nat) : Prop :=
-  ∀ B, ∃ b n, B < b ∧ 1 < b ∧ Pandigital b e₁ e₂ n
+/-- Infinitely many bases host an `(e1,e2)`-nice number. -/
+def InfinitelyManyNiceBases (e1 e2 : Nat) : Prop :=
+  ∀ B, ∃ b n, B < b ∧ 1 < b ∧ Pandigital b e1 e2 n
 
 theorem le_self_pow' {m e : Nat} (he : 0 < e) : m ≤ m ^ e := by
   obtain ⟨j, hj⟩ : ∃ j, e = j + 1 := ⟨e - 1, by omega⟩
@@ -4759,32 +4761,32 @@ theorem le_self_pow' {m e : Nat} (he : 0 < e) : m ≤ m ^ e := by
       _ = m ^ (j + 1) := (Nat.pow_succ m j).symm
 
 /-- Prop D at the level of solutions: a nice number is nice in exactly one base. -/
-theorem nice_base_unique {b b' e₁ e₂ n : Nat} (hb : 1 < b) (hb' : 1 < b')
-    (h : Pandigital b e₁ e₂ n) (h' : Pandigital b' e₁ e₂ n) : b = b' :=
+theorem nice_base_unique {b b' e1 e2 n : Nat} (hb : 1 < b) (hb' : 1 < b')
+    (h : Pandigital b e1 e2 n) (h' : Pandigital b' e1 e2 n) : b = b' :=
   base_unique hb hb' (pandigital_length hb h) (pandigital_length hb' h')
 
 /--
-**Theorem I.**  There are infinitely many `(e₁,e₂)`-nice numbers **iff** infinitely
+**Theorem I.**  There are infinitely many `(e1,e2)`-nice numbers **iff** infinitely
 many bases host one.  "Search more numbers" and "search more bases" are the same
 axis — quantitatively, not just up to the disjointness of Prop D.
 -/
-theorem infinitude_iff {e₁ e₂ : Nat} (he₁ : 0 < e₁) (he₂ : 0 < e₂) :
-    InfinitelyManyNiceBases e₁ e₂ ↔ InfinitelyManyNice e₁ e₂ := by
+theorem infinitude_iff {e1 e2 : Nat} (he1 : 0 < e1) (he2 : 0 < e2) :
+    InfinitelyManyNiceBases e1 e2 ↔ InfinitelyManyNice e1 e2 := by
   constructor
   · intro h N
-    obtain ⟨b, n, hBb, hb, hp⟩ := h (N ^ (e₁ + e₂) + 2)
+    obtain ⟨b, n, hBb, hb, hp⟩ := h (N ^ (e1 + e2) + 2)
     refine ⟨b, n, ?_, hb, hp⟩
     have hlow := (pandigital_pow_bounds hb hp).1
     have hb1 : b ^ 1 ≤ b ^ (b - 2) := Nat.pow_le_pow_right (by omega) (by omega)
     rw [Nat.pow_one] at hb1
     rcases Nat.lt_or_ge N n with h' | h'
     · exact h'
-    · exact absurd (Nat.pow_le_pow_left h' (e₁ + e₂)) (by omega)
+    · exact absurd (Nat.pow_le_pow_left h' (e1 + e2)) (by omega)
   · intro h B
     obtain ⟨b, n, hNn, hb, hp⟩ := h (B ^ B)
     refine ⟨b, n, ?_, hb, hp⟩
     have hhigh := (pandigital_pow_bounds hb hp).2
-    have hn : n ≤ n ^ (e₁ + e₂) := le_self_pow' (by omega)
+    have hn : n ≤ n ^ (e1 + e2) := le_self_pow' (by omega)
     rcases Nat.lt_or_ge B b with h' | h'
     · exact h'
     · have hB : 0 < B := by omega
@@ -4797,23 +4799,23 @@ theorem infinitude_iff {e₁ e₂ : Nat} (he₁ : 0 < e₁) (he₂ : 0 < e₂) :
 /--
 **The missing input.**  A base of §10.2's family — even, `E ∣ b-2`, large — whose
 heuristic count `|band|·b!/b^b` (bounded below by the `b^q` exhibited candidates)
-exceeds one fixed `M₀`, hosts a solution.
+exceeds one fixed `M0`, hosts a solution.
 
 This is *not* a weakening of the conjecture in any deep sense, and §10.6 shows it
 cannot be proved from the size of the heuristic alone.  Its value is that everything
 else in the chain is a theorem.
 -/
-def ModelPositive (e₁ e₂ : Nat) : Prop :=
-  ∃ M₀ b₀, ∀ b q, b₀ ≤ b → b % 2 = 0 → q * (e₁ + e₂) + 2 = b →
-    M₀ * b ^ b ≤ b ^ q * fact b → ∃ n, Pandigital b e₁ e₂ n
+def ModelPositive (e1 e2 : Nat) : Prop :=
+  ∃ M0 b0, ∀ b q, b0 ≤ b → b % 2 = 0 → q * (e1 + e2) + 2 = b →
+    M0 * b ^ b ≤ b ^ q * fact b → ∃ n, Pandigital b e1 e2 n
 
 /-- **Theorem K.**  `ModelPositive` implies there are infinitely many nice numbers. -/
-theorem conditional_infinitude {e₁ e₂ : Nat} (he₁ : 0 < e₁) (he₂ : 0 < e₂)
-    (h : ModelPositive e₁ e₂) : InfinitelyManyNice e₁ e₂ := by
-  obtain ⟨M₀, b₀, hmp⟩ := h
-  refine (infinitude_iff he₁ he₂).mp ?_
+theorem conditional_infinitude {e1 e2 : Nat} (he1 : 0 < e1) (he2 : 0 < e2)
+    (h : ModelPositive e1 e2) : InfinitelyManyNice e1 e2 := by
+  obtain ⟨M0, b0, hmp⟩ := h
+  refine (infinitude_iff he1 he2).mp ?_
   intro B
-  obtain ⟨b, q, hBb, hb1, hev, hq, _, hyield⟩ := model_diverges e₁ e₂ M₀ (B + b₀) he₁ he₂
+  obtain ⟨b, q, hBb, hb1, hev, hq, _, hyield⟩ := model_diverges e1 e2 M0 (B + b0) he1 he2
   obtain ⟨n, hn⟩ := hmp b q (by omega) hev hq hyield
   exact ⟨b, n, by omega, hb1, hn⟩
 
@@ -4829,9 +4831,9 @@ The moral is the one this file keeps meeting from the other side: the three prov
 sources are all *obstructions*.  They can empty a base; nothing here, and nothing in
 the literature, can fill one. -/
 
-theorem no_pandigital_of_mod_four {b e₁ e₂ n : Nat} (hb : 1 < b) (he₁ : e₁ ≠ 0)
-    (he₂ : e₂ ≠ 0) (hmod : b % 4 = 3) : ¬ Pandigital b e₁ e₂ n := fun hp =>
-  no_nice_of_mod_four hb he₁ he₂ hmod (pandigital_digitSum hb hp)
+theorem no_pandigital_of_mod_four {b e1 e2 n : Nat} (hb : 1 < b) (he1 : e1 ≠ 0)
+    (he2 : e2 ≠ 0) (hmod : b % 4 = 3) : ¬ Pandigital b e1 e2 n := fun hp =>
+  no_nice_of_mod_four hb he1 he2 hmod (pandigital_digitSum hb hp)
 
 theorem divergence_is_not_existence (M B : Nat) :
     ∃ b q, B < b ∧ 1 < b ∧ q * (2 + 3) + 2 = b ∧
@@ -4853,7 +4855,7 @@ theorem divergence_is_not_existence (M B : Nat) :
 /-! ### §10.7  Non-vacuity
 
 The family of §10.2 is not empty of solutions: base 8 is even, `3 ∣ 8-2`, and
-`174 = 256₈` is `(1,2)`-nice there — `174² = 73104₈`, and `{2,5,6} ∪ {7,3,1,0,4}` is
+`174 = 256_8` is `(1,2)`-nice there — `174^2 = 73104_8`, and `{2,5,6} ∪ {7,3,1,0,4}` is
 all eight digits.  Base 8 is far below the crossover — its heuristic count is 0.15 —
 so this witnesses the *shape* of `ModelPositive`, not its hypothesis. -/
 
