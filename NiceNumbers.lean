@@ -5485,10 +5485,18 @@ theorem hits_of_no_jump {g : Nat → Nat} {b N : Nat}
 candidate — every base large enough for the two explicit bounds, which is what §11.5
 shows cannot be dropped.
 
-`j1` and `j2` are digit-count certificates for the threshold `N = 2·e1·e2 + 1`: any
-`j_i` with `N^(e_i) < b^(j_i)` will do, and `j1 + j2 < b` is the real hypothesis —
-it says the walk starts below `b`.  Both are `decide`able at a concrete base, which
-`numDigits` itself is not.
+`j1` and `j2` are digit-count certificates for the threshold `N = 2·e1·e2 + 1`, the
+point above which one step of `n` can no longer add two digits to a power: any `j_i`
+with `N^(e_i) < b^(j_i)` will do, and taking each as small as possible the three
+hypotheses say exactly
+
+    len_b(N^e1) + len_b(N^e2) < b,
+
+i.e. the walk starts below the value it is looking for.  This form is stated with the
+digit counts named because it is `decide`able at a concrete base and `numDigits` is
+not.  The left side is nonincreasing in `b`, so each pair has a single first base from
+which the theorem holds for good — 8 for `(2,3)` (`two_three_band_nonempty`), 6 for
+`(1,2)`, 12 for `(3,4)`, 28 for `(8,9)`.
 -/
 theorem band_nonempty {b e1 e2 j1 j2 : Nat} (hb : 1 < b) (he1 : e1 ≠ 0) (he2 : e2 ≠ 0)
     (hj1 : (2 * (e1 * e2) + 1) ^ e1 < b ^ j1)
