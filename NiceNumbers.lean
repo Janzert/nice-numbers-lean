@@ -4524,6 +4524,383 @@ theorem base_seventeen_bound :
   rw [h3] at h2'
   omega
 
+/-! ### §9.10  The top slots — condition 4 of Theorem H
+
+§9.2's three filters all read `n` from the *bottom*: the band from its size,
+`resOK` from `n mod (b-1)`, `lowOK` from `n mod b^k`.  Condition 4 of REPORT §9
+reads it from the other end — the `h` leading digits of each `n^(e_i)`, `2h` slots
+for the pair, pairwise distinct and distinct from the low `2k`.
+
+Two things make the top end different from the bottom, and both appear as
+hypotheses below.  It is **not a congruence**: the top slots depend on `n` through
+its size, so the refined test has no period and §9.6's closed form does not apply
+to it.  And it needs the **exact** band rather than §9.4's crude one: a top slot is
+read at position `L - h`, so the length `L` has to be known, and the crude band is
+the union of three length splits.  §9.12 is what buys the cost back — the test is
+constant on intervals, so one evaluation retires a whole run of candidates. -/
+
+/-- `lowSlots` splits at any depth, exactly as `digits` does. -/
+theorem lowSlots_add (b : Nat) : ∀ k j x,
+    lowSlots b (k + j) x = lowSlots b k x ++ lowSlots b j (x / b ^ k) := by
+  intro k
+  induction k with
+  | zero => intro j x; rw [Nat.zero_add, Nat.pow_zero, Nat.div_one]; rfl
+  | succ i ih =>
+    intro j x
+    have hdiv : x / b / b ^ i = x / b ^ (i + 1) := by
+      rw [Nat.div_div_eq_div_mul, ← Nat.pow_succ']
+    have hsum : i + 1 + j = (i + j) + 1 := by omega
+    calc lowSlots b (i + 1 + j) x
+        = x % b :: lowSlots b (i + j) (x / b) := by rw [hsum, lowSlots_succ]
+      _ = x % b :: (lowSlots b i (x / b) ++ lowSlots b j (x / b / b ^ i)) := by
+            rw [ih j (x / b)]
+      _ = lowSlots b (i + 1) x ++ lowSlots b j (x / b ^ (i + 1)) := by
+            rw [hdiv, lowSlots_succ]; rfl
+
+/-- A number with exactly `L` digits is its own low `L` slots.  `lowSlots` pads
+with zeros and `digits` does not, so this needs the length on the nose. -/
+theorem digits_eq_lowSlots {b : Nat} (hb : 1 < b) :
+    ∀ L x, numDigits b x = L → digits b x = lowSlots b L x := by
+  intro L
+  induction L with
+  | zero =>
+    intro x hx
+    rw [eq_zero_of_numDigits_eq_zero hb hx, digits_zero, lowSlots_zero]
+  | succ j ih =>
+    intro x hx
+    have hpos : 0 < x := by
+      rcases Nat.eq_zero_or_pos x with rfl | h
+      · rw [numDigits_zero] at hx; omega
+      · exact h
+    have hnum : numDigits b x = numDigits b (x / b) + 1 := by
+      rw [numDigits, dif_pos ⟨hb, hpos⟩]
+    rw [digits_step hb hpos, lowSlots_succ, ih (x / b) (by omega)]
+
+/-- Dividing by `b^j` drops exactly `j` digits — no hypothesis needed, since past
+the top of `x` both sides are zero. -/
+theorem numDigits_div_pow {b : Nat} (hb : 1 < b) :
+    ∀ j x, numDigits b (x / b ^ j) = numDigits b x - j := by
+  have hstep : ∀ y, numDigits b (y / b) = numDigits b y - 1 := by
+    intro y
+    rcases Nat.eq_zero_or_pos y with rfl | hy
+    · rw [Nat.zero_div, numDigits_zero]
+    · have h : numDigits b y = numDigits b (y / b) + 1 := by
+        rw [numDigits, dif_pos ⟨hb, hy⟩]
+      omega
+  intro j
+  induction j with
+  | zero => intro x; rw [Nat.pow_zero, Nat.div_one]; omega
+  | succ i ih =>
+    intro x
+    have hdiv : x / b ^ (i + 1) = x / b / b ^ i := by
+      rw [Nat.div_div_eq_div_mul, ← Nat.pow_succ']
+    rw [hdiv, ih (x / b), hstep x]
+    omega
+
+/-- The length in the shape the interval hypotheses below produce. -/
+theorem numDigits_eq_of_len {b x L : Nat} (hb : 1 < b) (hL : 0 < L)
+    (h1 : b ^ (L - 1) ≤ x) (h2 : x < b ^ L) : numDigits b x = L := by
+  have he : L - 1 + 1 = L := by omega
+  have h := numDigits_eq_of_bounds (b := b) (x := x) (k := L - 1) hb h1 (by rw [he]; exact h2)
+  omega
+
+/-- The top `h` digits of `x`, least significant of them first, given that `x` has
+`L` digits.  The length is a *parameter* rather than `numDigits b x` because the
+filter is evaluated in the kernel and `numDigits` is well-founded recursion; the
+theorems below carry `numDigits b x = L` as a hypothesis instead. -/
+def topSlots (b h L x : Nat) : List Nat := lowSlots b h (x / b ^ (L - h))
+
+/-- The digit list splits as the low `L-h` slots followed by the top `h`. -/
+theorem digits_split_top {b : Nat} (hb : 1 < b) {L h x : Nat}
+    (hL : numDigits b x = L) (hh : h ≤ L) :
+    digits b x = lowSlots b (L - h) x ++ topSlots b h L x := by
+  have h1 : digits b x = lowSlots b (L - h) x ++ digits b (x / b ^ (L - h)) :=
+    digits_split hb (L - h) x (by omega)
+  have h2 : numDigits b (x / b ^ (L - h)) = h := by
+    rw [numDigits_div_pow hb, hL]; omega
+  rw [h1, digits_eq_lowSlots hb h _ h2]
+  rfl
+
+/-- The low `k` slots and the top `h` slots are disjoint stretches of the digit
+list, so their occurrence counts add up inside it.  This is everything conditions
+3 and 4 take from pandigitality, and it is where `k + h ≤ L` is used. -/
+theorem occ_low_top_le {b : Nat} (hb : 1 < b) {k h L x : Nat}
+    (hL : numDigits b x = L) (hkh : k + h ≤ L) (v : Nat) :
+    occ v (lowSlots b k x) + occ v (topSlots b h L x) ≤ occ v (digits b x) := by
+  have hsplit := digits_split_top hb hL (by omega : h ≤ L)
+  have hlow : lowSlots b (L - h) x
+      = lowSlots b k x ++ lowSlots b (L - h - k) (x / b ^ k) := by
+    rw [← lowSlots_add b k (L - h - k) x, show k + (L - h - k) = L - h from by omega]
+  rw [hsplit, hlow, occ_append, occ_append]
+  omega
+
+/-! ### §9.11  The refined test, and Theorem H with all four conditions -/
+
+/-- The `2(k+h)` boundary slots of the pair: the low `k` and the top `h` of each
+power.  Conditions 3 and 4 of REPORT §9 together say these are `2(k+h)`
+pairwise-distinct values. -/
+def boundary (b e1 e2 k h L1 L2 n : Nat) : List Nat :=
+  (lowSlots b k (n ^ e1) ++ topSlots b h L1 (n ^ e1))
+    ++ (lowSlots b k (n ^ e2) ++ topSlots b h L2 (n ^ e2))
+
+/-- Condition 4, as a decidable test: no value occupies two boundary slots. -/
+def boundaryOK (b e1 e2 k h L1 L2 n : Nat) : Bool :=
+  allb (fun v => decide (occ v (boundary b e1 e2 k h L1 L2 n) ≤ 1)) (run 0 b)
+
+/-- `adm` of §9.2 with condition 4 added: all four filters of REPORT §9 in one
+`Bool`.  At `h = 0` the top slots are empty and `boundaryOK` degenerates to the low
+distinctness `adm` already tests, so nothing is added and nothing is lost. -/
+def admTop (b e1 e2 k h L1 L2 T n : Nat) : Bool :=
+  adm b e1 e2 k T n && boundaryOK b e1 e2 k h L1 L2 n
+
+/-- Condition 4 can only remove candidates. -/
+theorem admTop_le_adm {b e1 e2 k h L1 L2 T n : Nat}
+    (h' : admTop b e1 e2 k h L1 L2 T n = true) : adm b e1 e2 k T n = true :=
+  (Bool.and_eq_true _ _).mp h' |>.1
+
+theorem pandigital_boundaryOK {b e1 e2 k h L1 L2 n : Nat} (hb : 1 < b)
+    (hd1 : numDigits b (n ^ e1) = L1) (hd2 : numDigits b (n ^ e2) = L2)
+    (hkh1 : k + h ≤ L1) (hkh2 : k + h ≤ L2)
+    (hp : Pandigital b e1 e2 n) : boundaryOK b e1 e2 k h L1 L2 n = true := by
+  refine allb_of_mem _ ?_
+  intro v hv
+  have hvb : v < b := by have := (mem_run b 0 v hv).2; omega
+  refine decide_eq_true ?_
+  show occ v ((lowSlots b k (n ^ e1) ++ topSlots b h L1 (n ^ e1))
+      ++ (lowSlots b k (n ^ e2) ++ topSlots b h L2 (n ^ e2))) ≤ 1
+  rw [occ_append, occ_append, occ_append]
+  have a1 := occ_low_top_le hb hd1 hkh1 v
+  have a2 := occ_low_top_le hb hd2 hkh2 v
+  have hone := hp v hvb
+  rw [occ_append] at hone
+  omega
+
+/--
+**Theorem H, condition 4 (REPORT §9, the top-digit refinement).**  On an interval
+`[a, c)` where the two digit lengths are constant, every `(e1,e2)`-pandigital `n`
+passes `admTop` — conditions 1-3 of §9.7 *and* the top-digit condition.
+
+The four length hypotheses are what pin `L1` and `L2` across the whole interval,
+and at a concrete base each is a `decide` on numerals.  They are also the reason
+this theorem is stated over an interval rather than over §9.4's crude band: that
+band is the union of three length splits, and `L1` is not constant on it.
+-/
+theorem theorem_H_top {b e1 e2 k h L1 L2 T a c n : Nat} (hb : 1 < b)
+    (hT : 2 * T = b * (b - 1))
+    (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (ha1 : b ^ (L1 - 1) ≤ a ^ e1) (hc1 : (c - 1) ^ e1 < b ^ L1)
+    (ha2 : b ^ (L2 - 1) ≤ a ^ e2) (hc2 : (c - 1) ^ e2 < b ^ L2)
+    (hkh1 : k + h ≤ L1) (hkh2 : k + h ≤ L2)
+    (han : a ≤ n) (hnc : n < c) (hp : Pandigital b e1 e2 n) :
+    admTop b e1 e2 k h L1 L2 T n = true := by
+  have hlen : ∀ e L, 0 < L → b ^ (L - 1) ≤ a ^ e → (c - 1) ^ e < b ^ L →
+      numDigits b (n ^ e) = L := by
+    intro e L hL h1 h2
+    refine numDigits_eq_of_len hb hL (Nat.le_trans h1 (Nat.pow_le_pow_left han e)) ?_
+    exact Nat.lt_of_le_of_lt (Nat.pow_le_pow_left (by omega : n ≤ c - 1) e) h2
+  have hd1 := hlen e1 L1 hL1 ha1 hc1
+  have hd2 := hlen e2 L2 hL2 ha2 hc2
+  have hlow := pandigital_lowOK hb (by omega : k ≤ numDigits b (n ^ e1))
+    (by omega : k ≤ numDigits b (n ^ e2)) hp
+  have hres := pandigital_resOK hb hT hp
+  have hbnd := pandigital_boundaryOK hb hd1 hd2 hkh1 hkh2 hp
+  show (adm b e1 e2 k T n && boundaryOK b e1 e2 k h L1 L2 n) = true
+  show ((resOK b e1 e2 T (n % (b - 1)) && lowOK b e1 e2 k (n % b ^ k))
+      && boundaryOK b e1 e2 k h L1 L2 n) = true
+  rw [hres, hlow, hbnd]
+  rfl
+
+/-- `countP_mono` where the implication is only available on the list — which is
+the shape a filter valid on one interval has. -/
+theorem countP_mono_mem {p q : Nat → Bool} : ∀ l : List Nat,
+    (∀ x, x ∈ l → p x = true → q x = true) →
+      List.countP p l ≤ List.countP q l := by
+  intro l
+  induction l with
+  | nil => intro _; simp
+  | cons a t ih =>
+    intro h
+    rw [List.countP_cons, List.countP_cons]
+    have ht := ih (fun x hx => h x (List.mem_cons_of_mem _ hx))
+    by_cases hp : p a = true
+    · rw [if_pos hp, if_pos (h a List.mem_cons_self hp)]; omega
+    · rw [if_neg hp]
+      by_cases hq : q a = true
+      · rw [if_pos hq]; omega
+      · rw [if_neg hq]; omega
+
+/--
+**Theorem H with condition 4, counting form.**  At most `countP admTop` of the
+interval is nice.  Unlike §9.7's this is a scan of the interval: `admTop` has no
+period, which is exactly what §9.12 pays for.
+-/
+theorem theorem_H_top_count {b e1 e2 k h L1 L2 T a c : Nat} (hb : 1 < b)
+    (hT : 2 * T = b * (b - 1))
+    (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (ha1 : b ^ (L1 - 1) ≤ a ^ e1) (hc1 : (c - 1) ^ e1 < b ^ L1)
+    (ha2 : b ^ (L2 - 1) ≤ a ^ e2) (hc2 : (c - 1) ^ e2 < b ^ L2)
+    (hkh1 : k + h ≤ L1) (hkh2 : k + h ≤ L2) :
+    List.countP (isPandigital b e1 e2) (run a (c - a))
+      ≤ List.countP (admTop b e1 e2 k h L1 L2 T) (run a (c - a)) :=
+  countP_mono_mem _ (fun x hx hpx =>
+    have hm := mem_run (c - a) a x hx
+    theorem_H_top hb hT hL1 hL2 ha1 hc1 ha2 hc2 hkh1 hkh2 hm.1 (by omega)
+      (isPandigital_iff.mp hpx))
+
+/-- And the refinement really is one: it never counts more than §9.7 does. -/
+theorem countP_admTop_le {b e1 e2 k h L1 L2 T : Nat} (l : List Nat) :
+    List.countP (admTop b e1 e2 k h L1 L2 T) l ≤ List.countP (adm b e1 e2 k T) l :=
+  countP_mono (fun _ hx => admTop_le_adm hx) l
+
+/-! ### §9.12  The decomposition: one evaluation retires a whole interval
+
+Condition 4 costs a scan where conditions 2 and 3 cost a window, and this is what
+pays for it.  `n ↦ ⌊n^e / b^(L-h)⌋` is nondecreasing, so the band splits into
+maximal intervals on which the top slots are *constant* — the cut points being the
+least `n` with `n^e ≥ c·b^(L-h)`, an exact `e`-th root.  Inside one such interval
+the test is a constant, so an interval whose top digits already clash is retired
+whole.
+
+**No root is extracted below, and none is needed.**  Finding the cuts is
+`bound.py`'s job; all a proof needs is that where the top quotient agrees at an
+interval's two ends it agrees throughout, which is two divisions and monotonicity of
+`/`.  Formalise the property the construction has, not the construction. -/
+
+/-- The engine of the decomposition: where the top quotient agrees at the two ends
+of an interval it is constant throughout, and so are the top slots. -/
+theorem topSlots_const {b e h L a c n : Nat} (han : a ≤ n) (hnc : n < c)
+    (hq : a ^ e / b ^ (L - h) = (c - 1) ^ e / b ^ (L - h)) :
+    topSlots b h L (n ^ e) = topSlots b h L (a ^ e) := by
+  have d1 : a ^ e / b ^ (L - h) ≤ n ^ e / b ^ (L - h) :=
+    Nat.div_le_div_right (Nat.pow_le_pow_left han e)
+  have d2 : n ^ e / b ^ (L - h) ≤ (c - 1) ^ e / b ^ (L - h) :=
+    Nat.div_le_div_right (Nat.pow_le_pow_left (by omega : n ≤ c - 1) e)
+  have heq : n ^ e / b ^ (L - h) = a ^ e / b ^ (L - h) := by omega
+  show lowSlots b h (n ^ e / b ^ (L - h)) = lowSlots b h (a ^ e / b ^ (L - h))
+  rw [heq]
+
+/--
+**The interval filter.**  If two of the `2h` top digits read at the *left end* of
+such an interval agree, the interval contains no nice number at all.  Nothing about
+`n mod b^k` is used, and nothing is evaluated per candidate: the whole interval
+costs the four divisions that produce `hq1` and `hq2`.
+-/
+theorem no_pandigital_of_top_clash {b e1 e2 h L1 L2 a c v : Nat} (hb : 1 < b)
+    (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (ha1 : b ^ (L1 - 1) ≤ a ^ e1) (hc1 : (c - 1) ^ e1 < b ^ L1)
+    (ha2 : b ^ (L2 - 1) ≤ a ^ e2) (hc2 : (c - 1) ^ e2 < b ^ L2)
+    (hh1 : h ≤ L1) (hh2 : h ≤ L2)
+    (hq1 : a ^ e1 / b ^ (L1 - h) = (c - 1) ^ e1 / b ^ (L1 - h))
+    (hq2 : a ^ e2 / b ^ (L2 - h) = (c - 1) ^ e2 / b ^ (L2 - h))
+    (hclash : 2 ≤ occ v (topSlots b h L1 (a ^ e1) ++ topSlots b h L2 (a ^ e2)))
+    {n : Nat} (han : a ≤ n) (hnc : n < c) : ¬ Pandigital b e1 e2 n := by
+  intro hp
+  have hb0 : 0 < b := by omega
+  have hv : v < b := by
+    have hmem : v ∈ topSlots b h L1 (a ^ e1) ++ topSlots b h L2 (a ^ e2) :=
+      mem_of_occ_pos _ v (by omega)
+    rcases List.mem_append.mp hmem with hm | hm
+    · exact lowSlots_lt hb0 h _ v hm
+    · exact lowSlots_lt hb0 h _ v hm
+  have hlen : ∀ e L, 0 < L → b ^ (L - 1) ≤ a ^ e → (c - 1) ^ e < b ^ L →
+      numDigits b (n ^ e) = L := by
+    intro e L hL x1 x2
+    refine numDigits_eq_of_len hb hL (Nat.le_trans x1 (Nat.pow_le_pow_left han e)) ?_
+    exact Nat.lt_of_le_of_lt (Nat.pow_le_pow_left (by omega : n ≤ c - 1) e) x2
+  have hok := pandigital_boundaryOK (k := 0) (h := h) hb (hlen e1 L1 hL1 ha1 hc1)
+    (hlen e2 L2 hL2 ha2 hc2) (by omega) (by omega) hp
+  have hd := allb_mem _ hok v (mem_run_of b 0 v (by omega) (by omega))
+  have hle : occ v (boundary b e1 e2 0 h L1 L2 n) ≤ 1 := of_decide_eq_true hd
+  have hb' : occ v (boundary b e1 e2 0 h L1 L2 n)
+      = occ v (topSlots b h L1 (a ^ e1)) + occ v (topSlots b h L2 (a ^ e2)) := by
+    show occ v (([] ++ topSlots b h L1 (n ^ e1)) ++ ([] ++ topSlots b h L2 (n ^ e2))) = _
+    rw [List.nil_append, List.nil_append, occ_append,
+        topSlots_const han hnc hq1, topSlots_const han hnc hq2]
+  rw [occ_append] at hclash
+  omega
+
+/-! ### §9.13  Both witnesses: the refinement is sharp, and it is not free
+
+Two things have to be shown, and they are different.  That condition 4 *tightens*
+the bound: at base 10 it reaches the same equality case `{69}` at `k = 2` that §9.8
+needed `k = 4` for, and there all three filters are load-bearing — unlike §9.8's
+witness, which survives deleting `resOK`.  And that §9.12 is worth having: an
+interval is retired by four divisions, at a cost that does not grow with its length,
+where the congruence filters pay per candidate and reach the same answer only at a
+depth whose table is orders of magnitude larger.  `base_seventeen_dead_interval`
+is that witness, over 95 consecutive candidates. -/
+
+/-- The **exact** band at base 10, which is what condition 4 needs and §9.4 does
+not give: `47 ≤ n < 100`, with `n^2` of 4 digits and `n^3` of 6.  The crude band
+also holds `40 ≤ n < 47`, where the split is `(4,5)` — and `4 + 5 ≠ 10`, so the
+length identity is what removes it. -/
+theorem base_ten_exact_band {n : Nat} (hp : Pandigital 10 2 3 n) :
+    (47 ≤ n ∧ n < 100) ∧ numDigits 10 (n ^ 2) = 4 ∧ numDigits 10 (n ^ 3) = 6 := by
+  have hb : (1 : Nat) < 10 := by decide
+  have hcrude := (theorem_H (b := 10) (e1 := 2) (e2 := 3) (k := 1) (T := 45)
+    (lo := 39) (hi := 100) hb (by decide) (by decide)
+    base_ten_lo base_ten_hi (by decide) (by decide) hp).1
+  have hlen := pandigital_length hb hp
+  have h47 : 47 ≤ n := by
+    rcases Nat.lt_or_ge n 47 with h | h
+    · exfalso
+      have hsq : numDigits 10 (n ^ 2) = 4 :=
+        numDigits_eq_of_len hb (by decide)
+          (Nat.le_trans (by decide : (10:Nat) ^ 3 ≤ 40 ^ 2)
+            (Nat.pow_le_pow_left (by omega : 40 ≤ n) 2))
+          (Nat.lt_of_le_of_lt (Nat.pow_le_pow_left (by omega : n ≤ 46) 2) (by decide))
+      have hcb : numDigits 10 (n ^ 3) = 5 :=
+        numDigits_eq_of_len hb (by decide)
+          (Nat.le_trans (by decide : (10:Nat) ^ 4 ≤ 40 ^ 3)
+            (Nat.pow_le_pow_left (by omega : 40 ≤ n) 3))
+          (Nat.lt_of_le_of_lt (Nat.pow_le_pow_left (by omega : n ≤ 46) 3) (by decide))
+      omega
+    · exact h
+  refine ⟨⟨h47, hcrude.2⟩, ?_, ?_⟩
+  · exact numDigits_eq_of_len hb (by decide)
+      (Nat.le_trans (by decide : (10:Nat) ^ 3 ≤ 47 ^ 2) (Nat.pow_le_pow_left h47 2))
+      (Nat.lt_of_le_of_lt (Nat.pow_le_pow_left (by omega : n ≤ 99) 2) (by decide))
+  · exact numDigits_eq_of_len hb (by decide)
+      (Nat.le_trans (by decide : (10:Nat) ^ 5 ≤ 47 ^ 3) (Nat.pow_le_pow_left h47 3))
+      (Nat.lt_of_le_of_lt (Nat.pow_le_pow_left (by omega : n ≤ 99) 3) (by decide))
+
+set_option maxRecDepth 8000 in
+/-- The whole content of the four-condition bound at base 10: over the exact band
+`[47, 100)`, `admTop` at `(k, h) = (2, 2)` admits exactly one number.  §9.8 reached
+the same conclusion at `(4, 0)`: `b^4 = 10 000` tabulated residues there, against
+`b^2 = 100` and two divisions per candidate here. -/
+theorem base_ten_top_survivors :
+    (run 47 53).filter (admTop 10 2 3 2 2 4 6 45) = [69] := by decide
+
+/-- **69 is the only `(2,3)`-nice number in base 10** — again, and this time with
+condition 4 doing part of the work.  The two proofs are independent: §9.8 uses the
+low slots to depth 4 and no top digit, this one uses depth 2 at both ends. -/
+theorem sixtynine_unique_top {n : Nat} (hp : Pandigital 10 2 3 n) : n = 69 := by
+  obtain ⟨⟨h1, h2⟩, -, -⟩ := base_ten_exact_band hp
+  have h := theorem_H_top (b := 10) (e1 := 2) (e2 := 3) (k := 2) (h := 2)
+    (L1 := 4) (L2 := 6) (T := 45) (a := 47) (c := 100) (by decide) (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide) h1 h2 hp
+  have hmem : n ∈ run 47 53 := mem_run_of 53 47 n (by omega) (by omega)
+  have hfil : n ∈ (run 47 53).filter (admTop 10 2 3 2 2 4 6 45) :=
+    List.mem_filter.mpr ⟨hmem, h⟩
+  rw [base_ten_top_survivors] at hfil
+  simpa using hfil
+
+/-- **Ninety-five candidates retired by four divisions.**  At base 17 the top two
+digits of `n^2` and of `n^3` are constant across `[4913, 5008)` — the start of the
+exact band — and both read `(0, 1)`, so the digit `0` occupies two slots and
+nothing in that interval can be nice.  For contrast, the congruence filters of §9.2
+leave five of these 95 alive at `k = 1`, three at `k = 2`, one at `k = 3` and at
+`k = 4`, and clear the interval only at `k = 5` — 1 419 857 tabulated residues and
+a test per candidate, against `h = 2` and four divisions for the whole run. -/
+theorem base_seventeen_dead_interval {n : Nat} (h1 : 4913 ≤ n) (h2 : n < 5008) :
+    ¬ Pandigital 17 2 3 n :=
+  no_pandigital_of_top_clash (b := 17) (e1 := 2) (e2 := 3) (h := 2)
+    (L1 := 7) (L2 := 10) (a := 4913) (c := 5008) (v := 0)
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) h1 h2
+
 /-! ## §10  Infinitude — the reduction, the divergence, and the one missing input
 
 Whether there are infinitely many `(e1,e2)`-nice numbers is **open**, and §10 of
@@ -4969,6 +5346,15 @@ end Nice
 #print axioms Nice.base_ten_nice_iff
 #print axioms Nice.base_seventeen_window
 #print axioms Nice.base_seventeen_bound
+#print axioms Nice.occ_low_top_le
+#print axioms Nice.theorem_H_top
+#print axioms Nice.theorem_H_top_count
+#print axioms Nice.topSlots_const
+#print axioms Nice.no_pandigital_of_top_clash
+#print axioms Nice.base_ten_exact_band
+#print axioms Nice.base_ten_top_survivors
+#print axioms Nice.sixtynine_unique_top
+#print axioms Nice.base_seventeen_dead_interval
 #print axioms Nice.pow_self_le_fact
 #print axioms Nice.band_of_interval
 #print axioms Nice.model_diverges
