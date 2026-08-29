@@ -5265,6 +5265,379 @@ theorem base_eight_band : ∀ n, 8 ^ 2 ≤ n → n < 2 * 8 ^ 2 → InBand 8 1 2 
 theorem base_eight_live : resOK 8 1 2 28 0 = true :=
   resOK_zero_of_even (by decide) (by decide) (by decide) (by decide) (by decide)
 
+/-! ## §11  Theorem A's converse — every admissible base really has candidates
+
+§1 proves the dead direction: `(e1+e2) ∣ e1(b-1)` forces the length identity to fail,
+for every `n`.  The converse — every *other* base has a candidate — was the oldest
+empirical claim in this file, checked by `verify.py` over `e1 ≤ 7, e2 ≤ 8, b < 120`.
+It is what turns Theorem A from a filter into a classification, and with it the
+admissibility question (A, B, C, G) is settled in both directions.
+
+**It is false without a threshold**, which is why the hypotheses below are not just the
+congruence.  Base 3 at `(2,3)` is outside the dead class and still has no candidate:
+`f(t) = ⌊2t⌋ + ⌊3t⌋` does take the value 1 on `[1/3, 1/2)`, but `3^(1/3) ≤ n < 3^(1/2)`
+holds for no integer.  §11.5 proves that, so the threshold is witnessed rather than
+assumed.
+
+**No root is extracted anywhere below, and none is needed.**  The temptation is to build
+the band — `⌈b^(t_lo)⌉`, an exact integer root — and show it is inhabited.  Instead
+everything happens on the integers, through
+
+  `g n = numDigits b (n^e1) + numDigits b (n^e2)`,
+
+which is nondecreasing, starts small and grows without bound.  All the content is that
+`g` steps by at most 2, and that a step of exactly 2 skips a value the congruence
+identifies.  So `g` attains every non-skipped value, `b` among them. -/
+
+/-! ### §11.0  A Bernoulli substitute in ℕ
+
+`(1 + 1/x)^k ≤ 2` for `x ≥ 2k`, without leaving ℕ and without a binomial theorem.  The
+induction step is `x + 2i ≤ 2x`, which is the hypothesis. -/
+
+theorem mul_succ_pow_le : ∀ k x, 2 * k ≤ x → x * (x + 1) ^ k ≤ (x + 2 * k) * x ^ k := by
+  intro k
+  induction k with
+  | zero => intro x _; show x * 1 ≤ (x + 0) * 1; omega
+  | succ i ih =>
+    intro x hx
+    have hi : 2 * i ≤ x := by omega
+    have key : (x + 2 * i) * (x + 1) ≤ (x + 2 * (i + 1)) * x := by
+      have k1 : (x + 2 * i) * (x + 1) = (x + 2 * i) * x + (x + 2 * i) := by
+        rw [Nat.mul_succ]
+      have k2 : (x + 2 * (i + 1)) * x = (x + 2 * i) * x + 2 * x := by
+        rw [show x + 2 * (i + 1) = (x + 2 * i) + 2 from by omega, Nat.add_mul]
+      omega
+    calc x * (x + 1) ^ (i + 1)
+        = (x * (x + 1) ^ i) * (x + 1) := by rw [Nat.pow_succ, ← Nat.mul_assoc]
+      _ ≤ ((x + 2 * i) * x ^ i) * (x + 1) := Nat.mul_le_mul_right _ (ih x hi)
+      _ = ((x + 2 * i) * (x + 1)) * x ^ i := by
+            rw [Nat.mul_right_comm]
+      _ ≤ ((x + 2 * (i + 1)) * x) * x ^ i := Nat.mul_le_mul_right _ key
+      _ = (x + 2 * (i + 1)) * x ^ (i + 1) := by rw [Nat.mul_assoc, ← Nat.pow_succ']
+
+/-- Hence one step of `n` multiplies `n^k` by less than the base, once `n ≥ 2k`.  This
+is the only inequality §11 needs about powers, and both of the next two subsections
+run on it. -/
+theorem succ_pow_le_base_mul {b k n : Nat} (hb : 1 < b) (hn : 0 < n) (hk : 2 * k ≤ n) :
+    (n + 1) ^ k ≤ b * n ^ k := by
+  have h1 := mul_succ_pow_le k n hk
+  have h2 : (n + 2 * k) * n ^ k ≤ (2 * n) * n ^ k :=
+    Nat.mul_le_mul_right _ (by omega)
+  have h3 : n * (n + 1) ^ k ≤ n * (2 * n ^ k) := by
+    calc n * (n + 1) ^ k ≤ (n + 2 * k) * n ^ k := h1
+      _ ≤ (2 * n) * n ^ k := h2
+      _ = n * (2 * n ^ k) := by
+            rw [Nat.mul_comm 2 n, Nat.mul_assoc]
+  have h4 : (n + 1) ^ k ≤ 2 * n ^ k := Nat.le_of_mul_le_mul_left h3 hn
+  calc (n + 1) ^ k ≤ 2 * n ^ k := h4
+    _ ≤ b * n ^ k := Nat.mul_le_mul_right _ (by omega)
+
+/-! ### §11.1  `numDigits`, read from a power bound -/
+
+theorem numDigits_le_of_lt_pow {b x j : Nat} (hb : 1 < b) (h : x < b ^ j) :
+    numDigits b x ≤ j := by
+  rcases Nat.lt_or_ge (numDigits b x) (j + 1) with hh | hh
+  · omega
+  · exfalso
+    obtain ⟨i, hi⟩ : ∃ i, numDigits b x = i + 1 := ⟨numDigits b x - 1, by omega⟩
+    obtain ⟨g1, -⟩ := bounds_of_numDigits hb x i hi
+    have : b ^ j ≤ b ^ i := Nat.pow_le_pow_right (by omega) (by omega)
+    omega
+
+/-- `x` always fits in its own digit count. -/
+theorem lt_pow_numDigits {b : Nat} (hb : 1 < b) (x : Nat) : x < b ^ numDigits b x := by
+  rcases Nat.eq_zero_or_pos x with rfl | hx
+  · rw [numDigits_zero, Nat.pow_zero]; omega
+  · obtain ⟨i, hi⟩ : ∃ i, numDigits b x = i + 1 :=
+      ⟨numDigits b x - 1, by have := numDigits_pos hb hx; omega⟩
+    obtain ⟨-, g2⟩ := bounds_of_numDigits hb x i hi
+    rw [hi]; exact g2
+
+/-- One step of `n` adds at most one digit to `n^e`. -/
+theorem numDigits_step_le {b e n : Nat} (hb : 1 < b) (hn : 0 < n) (he : 2 * e ≤ n) :
+    numDigits b ((n + 1) ^ e) ≤ numDigits b (n ^ e) + 1 := by
+  refine numDigits_le_of_lt_pow hb ?_
+  calc (n + 1) ^ e ≤ b * n ^ e := succ_pow_le_base_mul hb hn he
+    _ < b * b ^ numDigits b (n ^ e) :=
+        (Nat.mul_lt_mul_left (by omega : 0 < b)).mpr (lt_pow_numDigits hb _)
+    _ = b ^ (numDigits b (n ^ e) + 1) := by rw [Nat.pow_succ, Nat.mul_comm]
+
+/-! ### §11.2  A double step pins the two lengths
+
+The heart of it.  If `n → n+1` adds a digit to *both* powers, then `b^(A1)` and `b^(A2)`
+sit in the same interval `(n^(e1e2), (n+1)^(e1e2)]` after being raised to `e2` and `e1`
+respectively — and §11.0 says that interval has ratio at most `b`, so it holds at most
+one power of `b`. -/
+
+/-- Two powers of `b` inside an interval of ratio at most `b` are the same power. -/
+theorem pow_eq_of_narrow {b A B p q : Nat} (hb : 1 < b) (hAB : B ≤ b * A)
+    (h1 : A < b ^ p) (h2 : b ^ p ≤ B) (h3 : A < b ^ q) (h4 : b ^ q ≤ B) : p = q := by
+  have step : ∀ r s : Nat, r < s → A < b ^ r → b ^ s ≤ B → False := by
+    intro r s hrs hAr hsB
+    have e1 : b * b ^ r ≤ b ^ s := by
+      calc b * b ^ r = b ^ (r + 1) := by rw [Nat.pow_succ, Nat.mul_comm]
+        _ ≤ b ^ s := Nat.pow_le_pow_right (by omega) (by omega)
+    have e2 : b * A < b * b ^ r := (Nat.mul_lt_mul_left (by omega : 0 < b)).mpr hAr
+    omega
+  rcases Nat.lt_trichotomy p q with h | h | h
+  · exact (step p q h h1 h4).elim
+  · exact h
+  · exact (step q p h h3 h2).elim
+
+/-- At a double step the two digit counts are locked to each other: `A1·e2 = A2·e1`. -/
+theorem double_step_ratio {b e1 e2 n A1 A2 : Nat} (hb : 1 < b) (hn : 0 < n)
+    (he1 : e1 ≠ 0) (he2 : e2 ≠ 0) (hk : 2 * (e1 * e2) ≤ n)
+    (hlo1 : n ^ e1 < b ^ A1) (hhi1 : b ^ A1 ≤ (n + 1) ^ e1)
+    (hlo2 : n ^ e2 < b ^ A2) (hhi2 : b ^ A2 ≤ (n + 1) ^ e2) :
+    A1 * e2 = A2 * e1 := by
+  have hmul : (n + 1) ^ (e1 * e2) ≤ b * n ^ (e1 * e2) := succ_pow_le_base_mul hb hn hk
+  have raise : ∀ (e f A : Nat), f ≠ 0 → n ^ e < b ^ A → b ^ A ≤ (n + 1) ^ e →
+      n ^ (e * f) < b ^ (A * f) ∧ b ^ (A * f) ≤ (n + 1) ^ (e * f) := by
+    intro e f A hf hlo hhi
+    constructor
+    · calc n ^ (e * f) = (n ^ e) ^ f := Nat.pow_mul n e f
+        _ < (b ^ A) ^ f := pow_lt_pow_left' hlo f hf
+        _ = b ^ (A * f) := (Nat.pow_mul b A f).symm
+    · calc b ^ (A * f) = (b ^ A) ^ f := Nat.pow_mul b A f
+        _ ≤ ((n + 1) ^ e) ^ f := Nat.pow_le_pow_left hhi f
+        _ = (n + 1) ^ (e * f) := (Nat.pow_mul (n + 1) e f).symm
+  obtain ⟨p1, p2⟩ := raise e1 e2 A1 he2 hlo1 hhi1
+  obtain ⟨q1, q2⟩ := raise e2 e1 A2 he1 hlo2 hhi2
+  have hswap : e2 * e1 = e1 * e2 := Nat.mul_comm e2 e1
+  rw [hswap] at q1 q2
+  exact pow_eq_of_narrow hb hmul p1 p2 q1 q2
+
+/-- …and that locking is exactly the divisibility Theorem A tests.  The `gcd` lives
+only inside this proof: the statement is in the same shape as `no_nice_of_dvd`, so the
+two compose into a biconditional with nothing in between. -/
+theorem dvd_of_ratio {e1 e2 u v : Nat} (he1 : e1 ≠ 0) (he2 : e2 ≠ 0)
+    (h : u * e2 = v * e1) : (e1 + e2) ∣ e1 * (u + v) := by
+  have hg : 0 < Nat.gcd e1 e2 := Nat.gcd_pos_of_pos_left e2 (Nat.pos_of_ne_zero he1)
+  have hac := Nat.coprime_div_gcd_div_gcd (m := e1) (n := e2) hg
+  have ha : e1 = Nat.gcd e1 e2 * (e1 / Nat.gcd e1 e2) :=
+    (Nat.eq_mul_of_div_eq_right (Nat.gcd_dvd_left e1 e2) rfl)
+  have hc : e2 = Nat.gcd e1 e2 * (e2 / Nat.gcd e1 e2) :=
+    (Nat.eq_mul_of_div_eq_right (Nat.gcd_dvd_right e1 e2) rfl)
+  have hapos : 0 < e1 / Nat.gcd e1 e2 := by
+    rcases Nat.eq_zero_or_pos (e1 / Nat.gcd e1 e2) with h0 | h0
+    · rw [h0, Nat.mul_zero] at ha; exact absurd ha he1
+    · exact h0
+  -- strip the gcd: `u·c = v·a`
+  have hstrip : u * (e2 / Nat.gcd e1 e2) = v * (e1 / Nat.gcd e1 e2) := by
+    refine Nat.eq_of_mul_eq_mul_left hg ?_
+    calc Nat.gcd e1 e2 * (u * (e2 / Nat.gcd e1 e2))
+        = u * (Nat.gcd e1 e2 * (e2 / Nat.gcd e1 e2)) := by
+          rw [Nat.mul_left_comm]
+      _ = u * e2 := by rw [← hc]
+      _ = v * e1 := h
+      _ = v * (Nat.gcd e1 e2 * (e1 / Nat.gcd e1 e2)) := by rw [← ha]
+      _ = Nat.gcd e1 e2 * (v * (e1 / Nat.gcd e1 e2)) := by rw [Nat.mul_left_comm]
+  -- `a ∣ u`, so `u = a·d` and `v = c·d`
+  obtain ⟨d, hd⟩ : (e1 / Nat.gcd e1 e2) ∣ u :=
+    hac.dvd_of_dvd_mul_right ⟨v, by rw [hstrip, Nat.mul_comm]⟩
+  have hv : v = (e2 / Nat.gcd e1 e2) * d := by
+    refine (Nat.eq_of_mul_eq_mul_left hapos ?_).symm
+    calc (e1 / Nat.gcd e1 e2) * ((e2 / Nat.gcd e1 e2) * d)
+        = ((e1 / Nat.gcd e1 e2) * d) * (e2 / Nat.gcd e1 e2) := by
+          rw [Nat.mul_comm (e2 / Nat.gcd e1 e2) d, ← Nat.mul_assoc]
+      _ = u * (e2 / Nat.gcd e1 e2) := by rw [← hd]
+      _ = v * (e1 / Nat.gcd e1 e2) := hstrip
+      _ = (e1 / Nat.gcd e1 e2) * v := Nat.mul_comm _ _
+  refine ⟨(e1 / Nat.gcd e1 e2) * d, ?_⟩
+  calc e1 * (u + v)
+      = e1 * ((e1 / Nat.gcd e1 e2) * d + (e2 / Nat.gcd e1 e2) * d) := by rw [hd, hv]
+    _ = e1 * (((e1 / Nat.gcd e1 e2) + (e2 / Nat.gcd e1 e2)) * d) := by rw [Nat.add_mul]
+    _ = (Nat.gcd e1 e2 * (e1 / Nat.gcd e1 e2))
+          * (((e1 / Nat.gcd e1 e2) + (e2 / Nat.gcd e1 e2)) * d) := by rw [← ha]
+    _ = (Nat.gcd e1 e2 * ((e1 / Nat.gcd e1 e2) + (e2 / Nat.gcd e1 e2)))
+          * ((e1 / Nat.gcd e1 e2) * d) := by
+          rw [Nat.mul_assoc, Nat.mul_assoc]
+          rw [Nat.mul_left_comm (e1 / Nat.gcd e1 e2)
+                ((e1 / Nat.gcd e1 e2) + (e2 / Nat.gcd e1 e2)) d]
+    _ = (e1 + e2) * ((e1 / Nat.gcd e1 e2) * d) := by
+          rw [Nat.mul_add, ← ha, ← hc]
+
+/-! ### §11.3  Walking up to `b`
+
+A nondecreasing `g` that starts below `b`, ends at or above it, and never steps *over*
+it, must land on it.  Stated for exactly the range that is walked, because §11.2's
+hypotheses hold only above the threshold. -/
+
+theorem hits_of_no_jump {g : Nat → Nat} {b N : Nat}
+    (hjump : ∀ n, N ≤ n → g n < b → g (n + 1) ≤ b) :
+    ∀ len, g N < b → b ≤ g (N + len) → ∃ n, g n = b := by
+  intro len
+  induction len generalizing N with
+  | zero => intro h1 h2; rw [Nat.add_zero] at h2; omega
+  | succ t ih =>
+    intro h1 h2
+    have hstep := hjump N (Nat.le_refl N) h1
+    rcases Nat.lt_or_ge (g (N + 1)) b with h | h
+    · refine ih (fun n hn => hjump n (by omega)) h ?_
+      rw [show N + 1 + t = N + (t + 1) from by omega]
+      exact h2
+    · exact ⟨N + 1, by omega⟩
+
+/-! ### §11.4  Theorem A's converse -/
+
+/--
+**Theorem A, converse.**  A base outside the dead class of §1 really does have a
+candidate — every base large enough for the two explicit bounds, which is what §11.5
+shows cannot be dropped.
+
+`j1` and `j2` are digit-count certificates for the threshold `N = 2·e1·e2 + 1`: any
+`j_i` with `N^(e_i) < b^(j_i)` will do, and `j1 + j2 < b` is the real hypothesis —
+it says the walk starts below `b`.  Both are `decide`able at a concrete base, which
+`numDigits` itself is not.
+-/
+theorem band_nonempty {b e1 e2 j1 j2 : Nat} (hb : 1 < b) (he1 : e1 ≠ 0) (he2 : e2 ≠ 0)
+    (hj1 : (2 * (e1 * e2) + 1) ^ e1 < b ^ j1)
+    (hj2 : (2 * (e1 * e2) + 1) ^ e2 < b ^ j2)
+    (hsum : j1 + j2 < b)
+    (hdvd : ¬ ((e1 + e2) ∣ e1 * (b - 1))) :
+    ∃ n, InBand b e1 e2 n := by
+  have hb0 : 0 < b := by omega
+  have he1p : 0 < e1 := Nat.pos_of_ne_zero he1
+  have he2p : 0 < e2 := Nat.pos_of_ne_zero he2
+  -- the walk starts here, and `g N < b`
+  have hNpos : 0 < 2 * (e1 * e2) + 1 := by omega
+  have hstart : numDigits b ((2 * (e1 * e2) + 1) ^ e1)
+      + numDigits b ((2 * (e1 * e2) + 1) ^ e2) < b := by
+    have a1 := numDigits_le_of_lt_pow hb hj1
+    have a2 := numDigits_le_of_lt_pow hb hj2
+    omega
+  -- no step jumps over `b`
+  have hjump : ∀ n, 2 * (e1 * e2) + 1 ≤ n →
+      numDigits b (n ^ e1) + numDigits b (n ^ e2) < b →
+      numDigits b ((n + 1) ^ e1) + numDigits b ((n + 1) ^ e2) ≤ b := by
+    intro n hn hlt
+    have hn0 : 0 < n := by omega
+    have s1 : numDigits b ((n + 1) ^ e1) ≤ numDigits b (n ^ e1) + 1 :=
+      numDigits_step_le hb hn0 (by
+        have : e1 ≤ e1 * e2 := Nat.le_mul_of_pos_right e1 he2p
+        omega)
+    have s2 : numDigits b ((n + 1) ^ e2) ≤ numDigits b (n ^ e2) + 1 :=
+      numDigits_step_le hb hn0 (by
+        have : e2 ≤ e1 * e2 := Nat.le_mul_of_pos_left e2 he1p
+        omega)
+    rcases Nat.lt_or_ge (numDigits b ((n + 1) ^ e1)
+        + numDigits b ((n + 1) ^ e2)) (b + 1) with hle | hge
+    · omega
+    -- the only remaining case is a double step over `b`, and it is the dead class
+    · exfalso
+      have d1 : numDigits b ((n + 1) ^ e1) = numDigits b (n ^ e1) + 1 := by omega
+      have d2 : numDigits b ((n + 1) ^ e2) = numDigits b (n ^ e2) + 1 := by omega
+      have hsum' : numDigits b (n ^ e1) + numDigits b (n ^ e2) = b - 1 := by omega
+      have hhi1 : b ^ numDigits b (n ^ e1) ≤ (n + 1) ^ e1 :=
+        (bounds_of_numDigits hb _ _ d1).1
+      have hhi2 : b ^ numDigits b (n ^ e2) ≤ (n + 1) ^ e2 :=
+        (bounds_of_numDigits hb _ _ d2).1
+      have hratio := double_step_ratio hb hn0 he1 he2 (by omega)
+        (lt_pow_numDigits hb (n ^ e1)) hhi1 (lt_pow_numDigits hb (n ^ e2)) hhi2
+      have := dvd_of_ratio he1 he2 hratio
+      rw [hsum'] at this
+      exact hdvd this
+  -- and it gets there: `g (b^b) = (e1+e2)·b + 2 ≥ b`
+  have hpow : ∀ i, numDigits b (b ^ i) = i + 1 := by
+    intro i
+    exact numDigits_eq_of_bounds hb (Nat.le_refl _)
+      (Nat.pow_lt_pow_right hb (by omega))
+  have hend : b ≤ numDigits b ((b ^ b) ^ e1) + numDigits b ((b ^ b) ^ e2) := by
+    rw [← Nat.pow_mul, ← Nat.pow_mul, hpow, hpow]
+    have : b ≤ b * e1 := Nat.le_mul_of_pos_right b he1p
+    omega
+  -- the threshold is below `b^b`, so the walk has somewhere to go
+  have hNle : 2 * (e1 * e2) + 1 ≤ b ^ b := by
+    have hj2pos : 0 < j2 := by
+      rcases Nat.eq_zero_or_pos j2 with rfl | h
+      · rw [Nat.pow_zero] at hj2
+        have : 1 ≤ (2 * (e1 * e2) + 1) ^ e2 := Nat.one_le_pow _ _ hNpos
+        omega
+      · exact h
+    have h1 : 2 * (e1 * e2) + 1 ≤ (2 * (e1 * e2) + 1) ^ e1 :=
+      Nat.le_self_pow he1 _
+    have h2 : b ^ j1 ≤ b ^ b := Nat.pow_le_pow_right hb0 (by omega)
+    omega
+  obtain ⟨n, hn⟩ := hits_of_no_jump (g := fun n => numDigits b (n ^ e1) + numDigits b (n ^ e2))
+    hjump (b ^ b - (2 * (e1 * e2) + 1)) hstart
+    (by rw [show 2 * (e1 * e2) + 1 + (b ^ b - (2 * (e1 * e2) + 1)) = b ^ b from by omega]
+        exact hend)
+  exact ⟨n, hn⟩
+
+/-- **Theorem A, both directions.**  Above the threshold, a base has a candidate if and
+only if it is outside the dead class — which is the sentence REPORT-provability §2 states
+and which, until now, only the forward half of was proved. -/
+theorem band_nonempty_iff {b e1 e2 j1 j2 : Nat} (hb : 1 < b) (he1 : e1 ≠ 0) (he2 : e2 ≠ 0)
+    (hj1 : (2 * (e1 * e2) + 1) ^ e1 < b ^ j1)
+    (hj2 : (2 * (e1 * e2) + 1) ^ e2 < b ^ j2)
+    (hsum : j1 + j2 < b) :
+    (∃ n, InBand b e1 e2 n) ↔ ¬ ((e1 + e2) ∣ e1 * (b - 1)) :=
+  ⟨fun ⟨n, hn⟩ hdvd => no_nice_of_dvd hb he1 he2 hdvd hn,
+   fun hdvd => band_nonempty hb he1 he2 hj1 hj2 hsum hdvd⟩
+
+/-! ### §11.5  Both witnesses: the theorem fires, and the threshold is not decoration
+
+`two_three_band_nonempty` is the classical problem's form of it, over *all* bases from 8
+up at once — no root, no scan, and nothing about how large the band is.
+`base_three_no_candidate` is the other half: base 3 is outside the dead class and has no
+candidate anyway, so a converse without a threshold would be false, not merely unproved. -/
+
+/-- **Every base `b ≥ 8` outside `b ≡ 1 (mod 5)` has a square/cube candidate.**  The
+counterpart of `nice_no_solution`, and with it the `(2,3)` admissibility question is
+closed in both directions from base 8 on. -/
+theorem two_three_band_nonempty {b : Nat} (hb : 8 ≤ b) (hmod : b % 5 ≠ 1) :
+    ∃ n, InBand b 2 3 n := by
+  refine band_nonempty (e1 := 2) (e2 := 3) (j1 := 3) (j2 := 4) (by omega) (by decide)
+    (by decide) ?_ ?_ (by omega) ?_
+  · calc (2 * (2 * 3) + 1) ^ 2 = 169 := by decide
+      _ < 8 ^ 3 := by decide
+      _ ≤ b ^ 3 := Nat.pow_le_pow_left hb 3
+  · calc (2 * (2 * 3) + 1) ^ 3 = 2197 := by decide
+      _ < 8 ^ 4 := by decide
+      _ ≤ b ^ 4 := Nat.pow_le_pow_left hb 4
+  · intro hdvd
+    have h2 : (5 : Nat) ∣ 2 * (b - 1) := hdvd
+    have hcop : Nat.Coprime 5 2 := by decide
+    exact hmod (by have := hcop.dvd_of_dvd_mul_left h2; omega)
+
+/-- Base 34 is one of them — a base whose band starts above `3·10^9`, exhibited by
+nothing more than `169 < 34^2` and `2197 < 34^3`. -/
+theorem base_thirtyfour_band : ∃ n, InBand 34 2 3 n :=
+  two_three_band_nonempty (by omega) (by decide)
+
+/-- **The threshold is load-bearing.**  Base 3 is *not* in the dead class — `¬ (5 ∣ 2·2)`
+— and still has no `(2,3)` candidate: `n^2` and `n^3` each need two base-3 digits as soon
+as `n ≥ 2`, and `n ≤ 1` gives at most two digits in total, so the sum is never 3.  In the
+real picture the level set of `⌊2t⌋ + ⌊3t⌋ = 1` is the interval `[1/3, 1/2)`, and
+`3^(1/3) ≤ n < 3^(1/2)` catches no integer. -/
+theorem base_three_no_candidate (n : Nat) : ¬ InBand 3 2 3 n := by
+  intro h
+  have hb : (1 : Nat) < 3 := by decide
+  have hsum : numDigits 3 (n ^ 2) + numDigits 3 (n ^ 3) = 3 := h
+  rcases Nat.lt_or_ge n 2 with hn | hn
+  · match n, hn with
+    | 0, _ => rw [numDigits_zero] at hsum; omega
+    | 1, _ =>
+      rw [numDigits_eq_of_bounds (b := 3) (x := 1 ^ 2) (k := 0) hb (by decide) (by decide)]
+        at hsum
+      omega
+  · have h2 : 2 ≤ numDigits 3 (n ^ 2) := by
+      have : (3 : Nat) ^ 1 ≤ n ^ 2 :=
+        Nat.le_trans (by decide) (Nat.pow_le_pow_left hn 2)
+      have := le_numDigits_of_pow_le hb this
+      omega
+    have h3 : 2 ≤ numDigits 3 (n ^ 3) := by
+      have : (3 : Nat) ^ 1 ≤ n ^ 3 :=
+        Nat.le_trans (by decide) (Nat.pow_le_pow_left hn 3)
+      have := le_numDigits_of_pow_le hb this
+      omega
+    omega
+
+/-- And base 3 fails the theorem's hypotheses exactly where it should: `2197 < 3^j2`
+needs `j2 ≥ 7`, so `j1 + j2 < 3` is unreachable. -/
+theorem base_three_misses_the_threshold : ¬ ((2 : Nat) * (2 * 3) + 1) ^ 3 < 3 ^ 6 := by
+  decide
+
 end Nice
 
 #print axioms Nice.no_nice_of_dvd
@@ -5366,3 +5739,12 @@ end Nice
 #print axioms Nice.divergence_is_not_existence
 #print axioms Nice.base_eight_nice
 #print axioms Nice.base_eight_band
+#print axioms Nice.mul_succ_pow_le
+#print axioms Nice.double_step_ratio
+#print axioms Nice.dvd_of_ratio
+#print axioms Nice.hits_of_no_jump
+#print axioms Nice.band_nonempty
+#print axioms Nice.band_nonempty_iff
+#print axioms Nice.two_three_band_nonempty
+#print axioms Nice.base_thirtyfour_band
+#print axioms Nice.base_three_no_candidate

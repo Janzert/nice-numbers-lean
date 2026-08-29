@@ -1,7 +1,7 @@
 # Formalising the nice-number theorems in Lean 4
 
-**Answer to "can any of the proofs be written in Lean?": yes — Theorems A, B, C,
-C′, F, G, H and I/J/K and Proposition D are done, they compile in about seven
+**Answer to "can any of the proofs be written in Lean?": yes — Theorems A (both
+directions), B, C, C′, F, G, H and I/J/K and Proposition D are done, they compile in about seven
 seconds against Lean core with no Mathlib, and they are strictly stronger than the
 exhaustive checks they replace.** Proposition C′ has all three of its parts
 here: *soundness* for all bases and all `j`, *unconditional completeness*
@@ -9,7 +9,7 @@ here: *soundness* for all bases and all `j`, *unconditional completeness*
 theorem of REPORT §6.3 proved in full — leading digits and all.
 
 ```bash
-lean NiceNumbers.lean      # 7.0 s, 5368 lines, no errors, no sorry
+lean NiceNumbers.lean      # 7.4 s, 5750 lines, no errors, no sorry
 ```
 
 **§10 (2026-08-13) is the first section here that is *about* an open problem
@@ -51,7 +51,11 @@ axioms. No `sorryAx`, and no `native_decide` (which would add
 
 | Lean name | statement | replaces |
 |---|---|---|
-| `no_nice_of_dvd` | `(e1+e2) ∣ e1*(b-1)` ⟹ `numDigits b (n^e1) + numDigits b (n^e2) ≠ b` | `verify.py` gate A's *dead* direction, which checked `e1 ≤ 8, e2 ≤ 9, b < 120`. Its converse is not proved and stays in the script |
+| `no_nice_of_dvd` | `(e1+e2) ∣ e1*(b-1)` ⟹ `numDigits b (n^e1) + numDigits b (n^e2) ≠ b` | `verify.py` gate A's *dead* direction, which checked `e1 ≤ 8, e2 ≤ 9, b < 120` |
+| `band_nonempty` / `band_nonempty_iff` | **Theorem A's converse** — above two explicit decidable bounds, a base outside the dead class really does have a candidate; hence A as a biconditional. All bases, all pairs | gate A's converse, **narrowed** from ~3 000 (pair, base) cases to the 248 below the threshold, all `b ≤ 23` |
+| `mul_succ_pow_le` / `double_step_ratio` / `dvd_of_ratio` | **Theorem A's converse**, its three moving parts — a Bernoulli substitute in ℕ, the squeeze that locks `A1·e2 = A2·e1` at a double step, and the `gcd` step that turns that into the dead-class divisibility | — |
+| `two_three_band_nonempty` | **Every base `b ≥ 8` with `b ≢ 1 (mod 5)` has a square/cube candidate** — the classical problem's form of the converse, over all such bases at once | — |
+| `base_three_no_candidate` | …and the converse is **false** below the threshold: base 3 is outside the dead class and has no `(2,3)` candidate | nothing; this is why the theorem carries bounds rather than just the congruence |
 | `nice_no_solution` | base `b ≡ 1 (mod 5)` has no square/cube candidate | the `(2,3)` instance |
 | `one_three_no_solution` | base `b ≡ 1 (mod 4)` has no `(1,3)` candidate | the `(1,3)` instance |
 | `two_four_no_solution` | base `b ≡ 1 (mod 3)` has no `(2,4)` candidate | the `gcd > 1` instance |
@@ -454,7 +458,7 @@ than "I am missing a fact". Any statement here whose hypotheses are built out of
 | **Prop C′**, the `j = 2` converse | **an afternoon** | The corollary's *necessity* (`c_0c_1 ≥ b` is also needed) is not proved: it wants "the `p`-subset sums of `{0..b-1}` are *exactly* an interval", where `pick_sum` gives only the inclusion. Same induction, other direction. |
 | ~~**T4**~~ — the rigorous upper bound on `#nice(b)` | **done** (`theorem_H`, `theorem_H_count`, `theorem_H_closed`) | Costed here as "not worth it — an asymptotic statement with error terms. Formalising analytic estimates costs far more than the result is worth." Wrong, and instructively so: **there are no analytic estimates in it and no error term.** `+ O(b^k)` was how REPORT §11 happened to phrase the bound; written with an exact ceiling — `count ≤ window · ⌈len/W⌉`, and even that is only a corollary of the exact count — the whole thing is elementary counting on a periodic predicate, and it cost an afternoon core-only. **Price the statement you would actually prove, not the one the summary table quotes.** |
 | ~~**Theorem I / J / K**~~ — the infinitude reduction, the divergence, the conditional | **done** (`infinitude_iff`, `model_diverges`, `conditional_infinitude`, `divergence_is_not_existence`) | Never costed here, because "infinitude" reads like an analytic statement and analytic statements were priced out of core. It is not one: the reduction is the crude band read twice, the divergence needs a band lower bound (exhibit an interval, `E ∣ b-2`) and a Stirling substitute (`b^b ≤ 4^b·b!`, two inductions), and both are ℕ arithmetic. An afternoon. **The rule that missed it is the same one Theorem H broke** — do not price a formalisation from the word the summary uses for it. |
-| **Theorem J** for *all* admissible bases, not just `E ∣ b-2` | **300–600 lines, no value for infinitude** | The general band lower bound is the plateau of `⌊e1t⌋+⌊e2t⌋`: level sets are intervals between consecutive points of `(1/e1)ℤ ∪ (1/e2)ℤ`, so multiplicative width `≥ b^(1/e1e2)`. Wants exact `ceil_root` in ℕ plus the jump case analysis. Worth doing only because **it is the same lemma Theorem A's converse needs**, which is the oldest unproved claim in the file. |
+| **Theorem J** for *all* admissible bases, not just `E ∣ b-2` | **300–600 lines, no value for infinitude** | The general band lower bound is the plateau of `⌊e1t⌋+⌊e2t⌋`: level sets are intervals between consecutive points of `(1/e1)ℤ ∪ (1/e2)ℤ`, so multiplicative width `≥ b^(1/e1e2)`. Wants exact `ceil_root` in ℕ plus the jump case analysis. **The claim that this is "the same lemma Theorem A's converse needs" was wrong, and it hid a cheap job inside an expensive one** — the converse needs `|band| ≥ 1`, this needs `|band| ≥ b^q`, and only the second one wants a root. The converse landed 2026-08-29 in ~370 lines with no root anywhere; what is left here is the size statement, and it still has no value for infinitude. |
 | **Proposition L** — coverage is constructive (REPORT-infinitude §5) | **400–700 lines, marginal** | The only *unconditional* infinitude statement in the family: for every `b` and every `e` with `gcd(e,b)=1`, infinitely many `n` have every base-`b` digit in `n^e`. Needs `(Σ d_i Y^i)^e` coefficient-wise (core has no `Polynomial`) and a carry-free concatenation lemma for `digits` (`digits_split` is most of it). It proves a *relaxation*, and the paper proof is four paragraphs — so the argument for doing it is that the file currently contains no existence theorem at all. |
 | A second-moment version of **K** | **blocked by measurement, not by Lean** | Would weaken `ModelPositive` from positivity to a variance bound. The naive second moment is *wrong*: close pairs run 1.6× over Poisson at **+46σ** (REPORT-provability §9.4). Model the archimedean correlation first. |
 | Part II's yield and cost numbers | **not theorems** | They are heuristic expectations under a random-digit model. Lean has nothing to say about them, and pretending otherwise would be the worst kind of false precision. |
@@ -484,9 +488,12 @@ arithmetic identity `N_λ = N_gcd`. Gate C′ itself was **rewritten rather than
 narrowed** a day earlier, because formalising its soundness half exposed that the
 completeness half it had been sampling is false; what is left of it now is the
 conjecture and the counterexample table, both of which Lean does not carry.
-Two caveats worth keeping in view: Theorem A's *converse* (every base outside the
-dead class really does have candidates) is **not** proved and stays an empirical
-check, and neither is the closed form for `N`, for want of `λ(p^a)`. Theorem C
+One caveat worth keeping in view: the closed form for `N` is not proved, for want
+of `λ(p^a)`, and that is now the only place in the file where core's lack of a
+library is the binding constraint. Theorem A's *converse* used to sit beside it
+here; it landed 2026-08-29, and gate A's converse sub-gate is narrowed rather than
+deleted because the theorem carries a threshold and the converse is genuinely false
+below it. Theorem C
 arrived with a gate rather than replacing one, and that gate checks §4.1's
 *decoding* — which of C's dead classes Theorem A did not already have — which is
 a statement about two theorems at once and so not something either one proves.
