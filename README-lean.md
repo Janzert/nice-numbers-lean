@@ -9,8 +9,17 @@ here: *soundness* for all bases and all `j`, *unconditional completeness*
 theorem of REPORT §6.3 proved in full — leading digits and all.
 
 ```bash
-lean NiceNumbers.lean      # 7.4 s, 5750 lines, no errors, no sorry
+lean NiceNumbers.lean      # 7.4 s, 5795 lines, no errors, no sorry
 ```
+
+**The band's shape is proved too (2026-09-22)**: `numDigits_mono` (more `n`, never fewer
+digits), then `band_lengths_const` (both lengths are constant across a base's band, so a
+base has one digit split or none) and `band_convex` (anything between two band members is a
+band member). The article had called these machine-checked, and cited "an interval where
+the two lengths hold steady, which is what a band is" to apply Theorem H's fourth condition
+to a whole band, before any of them existed — only disjointness (`bands_disjoint`) did.
+Each is `numDigits_antitone`'s argument in the other variable, and `omega` closes both
+band lemmas from four monotonicity facts.
 
 **§10 (2026-08-13) is the first section here that is *about* an open problem
 rather than a proved one**, and it is the shape to copy when the answer is "no":

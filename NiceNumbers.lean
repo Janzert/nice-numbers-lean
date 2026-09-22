@@ -435,6 +435,40 @@ theorem bands_disjoint {b b' e1 e2 n : Nat} (hb : 1 < b) (hb' : 1 < b')
   rintro ⟨h, h'⟩
   exact hne (base_unique hb hb' h h')
 
+/-- A bigger number never has fewer digits — the same move as `numDigits_antitone`,
+in the other variable. -/
+theorem numDigits_mono {b x y : Nat} (hb : 1 < b) (hxy : x ≤ y) :
+    numDigits b x ≤ numDigits b y := by
+  rcases Nat.eq_zero_or_pos (numDigits b x) with h | h
+  · omega
+  obtain ⟨k, hk⟩ : ∃ k, numDigits b x = k + 1 := ⟨numDigits b x - 1, by omega⟩
+  obtain ⟨g1, -⟩ := bounds_of_numDigits hb x k hk
+  rw [hk]
+  exact le_numDigits_of_pow_le hb (Nat.le_trans g1 hxy)
+
+/-- **The band's shape, part 1: one digit split.**  Across a base's band both
+lengths are individually constant — two non-decreasing quantities with a fixed
+sum cannot move — so a base has exactly one split `L1 + L2 = b`, or no band. -/
+theorem band_lengths_const {b e1 e2 n n' : Nat} (hb : 1 < b) (hle : n ≤ n')
+    (h : InBand b e1 e2 n) (h' : InBand b e1 e2 n') :
+    numDigits b (n ^ e1) = numDigits b (n' ^ e1) ∧
+    numDigits b (n ^ e2) = numDigits b (n' ^ e2) := by
+  have m1 := numDigits_mono hb (Nat.pow_le_pow_left hle e1)
+  have m2 := numDigits_mono hb (Nat.pow_le_pow_left hle e2)
+  unfold InBand at h h'
+  omega
+
+/-- **The band's shape, part 2: no holes.**  Anything between two band members is
+a band member, so the band is a single unbroken interval of `n`. -/
+theorem band_convex {b e1 e2 lo n hi : Nat} (hb : 1 < b) (h1 : lo ≤ n) (h2 : n ≤ hi)
+    (hlo : InBand b e1 e2 lo) (hhi : InBand b e1 e2 hi) : InBand b e1 e2 n := by
+  have a1 := numDigits_mono hb (Nat.pow_le_pow_left h1 e1)
+  have a2 := numDigits_mono hb (Nat.pow_le_pow_left h1 e2)
+  have c1 := numDigits_mono hb (Nat.pow_le_pow_left h2 e1)
+  have c2 := numDigits_mono hb (Nat.pow_le_pow_left h2 e2)
+  unfold InBand at hlo hhi ⊢
+  omega
+
 /-! ## §4  Non-vacuity
 
 An impossibility theorem is worthless if its hypotheses are secretly
@@ -5661,6 +5695,9 @@ end Nice
 #print axioms Nice.base_seven_dead
 #print axioms Nice.base_unique
 #print axioms Nice.bands_disjoint
+#print axioms Nice.numDigits_mono
+#print axioms Nice.band_lengths_const
+#print axioms Nice.band_convex
 #print axioms Nice.sixtynine_only_base_ten
 #print axioms Nice.no_nice_of_universal_clash
 #print axioms Nice.clash_iff_dvd_clashMod
