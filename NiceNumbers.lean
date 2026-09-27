@@ -3188,7 +3188,7 @@ theorem base_ten_residue : (69 ^ 2 + 69 ^ 3) % 9 = 45 % 9 := by decide
 
 /-- Theorem 3 is the `a = 1` case: `b ≡ 3 (mod 4)` is exactly `v_2(b-1) = 1`.
 Re-deriving `residues_empty_of_mod_four` from Theorem 4, for every pair. -/
-theorem residues_empty_of_mod_four_of_C {b e1 e2 T ρ : Nat}
+theorem residues_empty_of_mod_four_via_two_adic {b e1 e2 T ρ : Nat}
     (hb : 1 < b) (he1 : 1 ≤ e1) (hlt : e1 < e2) (hmod : b % 4 = 3)
     (hT : 2 * T = b * (b - 1)) :
     (ρ ^ e1 + ρ ^ e2) % (b - 1) ≠ T % (b - 1) := by
@@ -3889,14 +3889,14 @@ theorem deficiency_sixtynine : deficiency 10 2 3 69 = 0 := by
   decide
 
 /-- Theorem 7 at base 13, `(2,3)`: a 3-digit `n` whose six low slots are distinct. -/
-theorem F_base_thirteen :
+theorem greedy_deficiency_thirteen :
     ∃ n, 13 ^ 2 ≤ n ∧ n < 13 ^ 3 ∧ deficiency 13 2 3 n + 6 ≤ 13 :=
   greedy_deficiency_le (b := 13) (e1 := 2) (e2 := 3) (ρ := 2) (β := 5) (d := 3)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
 
 /-- Theorem 7 at base 65, `(2,3)`: 26 of the 65 digit values are forced to occur. -/
-theorem F_base_sixtyfive :
+theorem greedy_deficiency_sixtyfive :
     ∃ n, 65 ^ 12 ≤ n ∧ n < 65 ^ 13 ∧ deficiency 65 2 3 n + 26 ≤ 65 :=
   greedy_deficiency_le (b := 65) (e1 := 2) (e2 := 3) (ρ := 2) (β := 57) (d := 13)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
@@ -3905,14 +3905,14 @@ theorem F_base_sixtyfive :
 /-- And at `(1,3)`, where `E = 4` — the report's §8 says the counting bound fails
 for `E = 3, 4`, but `4(d-1) + 2 < b` is sharper than `4b/E < b` and `E = 4` clears
 it at every base where the arithmetic side conditions hold. `E = 3` never does. -/
-theorem F_base_fortyseven :
+theorem greedy_deficiency_fortyseven :
     ∃ n, 47 ^ 11 ≤ n ∧ n < 47 ^ 12 ∧ deficiency 47 1 3 n + 24 ≤ 47 :=
   greedy_deficiency_le (b := 47) (e1 := 1) (e2 := 3) (ρ := 2) (β := 36) (d := 12)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
 
 /-- The conclusion is a genuine selection, not a property of the range: `169 = 13^2`
-lies in the very interval `F_base_thirteen` quantifies over, and it fails the
+lies in the very interval `greedy_deficiency_thirteen` quantifies over, and it fails the
 bound.  `169^2 = 13^4` and `169^3 = 13^6`, so between them they show two digit values
 and miss eleven. -/
 theorem digits_169sq : digits 13 (169 ^ 2) = [0, 0, 0, 0, 1] := by
@@ -3928,7 +3928,7 @@ theorem digits_169cb : digits 13 (169 ^ 3) = [0, 0, 0, 0, 0, 0, 1] := by
       digits_step (by decide) (by decide), digits_step (by decide) (by decide),
       digits_step (by decide) (by decide), digits_zero]
 
-theorem F_conclusion_not_automatic :
+theorem greedy_deficiency_not_automatic :
     13 ^ 2 ≤ 169 ∧ 169 < 13 ^ 3 ∧ ¬ (deficiency 13 2 3 169 + 6 ≤ 13) := by
   refine ⟨by decide, by decide, ?_⟩
   show ¬ (List.countP (fun v => !memb v (digits 13 (169 ^ 2) ++ digits 13 (169 ^ 3)))
@@ -5744,7 +5744,7 @@ end Nice
 #print axioms Nice.two_four_base_seventeen_dead
 #print axioms Nice.two_four_base_thirtythree_live
 #print axioms Nice.base_ten_residue
-#print axioms Nice.residues_empty_of_mod_four_of_C
+#print axioms Nice.residues_empty_of_mod_four_via_two_adic
 #print axioms Nice.residues_single_nonempty_iff
 #print axioms Nice.single_four_base_twentynine_dead
 #print axioms Nice.add_pow_ladder
@@ -5753,10 +5753,10 @@ end Nice
 #print axioms Nice.greedy_distinct_slots
 #print axioms Nice.greedy_deficiency_le
 #print axioms Nice.deficiency_sixtynine
-#print axioms Nice.F_base_thirteen
-#print axioms Nice.F_base_sixtyfive
-#print axioms Nice.F_base_fortyseven
-#print axioms Nice.F_conclusion_not_automatic
+#print axioms Nice.greedy_deficiency_thirteen
+#print axioms Nice.greedy_deficiency_sixtyfive
+#print axioms Nice.greedy_deficiency_fortyseven
+#print axioms Nice.greedy_deficiency_not_automatic
 #print axioms Nice.no_even_base
 #print axioms Nice.pick_sum
 #print axioms Nice.cover_exists
