@@ -1,0 +1,5 @@
+name = "nice-numbers-lean"
+defaultTargets = ["NiceNumbers"]
+
+[[lean_lib]]
+name = "NiceNumbers"

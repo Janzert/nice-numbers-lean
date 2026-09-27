@@ -25,7 +25,9 @@ from the `#print axioms` block at the end of the file. Each line should list onl
 `Classical.choice` and `Quot.sound` — Lean's three standard axioms — or a subset of them. A
 line mentioning `sorryAx` means a proof failed; the errors above it say which.
 
-There is nothing else to fetch: no `lakefile`, no dependencies. To install Lean, see
+There is nothing else to fetch: no dependencies. `lake build` works too, and gives the same
+output. The [`lakefile.toml`](lakefile.toml) exists only so that other Lean projects can
+depend on this one and use its definitions. To install Lean, see
 [Getting Lean](#getting-lean) below.
 
 ## What is proved
