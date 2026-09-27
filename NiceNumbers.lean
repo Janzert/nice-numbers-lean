@@ -2,61 +2,72 @@
   NiceNumbers.lean
   ================
 
-  Eight theorems about nice / quasi-nice numbers, formalised in Lean 4.
+  Ten theorems about nice / quasi-nice numbers, formalised in Lean 4, and one
+  proposition about the shape of the candidate band.  They are numbered as in the
+  article series *The middle digit wall*, which presents them in this order; the
+  sections of this file follow the order they were proved in instead, so each
+  entry below names its section.
 
   `n` is **(e1,e2)-nice in base b** when the base-`b` digits of `n^e1` and `n^e2`
   together are exactly {0,…,b-1}, each once.  `(2,3)` is the classical "nice
   number" problem, whose only known solution is 69 in base 10.
 
   Pandigitality has two immediate consequences, and both are formalised here as
-  hypotheses so that theorems A, B and D apply to *any* notion of solution
-  satisfying them:
+  hypotheses so that Theorems 1 and 3 and the band's shape apply to *any* notion
+  of solution satisfying them:
 
     * the digit-length identity   `numDigits b (n^e1) + numDigits b (n^e2) = b`
     * the digit-sum identity      `2 * (digitSum b (n^e1) + digitSum b (n^e2)) = b * (b-1)`
 
-  Theorem G is about a digit *collision*, which neither consequence sees, so §5
+  Theorem 2 is about a digit *collision*, which neither consequence sees, so §5
   defines pandigitality outright (`Pandigital`, from a `digits` list built by
   repeated division) and proves it satisfiable at 69.
 
-  **Theorem A** (`no_nice_of_dvd`): if `(e1+e2) ∣ e1*(b-1)` — equivalently
-  `b ≡ 1 mod (e1+e2)/gcd(e1,e2)` — the length identity is unsatisfiable.
-  Special cases: `b ≡ 1 mod 5` kills `(2,3)`, `b ≡ 1 mod 4` kills `(1,3)`,
-  `b ≡ 1 mod 3` kills `(2,4)`.
+  **Theorem 1** (§1, §11; `no_nice_of_dvd`, `band_nonempty_iff`): if
+  `(e1+e2) ∣ e1*(b-1)` — equivalently `b ≡ 1 mod (e1+e2)/gcd(e1,e2)` — the length
+  identity is unsatisfiable.  Special cases: `b ≡ 1 mod 5` kills `(2,3)`,
+  `b ≡ 1 mod 4` kills `(1,3)`, `b ≡ 1 mod 3` kills `(2,4)`.  Conversely, above an
+  explicit threshold every other base has a candidate, so this is a classification
+  rather than a filter.
 
-  **Theorem B** (`no_nice_of_mod_four`): for *every* pair with `e1,e2 ≥ 1`, if
-  `b ≡ 3 (mod 4)` the digit-sum identity is unsatisfiable.
+  **The band's shape** (§3; `base_unique`, `bands_disjoint`, `band_convex`,
+  `band_lengths_const`): the length identity holds for at most one base, so
+  distinct bases' candidate bands are disjoint and each `n` is a candidate in at
+  most one base; and within a base the band is one interval, with both digit
+  lengths constant across it.  Proved for arbitrary values, hence for every
+  exponent pair.  It rules nothing out, so it carries no number.
 
-  **Proposition D** (`base_unique`, `bands_disjoint`): the length identity holds
-  for at most one base, so distinct bases' candidate bands are disjoint and each
-  `n` is a candidate in at most one base.  Proved for arbitrary values, hence for
-  every exponent pair.
-
-  **Theorem C** (`residues_nonempty_iff`, `residues_empty_iff`,
-  `residues_single_nonempty_iff`): the residue set `R_b = {ρ : ρ^e1+ρ^e2 ≡ T}` is
-  **empty iff `a = 1`, or `a ≥ 3` with `e2-e1` even and `e1 ∤ a-1`**, where
-  `a = v_2(b-1)`.  No odd prime divisor of `b-1` enters: modulo the odd part `T`
-  vanishes and `ρ = 0` is a residue, so the whole classification is a valuation
-  count at 2.  Theorem B is its `a = 1` case.  For a single exponent `n^e` the
-  rule is `R_b ≠ ∅` iff `a = 0` or `e ∣ a-1`.
-
-  **Theorem G** (`no_nice_of_universal_clash`, `clash_iff_dvd_clashMod`,
+  **Theorem 2** (§5; `no_nice_of_universal_clash`, `clash_iff_dvd_clashMod`,
   `clash_prime_pow_iff`): if `x^e1 ≡ x^e2 (mod b)` for *every* `x` — a universal
   last-digit clash — then no `n` is pandigital in base `b`.  The bases where that
   happens are **exactly the divisors of one number** `N(e1,e2)`, computed here as
   a finite gcd (`N(1,3) = 6`, `N(2,4) = 12`, `N(3,7) = 120`, `N(2,3) = 2`); and
   `p^a ∣ N` iff `a ≤ e1` and every unit mod `p` has order dividing `e2-e1`, which
   is `λ(p^a) ∣ e2-e1` once the unit group's exponent is known.  Evaluating that
-  exponent is the one step of Theorem G left unformalised.
+  exponent is the one step of Theorem 2 left unformalised.
 
-  **Theorem F** (`greedy_distinct_slots`, `theorem_F`): the one *constructive*
-  result here rather than an impossibility.  With `gcd(e1e2, b) = 1`, a starting
-  digit `ρ` and a unit `β` separating the two progressions, if `4(d-1) + 2 < b`
-  then some `d`-digit `n` has `2d` pairwise-distinct low slots, hence combined
-  digit deficiency at most `b - 2d`.  Since `d ≈ b/E` that is `b(1 - 2/E)`: the
-  same `2/E` as the DFS prune, reached from the constructive side.
+  **Theorem 3** (§2; `no_nice_of_mod_four`): for *every* pair with `e1,e2 ≥ 1`, if
+  `b ≡ 3 (mod 4)` the digit-sum identity is unsatisfiable.
 
-  **Theorem H** (`theorem_H`, `theorem_H_count`, `theorem_H_closed`): the first
+  **Theorem 4** (§7; `residues_nonempty_iff`, `residues_empty_iff`,
+  `residues_single_nonempty_iff`): the residue set `R_b = {ρ : ρ^e1+ρ^e2 ≡ T}` is
+  **empty iff `a = 1`, or `a ≥ 3` with `e2-e1` even and `e1 ∤ a-1`**, where
+  `a = v_2(b-1)`.  No odd prime divisor of `b-1` enters: modulo the odd part `T`
+  vanishes and `ρ = 0` is a residue, so the whole classification is a valuation
+  count at 2.  Theorem 3 is its `a = 1` case.  For a single exponent `n^e` the
+  rule is `R_b ≠ ∅` iff `a = 0` or `e ∣ a-1`.
+
+  **Theorem 5** (§6; `valOf_mod_wsum`, `sieve_sound`,
+  `base_four_sieve_is_incomplete`, `sieve_complete`): how much a congruence sieve
+  can know.  Modulo `b^j - 1` a
+  pair of digit lists is worth only its `j` block totals, so no sieve sees more
+  than those; the naive claim that the digit-sum congruence already captures
+  everything is **false** (base 4 is a machine-checked counterexample); and under
+  an explicit block-size hypothesis it is true, by an explicit construction of a
+  pandigital pair for every permitted residue.
+
+  **Theorem 6** (§9; `adm_of_pandigital`, `countP_pandigital_le_adm`,
+  `countP_pandigital_le_window`, `admTop_of_pandigital`): the first
   *quantitative* result here — an upper bound on how many nice numbers a base can
   have, with no hypotheses beyond the base and a choice of depth `k`.  Every
   pandigital `n` lies in the crude band `b^(b-2) ≤ n^E < b^b` and passes a test
@@ -66,21 +77,29 @@
   (`base_ten_nice_iff` — the set of `(2,3)`-nice numbers in base 10 is `{69}`), and
   at base 17 a 272-number window bounds a band 38 times longer (`≤ 585`).
 
-  **Theorem I / J / K** (`infinitude_iff`, `model_diverges`, `conditional_infinitude`,
-  `divergence_is_not_existence`): §10, the infinitude question, cut into the half
-  that is provable and the half that is not.  I: there are infinitely many nice
-  numbers **iff** infinitely many bases host one, both directions from the crude
-  band of §9.4.  J: the *heuristic* count `|band|·b!/b^b` exceeds any `M` along an
-  explicit infinite family of bases — band exhibited, not estimated, and no proved
-  obstruction (A, B, C, G) touches it.  K: one named hypothesis, `ModelPositive`,
+  **Theorem 7** (§8; `greedy_distinct_slots`, `greedy_deficiency_le`): a
+  *constructive* result rather than an impossibility.  With `gcd(e1e2, b) = 1`, a
+  starting digit `ρ` and a unit `β` separating the two progressions, if
+  `4(d-1) + 2 < b` then some `d`-digit `n` has `2d` pairwise-distinct low slots,
+  hence combined digit deficiency at most `b - 2d`.  Since `d ≈ b/E` that is
+  `b(1 - 2/E)`: the same `2/E` as the DFS prune, reached from the constructive side.
+
+  **Theorems 8, 9 and 10** (§10; `infinitude_iff`, `model_diverges`,
+  `conditional_infinitude`, `divergence_is_not_existence`): the infinitude
+  question, cut into the half that is provable and the half that is not.
+  Theorem 8: there are infinitely many nice numbers **iff** infinitely many bases
+  host one, both directions from the crude band of §9.4.  Theorem 9: the
+  *heuristic* count `|band|·b!/b^b` exceeds any `M` along an explicit infinite
+  family of bases — band exhibited, not estimated, and no proved obstruction
+  (Theorems 1-4) touches it.  Theorem 10: one named hypothesis, `ModelPositive`,
   closes the gap; nothing here proves it, and `divergence_is_not_existence` shows
   it cannot be weakened to "the heuristic is large" — the `(2,3)` bases `20s+7`
-  have a divergent heuristic over a band Theorem B proves empty.
+  have a divergent heuristic over a band Theorem 3 proves empty.
 
   Together these replace exhaustive machine checks over `e1 ≤ 8`, `e2 ≤ 9`,
-  `b < 400` (A, B, C), `b < 500`, five pairs, ~2700 values of `n` (D), and
-  `e1 ≤ 5`, `e2 ≤ 7`, `b < 200` (G) with proofs valid for all bases, all
-  exponent pairs and all `n`.
+  `b < 400` (Theorems 1, 3 and 4), `b < 500`, five pairs, ~2700 values of `n` (the
+  band's shape), and `e1 ≤ 5`, `e2 ≤ 7`, `b < 200` (Theorem 2) with proofs valid
+  for all bases, all exponent pairs and all `n`.
 
   Lean 4.16-4.33, core only.  No Mathlib, no `sorry`.  `#print axioms` at the end
   shows only the three standard foundational axioms.
@@ -174,7 +193,7 @@ theorem digitSum_mod {b : Nat} (hb : 1 < b) : ∀ x, x % (b - 1) = digitSum b x 
       rw [hxeq] at key
       rw [key, Nat.add_mod, hIH, ← Nat.add_mod, Nat.add_comm]
 
-/-! ## §1  Theorem A — the length obstruction -/
+/-! ## §1  Theorem 1 — the length obstruction -/
 
 /-- Core lacks the strict form of `pow_le_pow_left`. -/
 theorem pow_lt_pow_left' {x y : Nat} (h : x < y) : ∀ k, k ≠ 0 → x ^ k < y ^ k := by
@@ -226,7 +245,7 @@ theorem no_candidate {b e1 e2 n a c : Nat}
   omega
 
 /--
-**Theorem A.**  If `(e1+e2) ∣ e1*(b-1)` then no `n` has
+**Theorem 1.**  If `(e1+e2) ∣ e1*(b-1)` then no `n` has
 `numDigits b (n^e1) + numDigits b (n^e2) = b`, so base `b` contains no
 `(e1,e2)`-nice number.
 -/
@@ -271,7 +290,7 @@ theorem two_four_no_solution {b n : Nat} (hb : 1 < b) (hmod : b % 3 = 1) :
   obtain ⟨t, ht⟩ : 3 ∣ (b - 1) := by omega
   exact ⟨t, by omega⟩
 
-/-! ## §2  Theorem B — the parity obstruction, for every exponent pair -/
+/-! ## §2  Theorem 3 — the parity obstruction, for every exponent pair -/
 
 theorem pow_mod_two {n : Nat} : ∀ e, e ≠ 0 → n ^ e % 2 = n % 2 := by
   intro e he
@@ -288,7 +307,7 @@ theorem pow_mod_two {n : Nat} : ∀ e, e ≠ 0 → n ^ e % 2 = n % 2 := by
       rcases h2' with h | h <;> rw [h] <;> decide
 
 /--
-**Theorem B.**  For every exponent pair with `e1, e2 ≥ 1`, base `b ≡ 3 (mod 4)`
+**Theorem 3.**  For every exponent pair with `e1, e2 ≥ 1`, base `b ≡ 3 (mod 4)`
 contains no `(e1,e2)`-nice number: the digit-sum identity
 `2·(digitSum(n^e1) + digitSum(n^e2)) = b(b-1)` is already unsatisfiable.
 -/
@@ -330,13 +349,13 @@ theorem no_nice_of_mod_four {b e1 e2 n : Nat}
 
 
 /--
-**Theorem B, residue-set form.**  The same parity obstruction stated the way the
+**Theorem 3, residue-set form.**  The same parity obstruction stated the way the
 sieve uses it: for `b ≡ 3 (mod 4)` the residue set
 `R_b = {ρ : ρ^e1 + ρ^e2 ≡ T (mod b-1)}`, `2T = b(b-1)`, is **empty**.
 
 `no_nice_of_mod_four` rules out an actual solution's digit sums; this rules out
 the congruence class it would have to live in, which is the statement
-`verify.py`'s gate B used to check over `e1 ≤ 8`, `e2 ≤ 9`, `b < 400`.
+an exhaustive check once covered over `e1 ≤ 8`, `e2 ≤ 9`, `b < 400`.
 -/
 theorem residues_empty_of_mod_four {b e1 e2 T ρ : Nat}
     (hb : 1 < b) (he1 : e1 ≠ 0) (he2 : e2 ≠ 0) (hmod : b % 4 = 3)
@@ -367,13 +386,13 @@ theorem residues_empty_of_mod_four {b e1 e2 T ρ : Nat}
   have hodd_T : (b * u) % 2 = 1 := by rw [Nat.mul_mod, hodd_b, hodd_u]
   omega
 
-/-- Theorem B's residue form firing: base 7 has no `(2,3)` residue at all
+/-- Theorem 3's residue form firing: base 7 has no `(2,3)` residue at all
 (`T = 21`, `2·21 = 7·6`). -/
 theorem base_seven_no_residue (ρ : Nat) : (ρ ^ 2 + ρ ^ 3) % 6 ≠ 21 % 6 :=
   residues_empty_of_mod_four (b := 7) (by decide) (by decide) (by decide) (by decide)
     (by decide)
 
-/-! ## §3  Proposition D — one base per `n`, and the bands are disjoint
+/-! ## §3  The band's shape — one base per `n`, and the bands are disjoint
 
 The candidate band of base `b` is `{n : numDigits b (n^e1) + numDigits b (n^e2) = b}`.
 Distinct bases have **disjoint** bands, so each `n` is a candidate in at most one
@@ -409,7 +428,7 @@ theorem numDigits_antitone {b b' : Nat} (hb : 1 < b) (hbb : b ≤ b') (x : Nat) 
   exact le_numDigits_of_pow_le hb hle
 
 /--
-**Proposition D.**  For any two values `x, y`, at most one base `b` satisfies the
+**One base per value.**  For any two values `x, y`, at most one base `b` satisfies the
 length identity `numDigits b x + numDigits b y = b`.
 -/
 theorem base_unique {b b' x y : Nat} (hb : 1 < b) (hb' : 1 < b')
@@ -428,7 +447,7 @@ theorem base_unique {b b' x y : Nat} (hb : 1 < b) (hb' : 1 < b')
 def InBand (b e1 e2 n : Nat) : Prop :=
   numDigits b (n ^ e1) + numDigits b (n ^ e2) = b
 
-/-- **Prop D, band form.**  The bands of two distinct bases are disjoint: no `n`
+/-- **The bands are disjoint.**  The bands of two distinct bases are disjoint: no `n`
 is a candidate in both.  Holds for every exponent pair, `n` included `0`. -/
 theorem bands_disjoint {b b' e1 e2 n : Nat} (hb : 1 < b) (hb' : 1 < b')
     (hne : b ≠ b') : ¬(InBand b e1 e2 n ∧ InBand b' e1 e2 n) := by
@@ -525,35 +544,35 @@ theorem digitsum_identity_holds :
     2 * (digitSum 10 (69 ^ 2) + digitSum 10 (69 ^ 3)) = 10 * (10 - 1) := by
   rw [ds_sq, ds_cb]
 
-/-- Theorem A firing: base 11 ≡ 1 (mod 5) admits no square/cube candidate. -/
+/-- Theorem 1 firing: base 11 ≡ 1 (mod 5) admits no square/cube candidate. -/
 theorem base_eleven_dead (n : Nat) : numDigits 11 (n ^ 2) + numDigits 11 (n ^ 3) ≠ 11 :=
   nice_no_solution (by decide) (by decide)
 
-/-- Theorem B firing where Theorem A says nothing: 7 ≢ 1 (mod 5), but 7 ≡ 3
+/-- Theorem 3 firing where Theorem 1 says nothing: 7 ≢ 1 (mod 5), but 7 ≡ 3
 (mod 4), so the digit-sum identity is already impossible in base 7. -/
 theorem base_seven_dead (n : Nat) :
     2 * (digitSum 7 (n ^ 2) + digitSum 7 (n ^ 3)) ≠ 7 * (7 - 1) :=
   fun h => no_nice_of_mod_four (by decide) (by decide) (by decide) (by decide) h
 
-/-- Prop D needs a witness too, or "at most one base" could mean "no base": 69 is
+/-- `base_unique` needs a witness too, or "at most one base" could mean "no base": 69 is
 in the base-10 `(2,3)` band. -/
 theorem sixtynine_in_band : InBand 10 2 3 69 := length_identity_holds
 
-/-- Prop D firing on that witness: base 10 is the *only* base 69 is a candidate
+/-- `base_unique` firing on that witness: base 10 is the *only* base 69 is a candidate
 in — no finite search, and no appeal to the exponents being `(2,3)`. -/
 theorem sixtynine_only_base_ten {b : Nat} (hb : 1 < b) (h : InBand b 2 3 69) : b = 10 :=
   base_unique hb (by decide) h sixtynine_in_band
 
-/-- Theorem B is genuinely pair-independent: same base, exponents (3,8). -/
+/-- Theorem 3 is genuinely pair-independent: same base, exponents (3,8). -/
 theorem base_seven_dead' (n : Nat) :
     2 * (digitSum 7 (n ^ 3) + digitSum 7 (n ^ 8)) ≠ 7 * (7 - 1) :=
   fun h => no_nice_of_mod_four (by decide) (by decide) (by decide) (by decide) h
 
-/-! ## §5  Theorem G — the universal last-digit clash
+/-! ## §5  Theorem 2 — the universal last-digit clash
 
 If `x^e1 ≡ x^e2 (mod b)` for *every* `x` then the last base-`b` digits of `n^e1`
 and `n^e2` coincide for every `n`, one digit value is used twice, and base `b` is
-dead for reasons that have nothing to do with the size of the band.  Theorem G
+dead for reasons that have nothing to do with the size of the band.  Theorem 2
 classifies the bases where that happens.
 
 Two halves, and only the first needs pandigitality:
@@ -634,7 +653,7 @@ theorem pos_of_pandigital {b e1 e2 n : Nat} (hb : 1 < b)
   · exact h
 
 /--
-**Theorem G, the operative half.**  A base with a universal clash contains no
+**Theorem 2, the operative half.**  A base with a universal clash contains no
 pandigital `n` at all — the last digits of `n^e1` and `n^e2` are the same value,
 so that value is used twice.  Every exponent pair, every `n`, no search.
 -/
@@ -660,7 +679,7 @@ def clashGcd (e1 e2 : Nat) : Nat → Nat
 theorem clashGcd_succ (e1 e2 m : Nat) :
     clashGcd e1 e2 (m + 1) = Nat.gcd (m ^ e2 - m ^ e1) (clashGcd e1 e2 m) := rfl
 
-/-- `N(e1,e2)` — the modulus of Theorem G.  The range stops at `2^e2 - 2^e1`
+/-- `N(e1,e2)` — the modulus of Theorem 2.  The range stops at `2^e2 - 2^e1`
 because the `x = 2` term already bounds every clashing base by it. -/
 def clashMod (e1 e2 : Nat) : Nat := clashGcd e1 e2 (2 ^ e2 - 2 ^ e1 + 1)
 
@@ -716,7 +735,7 @@ theorem dvd_clashGcd_iff {b e1 e2 : Nat} :
       exact Nat.dvd_gcd (h m (by omega)) (ih.mpr (fun x hx => h x (by omega)))
 
 /--
-**Theorem G (classification).**  For `1 ≤ e1 < e2` and any `b > 0`, base `b` has
+**Theorem 2 (classification).**  For `1 ≤ e1 < e2` and any `b > 0`, base `b` has
 a universal clash **iff** `b ∣ N(e1,e2)`.  So the clashing bases of a pair are
 exactly the divisors of a single computable number — divisor-closed, closed under
 lcm, and bounded, all at once.
@@ -761,7 +780,7 @@ theorem clash_lcm {b b' e1 e2 : Nat} (hb : 0 < b) (hb' : 0 < b') (he1 : 1 ≤ e1
 The local criterion, stated without Carmichael's `λ`: the unit condition is
 "every unit has order dividing `e2-e1`", which is what `λ(p^a) ∣ e2-e1` says
 once the unit group's exponent is known.  That evaluation is the classical
-structure theorem for `(ℤ/p^aℤ)ˣ` and is the only part of Theorem G left
+structure theorem for `(ℤ/p^aℤ)ˣ` and is the only part of Theorem 2 left
 unformalised. -/
 
 /-- Core has no `Nat.Prime`, and only one consequence of primality is used. -/
@@ -788,7 +807,7 @@ theorem pow_dvd_pow_of_dvd {a b : Nat} (h : a ∣ b) (n : Nat) : a ^ n ∣ b ^ n
   exact ⟨k ^ n, Nat.mul_pow a k n⟩
 
 /--
-**Theorem G (local criterion).**  For a prime power `p^a` with `a ≥ 1` and
+**Theorem 2 (local criterion).**  For a prime power `p^a` with `a ≥ 1` and
 `1 ≤ e1 < e2`, the universal clash holds mod `p^a` **iff** `a ≤ e1` and every
 unit mod `p` satisfies `u^(e2-e1) ≡ 1 (mod p^a)`.
 
@@ -860,7 +879,7 @@ theorem clash_prime_pow_iff {p a e1 e2 : Nat} (hp : IsPrime p) (ha : 1 ≤ a)
         rw [this]
       rw [hsplit, Nat.mul_mod, hd, Nat.mul_one, Nat.mod_mod_of_dvd _ (Nat.dvd_refl _)]
 
-/-- The valuation form of Theorem G: `p^a ∣ N(e1,e2)` exactly when `a ≤ e1` and
+/-- The valuation form of Theorem 2: `p^a ∣ N(e1,e2)` exactly when `a ≤ e1` and
 every unit mod `p` has order dividing `e2-e1`.  Feed in `λ(p^a)` — the exponent
 of `(ℤ/p^aℤ)ˣ` — and this is the report's closed form
 `N = ∏_p p^{a_p}`, `a_p = max{a ≤ e1 : λ(p^a) ∣ e2-e1}`. -/
@@ -874,7 +893,7 @@ theorem prime_pow_dvd_clashMod_iff {p a e1 e2 : Nat} (hp : IsPrime p) (ha : 1 �
 /-! ### §5.4  `N(e1,e2)`, computed, and the theorem firing
 
 The values agree with `verify.py`'s Carmichael product `∏ p^{a_p}`, which is the
-form Theorem G is stated in.  These are kernel computations, not `native_decide`. -/
+form Theorem 2 is stated in.  These are kernel computations, not `native_decide`. -/
 
 theorem clashMod_one_two : clashMod 1 2 = 2 := by decide
 theorem clashMod_two_three : clashMod 2 3 = 2 := by decide
@@ -891,13 +910,13 @@ theorem no_pandigital_of_dvd_clashMod {b e1 e2 n : Nat} (hb : 1 < b) (he1 : 1 �
     (he : e1 < e2) (hdvd : b ∣ clashMod e1 e2) : ¬ Pandigital b e1 e2 n :=
   no_nice_of_universal_clash hb ((clash_iff_dvd_clashMod (by omega) he1 he).mpr hdvd)
 
-/-- Theorem G firing where A and B both say nothing: `6 % 4 = 2` so Theorem A
-misses it and `6` is even so Theorem B misses it, but `x ≡ x^3 (mod 6)` for every
+/-- Theorem 2 firing where Theorems 1 and 3 both say nothing: `6 % 4 = 2` so Theorem 1
+misses it and `6` is even so Theorem 3 misses it, but `x ≡ x^3 (mod 6)` for every
 `x` because `6 ∣ N(1,3) = 6`.  So base 6 has no `(1,3)` pandigital number. -/
 theorem one_three_base_six_dead (n : Nat) : ¬ Pandigital 6 1 3 n :=
   no_pandigital_of_dvd_clashMod (by decide) (by decide) (by decide) (by decide)
 
-/-- The same at `(2,4)`, base 12: `12 ≡ 0 (mod 3)` so Theorem A misses it too,
+/-- The same at `(2,4)`, base 12: `12 ≡ 0 (mod 3)` so Theorem 1 misses it too,
 and `12 ∣ N(2,4) = 12`. -/
 theorem two_four_base_twelve_dead (n : Nat) : ¬ Pandigital 12 2 4 n :=
   no_pandigital_of_dvd_clashMod (by decide) (by decide) (by decide) (by decide)
@@ -905,7 +924,7 @@ theorem two_four_base_twelve_dead (n : Nat) : ¬ Pandigital 12 2 4 n :=
 /-! ### §5.5  Non-vacuity
 
 Two directions matter here.  `Pandigital` must be satisfiable, or §5.1 proves
-nothing; and Theorem G must **not** kill base 10 at `(2,3)`, or it would
+nothing; and Theorem 2 must **not** kill base 10 at `(2,3)`, or it would
 contradict 69. -/
 
 theorem digits_69sq : digits 10 (69 ^ 2) = [1, 6, 7, 4] := by
@@ -929,7 +948,7 @@ theorem sixtynine_pandigital : Pandigital 10 2 3 69 := by
   rw [digits_69sq, digits_69cb]
   exact h v hv
 
-/-- Theorem G does not kill base 10 at `(2,3)` — it had better not.
+/-- Theorem 2 does not kill base 10 at `(2,3)` — it had better not.
 `N(2,3) = 2` and `10 ∤ 2`. -/
 theorem base_ten_no_clash : ¬ UniversalClash 10 2 3 := by
   intro h
@@ -958,11 +977,11 @@ theorem nine_no_clash_one_three : ¬ UniversalClash 9 1 3 := by
     (by decide)).mp h
   omega
 
-/-! ## §6  Proposition C′ — how complete the congruence sieve is
+/-! ## §6  Theorem 5 — how complete the congruence sieve is
 
 A *congruence sieve* at modulus `m` prunes a candidate `n` by testing
 `(n^e1 + n^e2) mod m` for membership in the set of residues that a pandigital
-pair can have.  Proposition C′ of the report claims that set is always exactly
+pair can have.  The naive claim is that set is always exactly
 the one the digit-sum congruence already gives — that **no** modulus adds
 information.  This section formalises the two halves of that claim, and they
 come out differently:
@@ -1068,7 +1087,7 @@ theorem wsum_one (b : Nat) : ∀ ds : List Nat, wsum b 1 0 ds = ds.sum := by
   | cons d ds ih => rw [wsum_cons, ih]; simp
 
 /-- **Casting out `b-1`s, for lists.**  The `j = 1` case of the block
-congruence, and the only congruence Proposition C′ claims is available. -/
+congruence, and the only congruence the naive claim says is available. -/
 theorem valOf_mod_pred {b : Nat} (hb : 1 < b) (ds : List Nat) :
     valOf b ds % (b - 1) = ds.sum % (b - 1) := by
   have h := valOf_mod_pow_sub_one hb Nat.one_pos ds
@@ -1120,11 +1139,11 @@ theorem sieve_sound {b x y T : Nat} (hb : 1 < b)
 
 Base 4 with digit lengths `(2,2)`.  That is a genuine `(2,3)` band: `n = 2` has
 `2^2 = 4 = "10"` and `2^3 = 8 = "20"`, two base-4 digits each, and `2 + 2 = 4 = b`,
-so Theorem A's length identity holds and neither A (`4 % 5 ≠ 1`) nor B
+so Theorem 1's length identity holds and neither Theorem 1 (`4 % 5 ≠ 1`) nor Theorem 3
 (`4 % 4 ≠ 3`) kills the base.
 
 `gcd(5, b-1) = gcd(5,3) = 1`, so the digit-sum congruence mod 3 excludes **no**
-residue mod 5 whatsoever — Proposition C′ therefore predicts all five occur.
+residue mod 5 whatsoever — the naive claim therefore predicts all five occur.
 Only three do.  The three attainable sums are `15, 18, 21`; all are `≡ 0 (mod 3)`
 as casting out 3s demands, and mod 5 they are `0, 3, 1`. -/
 
@@ -1163,9 +1182,9 @@ theorem base_four_image {x y : Nat}
   exact base_four_gap_core x hx2 y hy2 ⟨hx1, hy1, fun v hv => hpan v hv⟩
 
 /--
-**Proposition C′ is false.**  In base 4 with digit lengths `(2,2)`, no pandigital
+**The naive completeness claim is false.**  In base 4 with digit lengths `(2,2)`, no pandigital
 pair has `x + y ≡ 2 (mod 5)` — while the digit-sum congruence, the only thing
-Proposition C′ allows a sieve to know, permits every residue mod 5 because
+the naive claim allows a sieve to know, permits every residue mod 5 because
 `gcd(5, 4-1) = 1`.  So the modulus 5 is strictly stronger than casting out 3s,
 and "no modulus yields additional density" does not hold as stated.
 -/
@@ -1215,7 +1234,7 @@ theorem base_four_lengths :
 
 /-- Base 4 is a genuine `(2,3)` band and not an artefact: `n = 2` has
 `2^2 = "10"` and `2^3 = "20"`, two base-4 digits each, so the length identity
-`2 + 2 = 4 = b` holds.  Neither Theorem A (`4 % 5 ≠ 1`) nor Theorem B
+`2 + 2 = 4 = b` holds.  Neither Theorem 1 (`4 % 5 ≠ 1`) nor Theorem 3
 (`4 % 4 ≠ 3`) kills the base, so the counterexample sits inside the family this
 repo actually searches. -/
 theorem base_four_band_nonempty : InBand 4 2 3 2 := by
@@ -1223,7 +1242,7 @@ theorem base_four_band_nonempty : InBand 4 2 3 2 := by
   rw [numDigits_eq_of_bounds (b := 4) (x := 2 ^ 2) (k := 1) (by decide) (by decide) (by decide),
       numDigits_eq_of_bounds (b := 4) (x := 2 ^ 3) (k := 1) (by decide) (by decide) (by decide)]
 
-/-! ### §6.2  Theorem C′ — completeness, under an explicit hypothesis
+/-! ### §6.2  Theorem 5 — completeness, under an explicit hypothesis
 
 §6.1 refuted the unconditional claim.  This is what survives, and it is the
 statement REPORT-provability.md §6.3 proves on paper: **if** the class sizes
@@ -1251,7 +1270,7 @@ rider, and the only place the leading-digit rule enters at all — take it away 
 the *block-sum* image can overstate the true image, as at base 4, where it says 5
 residues and §6.1 counts 3.
 
-`theorem_C_prime` is the headline.  `blocks_hit` is its block-level half, which
+`sieve_complete` is the headline.  `blocks_hit` is its block-level half, which
 mentions no digit lengths and no leading digits; `blocks_to_pair` is the other
 half, which mentions no arithmetic. -/
 
@@ -1392,7 +1411,7 @@ theorem pick_sum_total : ∀ s p q ν,
 
 /-- **Subset-sum contiguity.**  The `p`-element sublists of a run of `p+q`
 consecutive integers realise every sum from the minimum to the minimum plus
-`p·q`, with no gaps — this is the one combinatorial fact Theorem C′ needs. -/
+`p·q`, with no gaps — this is the one combinatorial fact Theorem 5 needs. -/
 theorem pick_sum : ∀ s p q ν, ν ≤ p * q →
     (pick s p q ν).1.sum = p * s + tri p + ν := by
   intro s p q ν
@@ -1450,7 +1469,7 @@ theorem sumRange_congr {f g : Nat → Nat} :
 /-- **Mixed-radix covering.**  If each place `b^t` opens before the lower places
 run out — `b^t ≤ 1 + Σ_{s<t} N_s b^s` — then `{Σ_{t<j} ν_t b^t : ν_t ≤ N_t}` is
 the whole interval `[0, Σ_{t<j} N_t b^t]`, with no gaps.  This is the second of
-Theorem C′'s two engines, and the only place the no-gap hypothesis is used. -/
+Theorem 5's two engines, and the only place the no-gap hypothesis is used. -/
 theorem cover_exists {b : Nat} (hb : 0 < b) (N : Nat → Nat) :
     ∀ j, (∀ t, t < j → b ^ t ≤ sumRange (fun s => N s * b ^ s) t + 1) →
       ∀ V, V ≤ sumRange (fun s => N s * b ^ s) j →
@@ -2350,7 +2369,7 @@ theorem shift_mod {K M W : Nat} (hK : 0 < K) (hW : W < K) :
 /-- `N_t = p_t·q_t`, the width of class `t`'s independent choice. -/
 def Nof (j : Nat) (c p : Nat → Nat) (t : Nat) : Nat := p t * qOf j c p t
 
-/-- **Theorem C′, block level.**  Under the no-gap hypothesis, the block-sum
+/-- **Theorem 5, block level.**  Under the no-gap hypothesis, the block-sum
 value `Σ_t b^t S_t` of an arrangement with class sizes `c` runs over the whole
 coset `{z : z ≡ T (mod b-1)}` of `ℤ/(b^j - 1)`.  Leading digits are not yet in
 play; that is the next theorem's business. -/
@@ -2500,7 +2519,7 @@ theorem blocks_to_pair {b j L1 L2 : Nat} (hb : 1 < b) (hj : 0 < j)
     exact hlead2
   · rw [pair_mod_pow_sub_one hb hj, hw]
 
-/-- **Theorem C′.**  Suppose the class sizes `c_t` forced by the digit lengths
+/-- **Theorem 5.**  Suppose the class sizes `c_t` forced by the digit lengths
 satisfy the no-gap conditions for some legal `p`, that `c_t ≥ 2` for every class,
 and that `c_t ≥ 3` at the one class `(L2-1) % j` holding the second number's
 leading slot.  Then every residue mod `b^j - 1` that the digit-sum congruence
@@ -2512,7 +2531,7 @@ The rider is sharper than REPORT-provability.md §6.3's `c_t ≥ 3` for all `t`,
 and sharpening it was worth doing: the gap between this theorem and the
 conjecture of §6.5 (`c_t ≥ 2` suffices) is now a single class, not every
 class. -/
-theorem theorem_C_prime {b j L1 L2 : Nat} (hb : 1 < b) (hj : 0 < j)
+theorem sieve_complete {b j L1 L2 : Nat} (hb : 1 < b) (hj : 0 < j)
     (hL : L1 + L2 = b) (hL1 : 0 < L1) (hL2 : 0 < L2)
     (c p : Nat → Nat)
     (hc : ∀ t, c t = occ t (clsOf j 0 L1) + occ t (clsOf j 0 L2))
@@ -2649,7 +2668,7 @@ theorem base_ten_two_classes : ∀ t,
   · rw [if_neg (by omega), occ_clsOf_zero (by omega) (by omega) h,
         occ_clsOf_zero (by omega) (by omega) h]
 
-/-- **Theorem C′ fires at the base and the digit lengths of the only known nice
+/-- **Theorem 5 fires at the base and the digit lengths of the only known nice
 number.**  Every residue mod `99` that casting out 9s permits really is the sum
 of a genuine pandigital `(4,6)` pair in base 10, so the modulus `99` — and with
 it every modulus of order 2 — buys nothing over casting out 9s. -/
@@ -2659,7 +2678,7 @@ theorem base_ten_j_two_complete {z : Nat} (hz : z % 9 = 0) :
       (∀ v, v < 10 → occ v (d1 ++ d2) = 1) ∧
       nth d1 3 ≠ 0 ∧ nth d2 5 ≠ 0 ∧
       (valOf 10 d1 + valOf 10 d2) % 99 = z % 99 := by
-  have h := theorem_C_prime (b := 10) (j := 2) (L1 := 4) (L2 := 6)
+  have h := sieve_complete (b := 10) (j := 2) (L1 := 4) (L2 := 6)
     (by omega) (by omega) (by omega) (by omega) (by omega)
     (fun t => if t < 2 then 5 else 0) (fun t => if t = 0 then 5 else 0)
     base_ten_two_classes
@@ -2700,7 +2719,7 @@ theorem base_four_clears_the_no_gap :
           (fun u => if u = 0 then 2 else 0) s * 4 ^ s) 2 + 1 :=
   ⟨by intro t ht; rcases t with _ | _ | t <;> first | decide | omega, by decide⟩
 
-/-! ## §7  Theorem C — the complete classification of `R_b = ∅`
+/-! ## §7  Theorem 4 — the complete classification of `R_b = ∅`
 
 The residue set `R_b = {ρ : ρ^e1 + ρ^e2 ≡ T (mod b-1)}`, `2T = b(b-1)`, is the
 second necessary condition every solution satisfies (§2 refuted it for
@@ -2716,9 +2735,9 @@ reaches for is never needed.  What is left is the 2-part, where `T ≡ 2^(a-1)`,
 and the whole question becomes: which 2-adic valuations can `ρ^e1 + ρ^e2` have?
 Exactly `1` (from odd `ρ` with `e2-e1` even), whatever `v_2(1 + ρ^(e2-e1))` is
 (odd `ρ`, `e2-e1` odd — always `≥ 1`), and the multiples of `e1` (from even `ρ`).
-Never `0`, which is Theorem B.
+Never `0`, which is Theorem 3.
 
-Theorem B is therefore the `a = 1` case of this theorem, and the three "extra"
+Theorem 3 is therefore the `a = 1` case of this theorem, and the three "extra"
 2-adic dead classes the report found for `(2,4)`, `(4,6)` and `(3,7)` are the
 second clause.  §7.5 runs both ends on numerals.
 -/
@@ -2975,12 +2994,12 @@ theorem sum_shape {S a' q : Nat} (hdiv : 2 ^ (a'+1) * q + 2 ^ a' = S) :
     rw [Nat.mul_add, Nat.mul_one, ← Nat.mul_assoc, Nat.pow_succ]
   omega
 
-/-- The 2-adic admissibility condition of Theorem C, in terms of `a = v_2(b-1)`.
-`a ≠ 1` is Theorem B; the rest bites only at `a ≥ 3` with `e2 - e1` even. -/
+/-- The 2-adic admissibility condition of Theorem 4, in terms of `a = v_2(b-1)`.
+`a ≠ 1` is Theorem 3; the rest bites only at `a ≥ 3` with `e2 - e1` even. -/
 def LiveTwoAdic (a e1 e2 : Nat) : Prop :=
   a ≠ 1 ∧ (a ≤ 2 ∨ (e2 - e1) % 2 = 1 ∨ e1 ∣ (a - 1))
 
-/-- **Theorem C, necessity.**  A residue exists only in the classes above.  The
+/-- **Theorem 4, necessity.**  A residue exists only in the classes above.  The
 argument is one valuation count: `ρ^e1 + ρ^e2 = ρ^e1·(1 + ρ^(e2-e1))` must have
 `v_2` exactly `a - 1`, and the three cases of `ρ` (zero, odd, even) supply the
 three clauses. -/
@@ -3061,10 +3080,10 @@ theorem live_of_residue {b e1 e2 T a m ρ : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (
     have : 0 < w * e1 := Nat.mul_pos hwpos (by omega)
     exact ⟨by omega, Or.inr (Or.inr ⟨w, by rw [Nat.mul_comm]; omega⟩)⟩
 
-/-! ### §7.4  Theorem C -/
+/-! ### §7.4  Theorem 4 -/
 
 /--
-**Theorem C.**  For every base `b > 1`, every pair `1 ≤ e1 < e2` and every
+**Theorem 4.**  For every base `b > 1`, every pair `1 ≤ e1 < e2` and every
 factorisation `b - 1 = 2^a·m` with `m` odd, the residue set is nonempty **iff**
 `a ≠ 1` and one of `a ≤ 2`, `e2 - e1` odd, `e1 ∣ a - 1` holds.
 
@@ -3100,7 +3119,7 @@ theorem residues_nonempty_iff {b e1 e2 T a m : Nat} (hb : 1 < b) (he1 : 1 ≤ e1
           rw [hidx]
         exact ⟨_, residue_of_dvd hb he1 hlt hVpos hm hT hMV⟩
 
-/-- **Theorem C, dead form** — the classification read as a list of dead classes,
+/-- **Theorem 4, dead form** — the classification read as a list of dead classes,
 which is how §4 of the report states it. -/
 theorem residues_empty_iff {b e1 e2 T a m : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (hlt : e1 < e2)
     (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ a * m) :
@@ -3145,9 +3164,9 @@ theorem no_nice_of_two_adic {b e1 e2 a m n : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) 
 /-! ### §7.5  Non-vacuity, and the theorem firing
 
 The `(2,4)` pair at base 17 is the sharpest example available: `17 % 3 = 2` so
-Theorem A says nothing, `17 % 4 = 1` so Theorem B says nothing, and
-`N(2,4) = 12` with `17 ∤ 12` so Theorem G says nothing.  `v_2(16) = 4`, the gap
-`4 - 2 = 2` is even and `2 ∤ 3`, so Theorem C alone kills it.  Base 33 — the very
+Theorem 1 says nothing, `17 % 4 = 1` so Theorem 3 says nothing, and
+`N(2,4) = 12` with `17 ∤ 12` so Theorem 2 says nothing.  `v_2(16) = 4`, the gap
+`4 - 2 = 2` is even and `2 ∤ 3`, so Theorem 4 alone kills it.  Base 33 — the very
 next base with `v_2(b-1) ≥ 3` that A leaves alive — is *not* killed, and the
 witness is exhibited, so the boundary `e1 ∣ a-1` is sharp and not slack. -/
 
@@ -3167,8 +3186,8 @@ theorem base_ten_live : LiveTwoAdic 0 2 3 := ⟨by decide, Or.inl (by decide)⟩
 
 theorem base_ten_residue : (69 ^ 2 + 69 ^ 3) % 9 = 45 % 9 := by decide
 
-/-- Theorem B is the `a = 1` case: `b ≡ 3 (mod 4)` is exactly `v_2(b-1) = 1`.
-Re-deriving `residues_empty_of_mod_four` from Theorem C, for every pair. -/
+/-- Theorem 3 is the `a = 1` case: `b ≡ 3 (mod 4)` is exactly `v_2(b-1) = 1`.
+Re-deriving `residues_empty_of_mod_four` from Theorem 4, for every pair. -/
 theorem residues_empty_of_mod_four_of_C {b e1 e2 T ρ : Nat}
     (hb : 1 < b) (he1 : 1 ≤ e1) (hlt : e1 < e2) (hmod : b % 4 = 3)
     (hT : 2 * T = b * (b - 1)) :
@@ -3187,7 +3206,7 @@ because `v_2(ρ^e) = e·v_2(ρ)` with no cofactor `1 + ρ^d` to think about:
 
 > `R_b = ∅`  ⟺  `a ≥ 1` and `e ∤ a - 1`.
 
-Note `a = 1` is **live** here — Theorem B needs the sum `ρ^e1 + ρ^e2 ≡ 2ρ`, and a
+Note `a = 1` is **live** here — Theorem 3 needs the sum `ρ^e1 + ρ^e2 ≡ 2ρ`, and a
 single exponent has no partner to pair with — which is why `b ≡ 3 (mod 4)`
 survives for `n^4` and not for `(1,3)`. -/
 
@@ -3206,7 +3225,7 @@ theorem residue_single_of_even_base {b e T : Nat} (hb : 1 < b) (he : 1 ≤ e)
   rw [Nat.zero_pow (by omega), target_zero hb hT hbe]
   simp
 
-/-- **Theorem C, single-exponent form.**  (`a - 1` is truncated subtraction, so
+/-- **Theorem 4, single-exponent form.**  (`a - 1` is truncated subtraction, so
 the `a = 0` disjunct is formally implied by the second; it is kept because the
 mathematics has two cases — even base, and `v_2(b-1) ≡ 1 mod e` — not one.) -/
 theorem residues_single_nonempty_iff {b e T a m : Nat} (hb : 1 < b) (he : 1 ≤ e)
@@ -3264,10 +3283,10 @@ theorem single_four_base_twentynine_dead (ρ : Nat) : ρ ^ 4 % 28 ≠ 406 % 28 :
 `v_2(32) = 5` and `4 ∣ 4`. -/
 theorem single_four_base_thirtythree_live : (2:Nat) ^ 4 % 32 = 528 % 32 := by decide
 
-/-! ## §8  Theorem F — the `2/E` greedy construction
+/-! ## §8  Theorem 7 — the `2/E` greedy construction
 
 `n mod b^(i+1)` pins digit `i` of `n^e1` *and* digit `i` of `n^e2`: two slots per
-digit of `n`, the conservation law the whole repository runs on.  Theorem F turns
+digit of `n`, the conservation law the whole repository runs on.  Theorem 7 turns
 that budget into a construction.  Build `n` from the bottom; at level `i` the new
 digit `x` moves each of the two slots along an arithmetic progression, and if the
 common differences are units the progressions are bijections, so each already-used
@@ -3390,7 +3409,7 @@ theorem slot_step {b i : Nat} (hb : 0 < b) (hi : 1 ≤ i) (r x e : Nat) :
 
 The progressions are bijections when their common differences are units, and the
 *difference* of the two progressions is a bijection when `α1 - α2` is — which is
-the side condition Theorem F carries, here supplied as an explicit unit `β`. -/
+the side condition Theorem 7 carries, here supplied as an explicit unit `β`. -/
 
 /-- `x ↦ (A + α·x) mod b` is injective on `{0,…,b-1}` when `α` is a unit. -/
 theorem lin_inj {b α A x y : Nat} (hb : 0 < b) (hα : Nat.Coprime b α)
@@ -3416,7 +3435,7 @@ theorem lin_inj {b α A x y : Nat} (hb : 0 < b) (hα : Nat.Coprime b α)
     omega
 
 /-- The two progressions collide for at most one digit `x`.  This is the side
-condition of Theorem F: `α1 - α2` must be a unit, supplied as `β` with
+condition of Theorem 7: `α1 - α2` must be a unit, supplied as `β` with
 `α2 + β ≡ α1`. -/
 theorem clash_inj {b α1 α2 β A1 A2 x y : Nat} (hb : 0 < b) (hβ : Nat.Coprime b β)
     (hsep : (α2 + β) % b = α1 % b) (hx : x < b) (hy : y < b)
@@ -3772,7 +3791,7 @@ theorem greedy_reaches {b e1 e2 ρ β d : Nat} (hb : 1 < b)
         exact greedy_step hb hce1 hce2 hcρ hβ hsep hi (by omega) U hinv
   exact main d hd (Nat.le_refl d)
 
-/-! ### §8.6  Theorem F
+/-! ### §8.6  Theorem 7
 
 The `2d` distinct slots are `2d` distinct *digit values*, so at most `b - 2d` of
 the `b` values can be missing.  With `d ≈ b/E` that is the `b(1 - 2/E)` of the
@@ -3780,7 +3799,7 @@ report — less than a random candidate's `≈ b/e`, which is the point: this is
 a *constructive* argument can reach, not what is typical. -/
 
 /--
-**Theorem F, slot form** — the statement the `2/E` accounting is really about:
+**Theorem 7, slot form** — the statement the `2/E` accounting is really about:
 some `d`-digit `n` has `2d` *pairwise distinct* values among the low `d` slots of
 `n^e1` and of `n^e2`.  The deficiency bound below is its corollary.
 -/
@@ -3801,7 +3820,7 @@ def deficiency (b e1 e2 n : Nat) : Nat :=
   List.countP (fun v => !memb v (digits b (n ^ e1) ++ digits b (n ^ e2))) (List.range b)
 
 /--
-**Theorem F.**  Fix a base `b` and exponents `e1, e2` with `gcd(e1e2, b) = 1`, a
+**Theorem 7.**  Fix a base `b` and exponents `e1, e2` with `gcd(e1e2, b) = 1`, a
 starting digit `ρ` — a unit whose two last digits already differ — and a unit `β`
 witnessing that the two progressions have invertible difference
 (`e2ρ^(e2-1) + β ≡ e1ρ^(e1-1)`).  If `4(d-1) + 2 < b`, then some `d`-digit `n`
@@ -3810,7 +3829,7 @@ has combined digit deficiency at most `b - 2d`.
 Since `d ≈ b/E` with `E = e1+e2`, the counting condition is `4b/E < b`, i.e.
 `E ≥ 5` up to the rounding, and the bound is `b(1 - 2/E) + O(1)`.
 -/
-theorem theorem_F {b e1 e2 ρ β d : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (he2 : 1 ≤ e2)
+theorem greedy_deficiency_le {b e1 e2 ρ β d : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (he2 : 1 ≤ e2)
     (hce1 : Nat.Coprime b e1) (hce2 : Nat.Coprime b e2)
     (hρ : 0 < ρ) (hρb : ρ < b) (hcρ : Nat.Coprime b ρ)
     (hstart : ρ ^ e1 % b ≠ ρ ^ e2 % b) (hβ : Nat.Coprime b β)
@@ -3869,17 +3888,17 @@ theorem deficiency_sixtynine : deficiency 10 2 3 69 = 0 := by
   rw [digits_69sq, digits_69cb]
   decide
 
-/-- Theorem F at base 13, `(2,3)`: a 3-digit `n` whose six low slots are distinct. -/
+/-- Theorem 7 at base 13, `(2,3)`: a 3-digit `n` whose six low slots are distinct. -/
 theorem F_base_thirteen :
     ∃ n, 13 ^ 2 ≤ n ∧ n < 13 ^ 3 ∧ deficiency 13 2 3 n + 6 ≤ 13 :=
-  theorem_F (b := 13) (e1 := 2) (e2 := 3) (ρ := 2) (β := 5) (d := 3)
+  greedy_deficiency_le (b := 13) (e1 := 2) (e2 := 3) (ρ := 2) (β := 5) (d := 3)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
 
-/-- Theorem F at base 65, `(2,3)`: 26 of the 65 digit values are forced to occur. -/
+/-- Theorem 7 at base 65, `(2,3)`: 26 of the 65 digit values are forced to occur. -/
 theorem F_base_sixtyfive :
     ∃ n, 65 ^ 12 ≤ n ∧ n < 65 ^ 13 ∧ deficiency 65 2 3 n + 26 ≤ 65 :=
-  theorem_F (b := 65) (e1 := 2) (e2 := 3) (ρ := 2) (β := 57) (d := 13)
+  greedy_deficiency_le (b := 65) (e1 := 2) (e2 := 3) (ρ := 2) (β := 57) (d := 13)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
 
@@ -3888,7 +3907,7 @@ for `E = 3, 4`, but `4(d-1) + 2 < b` is sharper than `4b/E < b` and `E = 4` clea
 it at every base where the arithmetic side conditions hold. `E = 3` never does. -/
 theorem F_base_fortyseven :
     ∃ n, 47 ^ 11 ≤ n ∧ n < 47 ^ 12 ∧ deficiency 47 1 3 n + 24 ≤ 47 :=
-  theorem_F (b := 47) (e1 := 1) (e2 := 3) (ρ := 2) (β := 36) (d := 12)
+  greedy_deficiency_le (b := 47) (e1 := 1) (e2 := 3) (ρ := 2) (β := 36) (d := 12)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
 
@@ -3927,7 +3946,7 @@ theorem odd_of_coprime_two {x : Nat} (hx : Nat.Coprime 2 x) : x % 2 = 1 := by
   · exact h
 
 /--
-**Where Theorem F stops, and it is a theorem rather than the edge of a scan: no
+**Where Theorem 7 stops, and it is a theorem rather than the edge of a scan: no
 even base is ever covered.**  If `b` is even then `gcd(e1e2, b) = 1` forces both
 exponents odd and `gcd(ρ, b) = 1` forces `ρ` odd, so both progression differences
 `e·ρ^(e-1)` are odd and their gap is even — no unit `β` can separate them.
@@ -3959,7 +3978,7 @@ theorem base_thirtyfour_is_even : 34 % 2 = 0 := by decide
 
 theorem base_fiftyseven_not_coprime : ¬ Nat.Coprime 57 3 := by decide
 
-/-! ## §9  Theorem H — a rigorous upper bound on how many nice numbers a base has
+/-! ## §9  Theorem 6 — a rigorous upper bound on how many nice numbers a base has
 
 Everything provable about this problem comes from three places, and all three are
 *finite* conditions on `n`:
@@ -4108,7 +4127,7 @@ def lowPair (b e1 e2 k r : Nat) : List Nat :=
   lowSlots b k (r ^ e1) ++ lowSlots b k (r ^ e2)
 
 /-- `Q_k`: the low `k` slots of `r^e1` and `r^e2` are `2k` pairwise-distinct values.
-Costs `b^k` to tabulate, and `k = 1` is Theorem G. -/
+Costs `b^k` to tabulate, and `k = 1` is Theorem 2. -/
 def lowOK (b e1 e2 k r : Nat) : Bool :=
   allb (fun v => decide (occ v (lowPair b e1 e2 k r) ≤ 1)) (run 0 b)
 
@@ -4117,7 +4136,7 @@ def resOK (b e1 e2 T r : Nat) : Bool :=
   decide ((r ^ e1 + r ^ e2) % (b - 1) = T % (b - 1))
 
 /-- Everything the two congruence filters know about `n`.  Its period is
-`(b-1)·b^k` (`adm_period`), which is what turns Theorem H into a closed form. -/
+`(b-1)·b^k` (`adm_period`), which is what turns Theorem 6 into a closed form. -/
 def adm (b e1 e2 k T n : Nat) : Bool :=
   resOK b e1 e2 T (n % (b - 1)) && lowOK b e1 e2 k (n % b ^ k)
 
@@ -4431,10 +4450,10 @@ theorem adm_period {b e1 e2 k T : Nat} (hb : 1 < b) (x : Nat) :
       = (resOK b e1 e2 T (x % (b - 1)) && lowOK b e1 e2 k (x % b ^ k))
   rw [h1', h2']
 
-/-! ### §9.7  Theorem H -/
+/-! ### §9.7  Theorem 6 -/
 
 /--
-**Theorem H (T4 of REPORT §11).**  Every `(e1,e2)`-pandigital `n` lies in the crude
+**Theorem 6.**  Every `(e1,e2)`-pandigital `n` lies in the crude
 band `(lo, hi)` and passes the admissibility test `adm`, which depends on `n` only
 through `n mod (b-1)` and `n mod b^k`.
 
@@ -4443,7 +4462,7 @@ through `n mod (b-1)` and `n mod b^k`.
 digits, which is what makes the low-`k`-slot filter legitimate — without them the
 padding zeros of `lowSlots` would be counted as digits.
 -/
-theorem theorem_H {b e1 e2 k T lo hi n : Nat} (hb : 1 < b) (hk : 0 < k)
+theorem adm_of_pandigital {b e1 e2 k T lo hi n : Nat} (hb : 1 < b) (hk : 0 < k)
     (hT : 2 * T = b * (b - 1))
     (hlo : lo ^ (e1 + e2) < b ^ (b - 2)) (hhi : b ^ b ≤ hi ^ (e1 + e2))
     (hk1 : b ^ (k - 1) ≤ (lo + 1) ^ e1) (hk2 : b ^ (k - 1) ≤ (lo + 1) ^ e2)
@@ -4462,24 +4481,24 @@ theorem theorem_H {b e1 e2 k T lo hi n : Nat} (hb : 1 < b) (hk : 0 < k)
   rfl
 
 /--
-**Theorem H, counting form.**  At most `countP adm` numbers of the crude band are
+**Theorem 6, counting form.**  At most `countP adm` numbers of the crude band are
 nice.  This is the quantity `nice-provability/bound.py` evaluates.
 -/
-theorem theorem_H_count {b e1 e2 k T lo hi : Nat} (hb : 1 < b) (hk : 0 < k)
+theorem countP_pandigital_le_adm {b e1 e2 k T lo hi : Nat} (hb : 1 < b) (hk : 0 < k)
     (hT : 2 * T = b * (b - 1))
     (hlo : lo ^ (e1 + e2) < b ^ (b - 2)) (hhi : b ^ b ≤ hi ^ (e1 + e2))
     (hk1 : b ^ (k - 1) ≤ (lo + 1) ^ e1) (hk2 : b ^ (k - 1) ≤ (lo + 1) ^ e2) :
     List.countP (isPandigital b e1 e2) (run (lo + 1) (hi - lo - 1))
       ≤ List.countP (adm b e1 e2 k T) (run (lo + 1) (hi - lo - 1)) :=
   countP_mono (fun x hx =>
-    (theorem_H hb hk hT hlo hhi hk1 hk2 (isPandigital_iff.mp hx)).2) _
+    (adm_of_pandigital hb hk hT hlo hhi hk1 hk2 (isPandigital_iff.mp hx)).2) _
 
 /--
-**Theorem H, closed form.**  `adm` has period `W = (b-1)·b^k`, so the count over the
+**Theorem 6, closed form.**  `adm` has period `W = (b-1)·b^k`, so the count over the
 band is at most the count over one window times `⌈band/W⌉` — `O(b^k)` work, with no
 reference to the band beyond its length.
 -/
-theorem theorem_H_closed {b e1 e2 k T lo hi : Nat} (hb : 1 < b) :
+theorem countP_pandigital_le_window {b e1 e2 k T lo hi : Nat} (hb : 1 < b) :
     List.countP (adm b e1 e2 k T) (run (lo + 1) (hi - lo - 1))
       ≤ List.countP (adm b e1 e2 k T) (run 0 ((b - 1) * b ^ k))
         * ((hi - lo - 1 + (b - 1) * b ^ k - 1) / ((b - 1) * b ^ k)) := by
@@ -4511,7 +4530,7 @@ theorem base_ten_survivors : (run 40 60).filter (adm 10 2 3 4 45) = [69] := by d
 
 /-- **69 is the only `(2,3)`-nice number in base 10.** -/
 theorem sixtynine_unique {n : Nat} (hp : Pandigital 10 2 3 n) : n = 69 := by
-  have h := theorem_H (b := 10) (e1 := 2) (e2 := 3) (k := 4) (T := 45) (lo := 39) (hi := 100)
+  have h := adm_of_pandigital (b := 10) (e1 := 2) (e2 := 3) (k := 4) (T := 45) (lo := 39) (hi := 100)
     (by decide) (by decide) (by decide) base_ten_lo base_ten_hi (by decide) (by decide) hp
   have hmem : n ∈ run 40 60 := mem_run_of 60 40 n (by omega) (by omega)
   have hfil : n ∈ (run 40 60).filter (adm 10 2 3 4 45) :=
@@ -4535,7 +4554,7 @@ set_option maxRecDepth 4000 in
 theorem base_seventeen_window : List.countP (adm 17 2 3 1 136) (run 0 272) = 15 := by decide
 
 theorem base_seventeen_all {n : Nat} (hp : Pandigital 17 2 3 n) : n ∈ run 4913 10347 := by
-  have h := theorem_H (b := 17) (e1 := 2) (e2 := 3) (k := 1) (T := 136)
+  have h := adm_of_pandigital (b := 17) (e1 := 2) (e2 := 3) (k := 1) (T := 136)
     (lo := 4912) (hi := 15260) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) hp
   exact mem_run_of 10347 4913 n (by omega) (by omega)
@@ -4546,10 +4565,10 @@ theorem base_seventeen_bound :
     List.countP (isPandigital 17 2 3) (run 4913 10347) ≤ 585 := by
   have hlen : 15260 - 4912 - 1 = 10347 := rfl
   have hstart : (4912 : Nat) + 1 = 4913 := rfl
-  have h1' := theorem_H_count (b := 17) (e1 := 2) (e2 := 3) (k := 1) (T := 136)
+  have h1' := countP_pandigital_le_adm (b := 17) (e1 := 2) (e2 := 3) (k := 1) (T := 136)
     (lo := 4912) (hi := 15260) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide)
-  have h2' := theorem_H_closed (b := 17) (e1 := 2) (e2 := 3) (k := 1) (T := 136)
+  have h2' := countP_pandigital_le_window (b := 17) (e1 := 2) (e2 := 3) (k := 1) (T := 136)
     (lo := 4912) (hi := 15260) (by decide)
   rw [hstart, hlen] at h1' h2'
   have hW : (17 - 1) * 17 ^ 1 = 272 := rfl
@@ -4558,7 +4577,7 @@ theorem base_seventeen_bound :
   rw [h3] at h2'
   omega
 
-/-! ### §9.10  The top slots — condition 4 of Theorem H
+/-! ### §9.10  The top slots — condition 4 of Theorem 6
 
 §9.2's three filters all read `n` from the *bottom*: the band from its size,
 `resOK` from `n mod (b-1)`, `lowOK` from `n mod b^k`.  Condition 4 of REPORT §9
@@ -4668,7 +4687,7 @@ theorem occ_low_top_le {b : Nat} (hb : 1 < b) {k h L x : Nat}
   rw [hsplit, hlow, occ_append, occ_append]
   omega
 
-/-! ### §9.11  The refined test, and Theorem H with all four conditions -/
+/-! ### §9.11  The refined test, and Theorem 6 with all four conditions -/
 
 /-- The `2(k+h)` boundary slots of the pair: the low `k` and the top `h` of each
 power.  Conditions 3 and 4 of REPORT §9 together say these are `2(k+h)`
@@ -4710,7 +4729,7 @@ theorem pandigital_boundaryOK {b e1 e2 k h L1 L2 n : Nat} (hb : 1 < b)
   omega
 
 /--
-**Theorem H, condition 4 (REPORT §9, the top-digit refinement).**  On an interval
+**Theorem 6, condition 4 (REPORT §9, the top-digit refinement).**  On an interval
 `[a, c)` where the two digit lengths are constant, every `(e1,e2)`-pandigital `n`
 passes `admTop` — conditions 1-3 of §9.7 *and* the top-digit condition.
 
@@ -4719,7 +4738,7 @@ and at a concrete base each is a `decide` on numerals.  They are also the reason
 this theorem is stated over an interval rather than over §9.4's crude band: that
 band is the union of three length splits, and `L1` is not constant on it.
 -/
-theorem theorem_H_top {b e1 e2 k h L1 L2 T a c n : Nat} (hb : 1 < b)
+theorem admTop_of_pandigital {b e1 e2 k h L1 L2 T a c n : Nat} (hb : 1 < b)
     (hT : 2 * T = b * (b - 1))
     (hL1 : 0 < L1) (hL2 : 0 < L2)
     (ha1 : b ^ (L1 - 1) ≤ a ^ e1) (hc1 : (c - 1) ^ e1 < b ^ L1)
@@ -4764,11 +4783,11 @@ theorem countP_mono_mem {p q : Nat → Bool} : ∀ l : List Nat,
       · rw [if_neg hq]; omega
 
 /--
-**Theorem H with condition 4, counting form.**  At most `countP admTop` of the
+**Theorem 6 with condition 4, counting form.**  At most `countP admTop` of the
 interval is nice.  Unlike §9.7's this is a scan of the interval: `admTop` has no
 period, which is exactly what §9.12 pays for.
 -/
-theorem theorem_H_top_count {b e1 e2 k h L1 L2 T a c : Nat} (hb : 1 < b)
+theorem countP_pandigital_le_admTop {b e1 e2 k h L1 L2 T a c : Nat} (hb : 1 < b)
     (hT : 2 * T = b * (b - 1))
     (hL1 : 0 < L1) (hL2 : 0 < L2)
     (ha1 : b ^ (L1 - 1) ≤ a ^ e1) (hc1 : (c - 1) ^ e1 < b ^ L1)
@@ -4778,7 +4797,7 @@ theorem theorem_H_top_count {b e1 e2 k h L1 L2 T a c : Nat} (hb : 1 < b)
       ≤ List.countP (admTop b e1 e2 k h L1 L2 T) (run a (c - a)) :=
   countP_mono_mem _ (fun x hx hpx =>
     have hm := mem_run (c - a) a x hx
-    theorem_H_top hb hT hL1 hL2 ha1 hc1 ha2 hc2 hkh1 hkh2 hm.1 (by omega)
+    admTop_of_pandigital hb hT hL1 hL2 ha1 hc1 ha2 hc2 hkh1 hkh2 hm.1 (by omega)
       (isPandigital_iff.mp hpx))
 
 /-- And the refinement really is one: it never counts more than §9.7 does. -/
@@ -4871,7 +4890,7 @@ length identity is what removes it. -/
 theorem base_ten_exact_band {n : Nat} (hp : Pandigital 10 2 3 n) :
     (47 ≤ n ∧ n < 100) ∧ numDigits 10 (n ^ 2) = 4 ∧ numDigits 10 (n ^ 3) = 6 := by
   have hb : (1 : Nat) < 10 := by decide
-  have hcrude := (theorem_H (b := 10) (e1 := 2) (e2 := 3) (k := 1) (T := 45)
+  have hcrude := (adm_of_pandigital (b := 10) (e1 := 2) (e2 := 3) (k := 1) (T := 45)
     (lo := 39) (hi := 100) hb (by decide) (by decide)
     base_ten_lo base_ten_hi (by decide) (by decide) hp).1
   have hlen := pandigital_length hb hp
@@ -4911,7 +4930,7 @@ condition 4 doing part of the work.  The two proofs are independent: §9.8 uses 
 low slots to depth 4 and no top digit, this one uses depth 2 at both ends. -/
 theorem sixtynine_unique_top {n : Nat} (hp : Pandigital 10 2 3 n) : n = 69 := by
   obtain ⟨⟨h1, h2⟩, -, -⟩ := base_ten_exact_band hp
-  have h := theorem_H_top (b := 10) (e1 := 2) (e2 := 3) (k := 2) (h := 2)
+  have h := admTop_of_pandigital (b := 10) (e1 := 2) (e2 := 3) (k := 2) (h := 2)
     (L1 := 4) (L2 := 6) (T := 45) (a := 47) (c := 100) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) h1 h2 hp
@@ -4944,22 +4963,22 @@ statistic (Mauduit–Rivat) or one *missing* digit in a base above `10^23` (Mayn
 Nothing here closes that gap.  What this section does is cut the question into the
 half that is provable and the half that is not, and prove the first half in full.
 
-  * **Theorem I** (`infinitude_iff`) — there are infinitely many nice numbers **iff**
+  * **Theorem 8** (`infinitude_iff`) — there are infinitely many nice numbers **iff**
     infinitely many bases host one.  Both directions are the crude band
     `b^(b-2) ≤ n^E < b^b` of §9.4: a solution in a large base is a large number, and
-    a large number needs a large base.  This is Prop D's "one base per `n`" upgraded
+    a large number needs a large base.  This is §3's "one base per `n`" upgraded
     from disjointness to a two-sided size estimate.
-  * **Theorem J** (`model_diverges`) — the *heuristic* count `|band|·b!/b^b` exceeds
+  * **Theorem 9** (`model_diverges`) — the *heuristic* count `|band|·b!/b^b` exceeds
     any `M`, along an explicit infinite family of bases, unconditionally and with no
     asymptotic notation.  The band is **exhibited** — `b^q` consecutive candidates,
     §10.1 — rather than estimated, and `b^b ≤ 4^b·b!` comes from
     `b!·b^b ≤ (2b)! ≤ 4^b·(b!)^2`: two inductions, no Stirling, no reals.
-  * **Theorem K** (`conditional_infinitude`) — `ModelPositive → infinitude`, where
+  * **Theorem 10** (`conditional_infinitude`) — `ModelPositive → infinitude`, where
     `ModelPositive` says that a base of that family whose heuristic count exceeds one
     fixed `M0` hosts a solution.  That is the only input left.
   * **The guard** (`divergence_is_not_existence`) — and it is not a formality.  For
     `(2,3)` the bases `b = 20s+7` sit in the *same* family, their heuristic counts
-    diverge at the same rate, and **every one of them is provably empty** (Theorem B:
+    diverge at the same rate, and **every one of them is provably empty** (Theorem 3:
     `b ≡ 3 mod 4`).  So no argument from the size of the heuristic alone can ever
     produce a solution.  `ModelPositive` has to carry arithmetic input, and the whole
     difficulty of the problem is that no such input is both true and provable.
@@ -5016,7 +5035,7 @@ theorem fact_two_mul_le (b : Nat) : fact (2 * b) ≤ 4 ^ b * (fact b * fact b) :
           rw [e2', fact_succ, Nat.pow_succ]
           exact prod_shuffle (b + 1) (4 ^ b) (fact b)
 
-/-- **`b^b ≤ 4^b · b!`.**  The whole analytic content of Theorem J, in one
+/-- **`b^b ≤ 4^b · b!`.**  The whole analytic content of Theorem 9, in one
 cancellation: `b!·b^b ≤ (2b)! ≤ 4^b·(b!)^2`. -/
 theorem pow_self_le_fact (b : Nat) : b ^ b ≤ 4 ^ b * fact b := by
   have h1' : fact b * b ^ b ≤ fact (2 * b) := by
@@ -5092,7 +5111,7 @@ theorem yield_ge {b q M E : Nat} (hq : q * E + 2 = b)
     _ ≤ b ^ q * fact b := Nat.mul_le_mul (Nat.le_trans h2' h1') (Nat.le_refl _)
 
 /--
-**Theorem J.**  For every exponent pair and every `M`, there are arbitrarily large
+**Theorem 9.**  For every exponent pair and every `M`, there are arbitrarily large
 bases `b` which are even, satisfy `E ∣ b-2`, carry `b^q` consecutive candidates in
 their band, and whose heuristic count `|band|·b!/b^b` exceeds `M`.
 
@@ -5123,9 +5142,9 @@ theorem model_diverges (e1 e2 M B : Nat) (he1 : 0 < e1) (he2 : 0 < e2) :
 
 /-! ### §10.3  The family is not one of the dead classes
 
-Theorem A cannot touch it — its band is exhibited above — and for **even** members
-neither can B nor C: `b` even makes `b-1` odd, so `T ≡ 0 (mod b-1)` and `ρ = 0` is a
-residue.  That is Theorem C's `v_2(b-1) = 0` case, and it is why §10.2 builds the
+Theorem 1 cannot touch it — its band is exhibited above — and for **even** members
+neither can Theorem 3 nor Theorem 4: `b` even makes `b-1` odd, so `T ≡ 0 (mod b-1)` and `ρ = 0` is a
+residue.  That is Theorem 4's `v_2(b-1) = 0` case, and it is why §10.2 builds the
 family out of even bases in the first place. -/
 
 theorem resOK_zero_of_even {b e1 e2 T : Nat} (hb : 1 < b) (hev : b % 2 = 0)
@@ -5141,9 +5160,9 @@ theorem resOK_zero_of_even {b e1 e2 T : Nat} (hb : 1 < b) (hev : b % 2 = 0)
   refine decide_eq_true ?_
   rw [hz, hmod, Nat.zero_mod]
 
-/-- And Theorem G misses it as well: the clashing bases all divide `N(e1,e2)`, so
+/-- And Theorem 2 misses it as well: the clashing bases all divide `N(e1,e2)`, so
 only finitely many of them exist and the family runs past all of them.  With the
-band exhibited (Theorem A), `ρ = 0` a residue (B, C) and no clash (G), **none of
+band exhibited (Theorem 1), `ρ = 0` a residue (Theorems 3 and 4) and no clash (Theorem 2), **none of
 the four proved obstructions touches §10.2's family**. -/
 theorem no_clash_of_large {b e1 e2 : Nat} (hb : 0 < b) (he1 : 1 ≤ e1) (he : e1 < e2)
     (hN : 0 < clashMod e1 e2) (hgt : clashMod e1 e2 < b) : ¬ UniversalClash b e1 e2 := by
@@ -5152,7 +5171,7 @@ theorem no_clash_of_large {b e1 e2 : Nat} (hb : 0 < b) (he1 : 1 ≤ e1) (he : e1
   have := Nat.le_of_dvd hN hd
   omega
 
-/-! ### §10.4  Theorem I — infinitude of numbers is infinitude of bases -/
+/-! ### §10.4  Theorem 8 — infinitude of numbers is infinitude of bases -/
 
 /-- There are infinitely many `(e1,e2)`-nice numbers. -/
 def InfinitelyManyNice (e1 e2 : Nat) : Prop :=
@@ -5171,15 +5190,15 @@ theorem le_self_pow' {m e : Nat} (he : 0 < e) : m ≤ m ^ e := by
       _ ≤ m ^ j * m := Nat.mul_le_mul (Nat.one_le_pow _ _ h) (Nat.le_refl m)
       _ = m ^ (j + 1) := (Nat.pow_succ m j).symm
 
-/-- Prop D at the level of solutions: a nice number is nice in exactly one base. -/
+/-- §3's `base_unique` at the level of solutions: a nice number is nice in exactly one base. -/
 theorem nice_base_unique {b b' e1 e2 n : Nat} (hb : 1 < b) (hb' : 1 < b')
     (h : Pandigital b e1 e2 n) (h' : Pandigital b' e1 e2 n) : b = b' :=
   base_unique hb hb' (pandigital_length hb h) (pandigital_length hb' h')
 
 /--
-**Theorem I.**  There are infinitely many `(e1,e2)`-nice numbers **iff** infinitely
+**Theorem 8.**  There are infinitely many `(e1,e2)`-nice numbers **iff** infinitely
 many bases host one.  "Search more numbers" and "search more bases" are the same
-axis — quantitatively, not just up to the disjointness of Prop D.
+axis — quantitatively, not just up to the disjointness of §3.
 -/
 theorem infinitude_iff {e1 e2 : Nat} (he1 : 0 < e1) (he2 : 0 < e2) :
     InfinitelyManyNiceBases e1 e2 ↔ InfinitelyManyNice e1 e2 := by
@@ -5205,7 +5224,7 @@ theorem infinitude_iff {e1 e2 : Nat} (he1 : 0 < e1) (he2 : 0 < e2) :
         Nat.le_trans (Nat.pow_le_pow_left h' b) (Nat.pow_le_pow_right hB h')
       omega
 
-/-! ### §10.5  Theorem K — the conditional statement, and the missing input -/
+/-! ### §10.5  Theorem 10 — the conditional statement, and the missing input -/
 
 /--
 **The missing input.**  A base of §10.2's family — even, `E ∣ b-2`, large — whose
@@ -5220,7 +5239,7 @@ def ModelPositive (e1 e2 : Nat) : Prop :=
   ∃ M0 b0, ∀ b q, b0 ≤ b → b % 2 = 0 → q * (e1 + e2) + 2 = b →
     M0 * b ^ b ≤ b ^ q * fact b → ∃ n, Pandigital b e1 e2 n
 
-/-- **Theorem K.**  `ModelPositive` implies there are infinitely many nice numbers. -/
+/-- **Theorem 10.**  `ModelPositive` implies there are infinitely many nice numbers. -/
 theorem conditional_infinitude {e1 e2 : Nat} (he1 : 0 < e1) (he2 : 0 < e2)
     (h : ModelPositive e1 e2) : InfinitelyManyNice e1 e2 := by
   obtain ⟨M0, b0, hmp⟩ := h
@@ -5235,7 +5254,7 @@ theorem conditional_infinitude {e1 e2 : Nat} (he1 : 0 < e1) (he2 : 0 < e2)
 `ModelPositive` needs its parity clause, and this is why.  Take `(2,3)` and
 `b = 20s+7`: then `5 ∣ b-2`, so §10.1 fills the band with `b^q` consecutive
 candidates and §10.2 pushes the heuristic count past any `M` — and `b ≡ 3 (mod 4)`,
-so Theorem B says the base is empty.  An infinite family where the heuristic diverges
+so Theorem 3 says the base is empty.  An infinite family where the heuristic diverges
 and the truth is exactly zero.
 
 The moral is the one this file keeps meeting from the other side: the three provable
@@ -5299,13 +5318,13 @@ theorem base_eight_band : ∀ n, 8 ^ 2 ≤ n → n < 2 * 8 ^ 2 → InBand 8 1 2 
 theorem base_eight_live : resOK 8 1 2 28 0 = true :=
   resOK_zero_of_even (by decide) (by decide) (by decide) (by decide) (by decide)
 
-/-! ## §11  Theorem A's converse — every admissible base really has candidates
+/-! ## §11  Theorem 1's converse — every admissible base really has candidates
 
 §1 proves the dead direction: `(e1+e2) ∣ e1(b-1)` forces the length identity to fail,
 for every `n`.  The converse — every *other* base has a candidate — was the oldest
 empirical claim in this file, checked by `verify.py` over `e1 ≤ 7, e2 ≤ 8, b < 120`.
-It is what turns Theorem A from a filter into a classification, and with it the
-admissibility question (A, B, C, G) is settled in both directions.
+It is what turns Theorem 1 from a filter into a classification, and with it the
+admissibility question (Theorems 1-4) is settled in both directions.
 
 **It is false without a threshold**, which is why the hypotheses below are not just the
 congruence.  Base 3 at `(2,3)` is outside the dead class and still has no candidate:
@@ -5441,7 +5460,7 @@ theorem double_step_ratio {b e1 e2 n A1 A2 : Nat} (hb : 1 < b) (hn : 0 < n)
   rw [hswap] at q1 q2
   exact pow_eq_of_narrow hb hmul p1 p2 q1 q2
 
-/-- …and that locking is exactly the divisibility Theorem A tests.  The `gcd` lives
+/-- …and that locking is exactly the divisibility Theorem 1 tests.  The `gcd` lives
 only inside this proof: the statement is in the same shape as `no_nice_of_dvd`, so the
 two compose into a biconditional with nothing in between. -/
 theorem dvd_of_ratio {e1 e2 u v : Nat} (he1 : e1 ≠ 0) (he2 : e2 ≠ 0)
@@ -5512,10 +5531,10 @@ theorem hits_of_no_jump {g : Nat → Nat} {b N : Nat}
       exact h2
     · exact ⟨N + 1, by omega⟩
 
-/-! ### §11.4  Theorem A's converse -/
+/-! ### §11.4  Theorem 1's converse -/
 
 /--
-**Theorem A, converse.**  A base outside the dead class of §1 really does have a
+**Theorem 1, converse.**  A base outside the dead class of §1 really does have a
 candidate — every base large enough for the two explicit bounds, which is what §11.5
 shows cannot be dropped.
 
@@ -5606,7 +5625,7 @@ theorem band_nonempty {b e1 e2 j1 j2 : Nat} (hb : 1 < b) (he1 : e1 ≠ 0) (he2 :
         exact hend)
   exact ⟨n, hn⟩
 
-/-- **Theorem A, both directions.**  Above the threshold, a base has a candidate if and
+/-- **Theorem 1, both directions.**  Above the threshold, a base has a candidate if and
 only if it is outside the dead class — which is the sentence REPORT-provability §2 states
 and which, until now, only the forward half of was proved. -/
 theorem band_nonempty_iff {b e1 e2 j1 j2 : Nat} (hb : 1 < b) (he1 : e1 ≠ 0) (he2 : e2 ≠ 0)
@@ -5732,7 +5751,7 @@ end Nice
 #print axioms Nice.slot_step
 #print axioms Nice.exists_good_digit
 #print axioms Nice.greedy_distinct_slots
-#print axioms Nice.theorem_F
+#print axioms Nice.greedy_deficiency_le
 #print axioms Nice.deficiency_sixtynine
 #print axioms Nice.F_base_thirteen
 #print axioms Nice.F_base_sixtyfive
@@ -5744,7 +5763,7 @@ end Nice
 #print axioms Nice.blk_identity
 #print axioms Nice.blocks_hit
 #print axioms Nice.blocks_to_pair
-#print axioms Nice.theorem_C_prime
+#print axioms Nice.sieve_complete
 #print axioms Nice.base_ten_j_two_complete
 #print axioms Nice.base_ten_j_five_rider_fails
 #print axioms Nice.base_four_rider_fails
@@ -5756,17 +5775,17 @@ end Nice
 #print axioms Nice.pandigital_pow_bounds
 #print axioms Nice.countP_run_le
 #print axioms Nice.adm_period
-#print axioms Nice.theorem_H
-#print axioms Nice.theorem_H_count
-#print axioms Nice.theorem_H_closed
+#print axioms Nice.adm_of_pandigital
+#print axioms Nice.countP_pandigital_le_adm
+#print axioms Nice.countP_pandigital_le_window
 #print axioms Nice.base_ten_survivors
 #print axioms Nice.sixtynine_unique
 #print axioms Nice.base_ten_nice_iff
 #print axioms Nice.base_seventeen_window
 #print axioms Nice.base_seventeen_bound
 #print axioms Nice.occ_low_top_le
-#print axioms Nice.theorem_H_top
-#print axioms Nice.theorem_H_top_count
+#print axioms Nice.admTop_of_pandigital
+#print axioms Nice.countP_pandigital_le_admTop
 #print axioms Nice.topSlots_const
 #print axioms Nice.no_pandigital_of_top_clash
 #print axioms Nice.base_ten_exact_band
