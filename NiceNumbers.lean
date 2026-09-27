@@ -623,7 +623,7 @@ theorem occ_append (v : Nat) : ∀ l1 l2 : List Nat,
 
 /-- `n` is **`(e1,e2)`-pandigital in base `b`**: the base-`b` digits of `n^e1`
 and of `n^e2`, taken together, contain every value `< b` exactly once.  This is
-the definition the rest of the repo searches for; §1-§3 above use only its two
+the definition an exhaustive search tests for; §1-§3 above use only its two
 numerical consequences. -/
 def Pandigital (b e1 e2 n : Nat) : Prop :=
   ∀ v, v < b → occ v (digits b (n ^ e1) ++ digits b (n ^ e2)) = 1
@@ -881,7 +881,7 @@ theorem clash_prime_pow_iff {p a e1 e2 : Nat} (hp : IsPrime p) (ha : 1 ≤ a)
 
 /-- The valuation form of Theorem 2: `p^a ∣ N(e1,e2)` exactly when `a ≤ e1` and
 every unit mod `p` has order dividing `e2-e1`.  Feed in `λ(p^a)` — the exponent
-of `(ℤ/p^aℤ)ˣ` — and this is the report's closed form
+of `(ℤ/p^aℤ)ˣ` — and this is the textbook closed form
 `N = ∏_p p^{a_p}`, `a_p = max{a ≤ e1 : λ(p^a) ∣ e2-e1}`. -/
 theorem prime_pow_dvd_clashMod_iff {p a e1 e2 : Nat} (hp : IsPrime p) (ha : 1 ≤ a)
     (he1 : 1 ≤ e1) (he : e1 < e2) :
@@ -892,8 +892,8 @@ theorem prime_pow_dvd_clashMod_iff {p a e1 e2 : Nat} (hp : IsPrime p) (ha : 1 �
 
 /-! ### §5.4  `N(e1,e2)`, computed, and the theorem firing
 
-The values agree with `verify.py`'s Carmichael product `∏ p^{a_p}`, which is the
-form Theorem 2 is stated in.  These are kernel computations, not `native_decide`. -/
+The values agree with the Carmichael product `∏ p^{a_p}` computed independently, which
+is the form Theorem 2 is usually stated in.  These are kernel computations, not `native_decide`. -/
 
 theorem clashMod_one_two : clashMod 1 2 = 2 := by decide
 theorem clashMod_two_three : clashMod 2 3 = 2 := by decide
@@ -998,7 +998,7 @@ come out differently:
   `n = 2` lies in it — the digit-sum congruence permits all five residues mod 5,
   and only three occur.  So a modulus *can* buy density the digit sum does not.
 
-See REPORT-provability.md §6 for what is true instead: completeness holds under
+What is true instead: completeness holds under
 an explicit hypothesis on the block sizes, the deficiency elsewhere is tiny
 (base 10 loses 2 residues in 11111), and the sharp threshold is conjectural. -/
 
@@ -1235,8 +1235,8 @@ theorem base_four_lengths :
 /-- Base 4 is a genuine `(2,3)` band and not an artefact: `n = 2` has
 `2^2 = "10"` and `2^3 = "20"`, two base-4 digits each, so the length identity
 `2 + 2 = 4 = b` holds.  Neither Theorem 1 (`4 % 5 ≠ 1`) nor Theorem 3
-(`4 % 4 ≠ 3`) kills the base, so the counterexample sits inside the family this
-repo actually searches. -/
+(`4 % 4 ≠ 3`) kills the base, so the counterexample sits inside the very family
+under study. -/
 theorem base_four_band_nonempty : InBand 4 2 3 2 := by
   show numDigits 4 (2 ^ 2) + numDigits 4 (2 ^ 3) = 4
   rw [numDigits_eq_of_bounds (b := 4) (x := 2 ^ 2) (k := 1) (by decide) (by decide) (by decide),
@@ -1245,7 +1245,7 @@ theorem base_four_band_nonempty : InBand 4 2 3 2 := by
 /-! ### §6.2  Theorem 5 — completeness, under an explicit hypothesis
 
 §6.1 refuted the unconditional claim.  This is what survives, and it is the
-statement REPORT-provability.md §6.3 proves on paper: **if** the class sizes
+statement the informal proof gives on paper: **if** the class sizes
 `c_t` admit a legal split `p` whose no-gap conditions hold, and the classes are
 big enough, then the image is the whole coset — so no modulus of order `j` prunes
 more than casting out `b-1`s does.
@@ -2527,9 +2527,9 @@ permits is realised by a genuine pandigital pair with those digit lengths —
 leading digits included.  So no modulus of order `j` prunes more than casting
 out `b-1`s does.
 
-The rider is sharper than REPORT-provability.md §6.3's `c_t ≥ 3` for all `t`,
+The rider is sharper than the informal proof's `c_t ≥ 3` for all `t`,
 and sharpening it was worth doing: the gap between this theorem and the
-conjecture of §6.5 (`c_t ≥ 2` suffices) is now a single class, not every
+conjecture that `c_t ≥ 2` suffices is now a single class, not every
 class. -/
 theorem sieve_complete {b j L1 L2 : Nat} (hb : 1 < b) (hj : 0 < j)
     (hL : L1 + L2 = b) (hL1 : 0 < L1) (hL2 : 0 < L2)
@@ -2693,7 +2693,7 @@ theorem base_ten_j_two_complete {z : Nat} (hz : z % 9 = 0) :
 /-- …and it does **not** fire at `j = 5`, which is exactly where base 10's sieve
 does gain: `11111 = 41 · 271` has order 5 and two residues are unreachable.  The
 class sizes there are `(3,2,2,2,1)`, so the `c_t ≥ 2` half of the rider fails —
-the theorem's hypothesis and the report's measured counterexample agree. -/
+the theorem's hypothesis and the measured counterexample agree. -/
 theorem base_ten_j_five_rider_fails :
     ¬ ∀ t, t < 5 → 2 ≤ occ t (clsOf 5 0 4) + occ t (clsOf 5 0 6) := by decide
 
@@ -2738,7 +2738,7 @@ Exactly `1` (from odd `ρ` with `e2-e1` even), whatever `v_2(1 + ρ^(e2-e1))` is
 Never `0`, which is Theorem 3.
 
 Theorem 3 is therefore the `a = 1` case of this theorem, and the three "extra"
-2-adic dead classes the report found for `(2,4)`, `(4,6)` and `(3,7)` are the
+2-adic dead classes found by computer search for `(2,4)`, `(4,6)` and `(3,7)` are the
 second clause.  §7.5 runs both ends on numerals.
 -/
 
@@ -3120,7 +3120,7 @@ theorem residues_nonempty_iff {b e1 e2 T a m : Nat} (hb : 1 < b) (he1 : 1 ≤ e1
         exact ⟨_, residue_of_dvd hb he1 hlt hVpos hm hT hMV⟩
 
 /-- **Theorem 4, dead form** — the classification read as a list of dead classes,
-which is how §4 of the report states it. -/
+which is how the informal account states it. -/
 theorem residues_empty_iff {b e1 e2 T a m : Nat} (hb : 1 < b) (he1 : 1 ≤ e1) (hlt : e1 < e2)
     (hm : m % 2 = 1) (hT : 2 * T = b * (b - 1)) (hM : b - 1 = 2 ^ a * m) :
     (∀ ρ, (ρ ^ e1 + ρ ^ e2) % (b - 1) ≠ T % (b - 1))
@@ -3199,8 +3199,8 @@ theorem residues_empty_of_mod_four_via_two_adic {b e1 e2 T ρ : Nat}
 
 /-! ### §7.6  The single-exponent family
 
-`n^e` alone pandigital is the `E = e` member of the family, and §14 of the
-report recommends it as the best compute target — which makes "which bases are
+`n^e` alone pandigital is the `E = e` member of the family, and it has been
+proposed as a compute target in its own right — which makes "which bases are
 live" load-bearing there.  The same valuation count answers it, and more simply,
 because `v_2(ρ^e) = e·v_2(ρ)` with no cofactor `1 + ρ^d` to think about:
 
@@ -3271,7 +3271,7 @@ theorem residues_single_nonempty_iff {b e T a m : Nat} (hb : 1 < b) (he : 1 ≤ 
         rw [hidx]
 
 /-- `n^4` in base 29 has no residue: `v_2(28) = 2` and `4 ∤ 1`.  This is one of the
-bases §14 of the report lists as killed, and base 8 — where the only known
+bases the single-exponent family loses, and base 8 — where the only known
 solution `42^4` lives — is even, hence `a = 0`, hence live. -/
 theorem single_four_base_twentynine_dead (ρ : Nat) : ρ ^ 4 % 28 ≠ 406 % 28 := by
   intro h
@@ -3286,7 +3286,7 @@ theorem single_four_base_thirtythree_live : (2:Nat) ^ 4 % 32 = 528 % 32 := by de
 /-! ## §8  Theorem 7 — the `2/E` greedy construction
 
 `n mod b^(i+1)` pins digit `i` of `n^e1` *and* digit `i` of `n^e2`: two slots per
-digit of `n`, the conservation law the whole repository runs on.  Theorem 7 turns
+digit of `n`, the conservation law the exhaustive search runs on.  Theorem 7 turns
 that budget into a construction.  Build `n` from the bottom; at level `i` the new
 digit `x` moves each of the two slots along an arithmetic progression, and if the
 common differences are units the progressions are bijections, so each already-used
@@ -3795,7 +3795,7 @@ theorem greedy_reaches {b e1 e2 ρ β d : Nat} (hb : 1 < b)
 
 The `2d` distinct slots are `2d` distinct *digit values*, so at most `b - 2d` of
 the `b` values can be missing.  With `d ≈ b/E` that is the `b(1 - 2/E)` of the
-report — less than a random candidate's `≈ b/e`, which is the point: this is what
+header — less than a random candidate's `≈ b/e`, which is the point: this is what
 a *constructive* argument can reach, not what is typical. -/
 
 /--
@@ -3877,7 +3877,7 @@ theorem greedy_deficiency_le {b e1 e2 ρ β d : Nat} (hb : 1 < b) (he1 : 1 ≤ e
 /-! ### §8.7  Non-vacuity
 
 The hypotheses are satisfiable, the conclusion is a real restriction, and the
-theorem fires at a pair the report says the counting bound cannot reach. -/
+theorem fires at a pair the informal account says the counting bound cannot reach. -/
 
 /-- `deficiency` says what it should: 69 in base 10 misses nothing.  (`digits` is
 defined by well-founded recursion and does not reduce in the kernel, so the two
@@ -3902,7 +3902,7 @@ theorem greedy_deficiency_sixtyfive :
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
 
-/-- And at `(1,3)`, where `E = 4` — the report's §8 says the counting bound fails
+/-- And at `(1,3)`, where `E = 4` — the informal account says the counting bound fails
 for `E = 3, 4`, but `4(d-1) + 2 < b` is sharper than `4b/E < b` and `E = 4` clears
 it at every base where the arithmetic side conditions hold. `E = 3` never does. -/
 theorem greedy_deficiency_fortyseven :
@@ -3951,8 +3951,8 @@ even base is ever covered.**  If `b` is even then `gcd(e1e2, b) = 1` forces both
 exponents odd and `gcd(ρ, b) = 1` forces `ρ` odd, so both progression differences
 `e·ρ^(e-1)` are odd and their gap is even — no unit `β` can separate them.
 
-This is the honest limitation: the whole `(1,3)` family the repository actually
-searches (bases 38, 40, 42, 46) is even, and so is `(2,3)` base 34.  `(2,3)` base
+This is the honest limitation: every `(1,3)` base that can hold a
+solution is even, and so is `(2,3)` base 34.  `(2,3)` base
 57 is odd but loses the coprimality instead, `3 ∣ 57`.
 -/
 theorem no_even_base {b e1 e2 ρ β : Nat} (hbe : b % 2 = 0)
@@ -3973,7 +3973,7 @@ theorem no_even_base {b e1 e2 ρ β : Nat} (hbe : b % 2 = 0)
   rw [hβodd] at h2'
   exact absurd h2' (by decide)
 
-/-- The two `(2,3)` bases this repository benchmarks, and why each is outside. -/
+/-- Two `(2,3)` bases often used as search benchmarks, and why each is outside. -/
 theorem base_thirtyfour_is_even : 34 % 2 = 0 := by decide
 
 theorem base_fiftyseven_not_coprime : ¬ Nat.Coprime 57 3 := by decide
@@ -4482,7 +4482,7 @@ theorem adm_of_pandigital {b e1 e2 k T lo hi n : Nat} (hb : 1 < b) (hk : 0 < k)
 
 /--
 **Theorem 6, counting form.**  At most `countP adm` numbers of the crude band are
-nice.  This is the quantity `nice-provability/bound.py` evaluates.
+nice.  This is the quantity a program evaluating the bound computes.
 -/
 theorem countP_pandigital_le_adm {b e1 e2 k T lo hi : Nat} (hb : 1 < b) (hk : 0 < k)
     (hT : 2 * T = b * (b - 1))
@@ -4580,7 +4580,7 @@ theorem base_seventeen_bound :
 /-! ### §9.10  The top slots — condition 4 of Theorem 6
 
 §9.2's three filters all read `n` from the *bottom*: the band from its size,
-`resOK` from `n mod (b-1)`, `lowOK` from `n mod b^k`.  Condition 4 of REPORT §9
+`resOK` from `n mod (b-1)`, `lowOK` from `n mod b^k`.  The fourth condition
 reads it from the other end — the `h` leading digits of each `n^(e_i)`, `2h` slots
 for the pair, pairwise distinct and distinct from the low `2k`.
 
@@ -4690,7 +4690,7 @@ theorem occ_low_top_le {b : Nat} (hb : 1 < b) {k h L x : Nat}
 /-! ### §9.11  The refined test, and Theorem 6 with all four conditions -/
 
 /-- The `2(k+h)` boundary slots of the pair: the low `k` and the top `h` of each
-power.  Conditions 3 and 4 of REPORT §9 together say these are `2(k+h)`
+power.  The low-slot and top-slot conditions together say these are `2(k+h)`
 pairwise-distinct values. -/
 def boundary (b e1 e2 k h L1 L2 n : Nat) : List Nat :=
   (lowSlots b k (n ^ e1) ++ topSlots b h L1 (n ^ e1))
@@ -4700,7 +4700,7 @@ def boundary (b e1 e2 k h L1 L2 n : Nat) : List Nat :=
 def boundaryOK (b e1 e2 k h L1 L2 n : Nat) : Bool :=
   allb (fun v => decide (occ v (boundary b e1 e2 k h L1 L2 n) ≤ 1)) (run 0 b)
 
-/-- `adm` of §9.2 with condition 4 added: all four filters of REPORT §9 in one
+/-- `adm` of §9.2 with condition 4 added: all four filters in one
 `Bool`.  At `h = 0` the top slots are empty and `boundaryOK` degenerates to the low
 distinctness `adm` already tests, so nothing is added and nothing is lost. -/
 def admTop (b e1 e2 k h L1 L2 T n : Nat) : Bool :=
@@ -4729,7 +4729,7 @@ theorem pandigital_boundaryOK {b e1 e2 k h L1 L2 n : Nat} (hb : 1 < b)
   omega
 
 /--
-**Theorem 6, condition 4 (REPORT §9, the top-digit refinement).**  On an interval
+**Theorem 6, condition 4 (the top-digit refinement).**  On an interval
 `[a, c)` where the two digit lengths are constant, every `(e1,e2)`-pandigital `n`
 passes `admTop` — conditions 1-3 of §9.7 *and* the top-digit condition.
 
@@ -4815,7 +4815,7 @@ the test is a constant, so an interval whose top digits already clash is retired
 whole.
 
 **No root is extracted below, and none is needed.**  Finding the cuts is
-`bound.py`'s job; all a proof needs is that where the top quotient agrees at an
+the job of a program evaluating the bound; all a proof needs is that where the top quotient agrees at an
 interval's two ends it agrees throughout, which is two divisions and monotonicity of
 `/`.  Formalise the property the construction has, not the construction. -/
 
@@ -4956,8 +4956,8 @@ theorem base_seventeen_dead_interval {n : Nat} (h1 : 4913 ≤ n) (h2 : n < 5008)
 
 /-! ## §10  Infinitude — the reduction, the divergence, and the one missing input
 
-Whether there are infinitely many `(e1,e2)`-nice numbers is **open**, and §10 of
-REPORT-provability argues that it is far out of reach: it is a statement about all
+Whether there are infinitely many `(e1,e2)`-nice numbers is **open**, and far
+out of reach: it is a statement about all
 `b` digits of two powers at once, where the state of the art handles one digit
 statistic (Mauduit–Rivat) or one *missing* digit in a base above `10^23` (Maynard).
 Nothing here closes that gap.  What this section does is cut the question into the
@@ -5322,7 +5322,7 @@ theorem base_eight_live : resOK 8 1 2 28 0 = true :=
 
 §1 proves the dead direction: `(e1+e2) ∣ e1(b-1)` forces the length identity to fail,
 for every `n`.  The converse — every *other* base has a candidate — was the oldest
-empirical claim in this file, checked by `verify.py` over `e1 ≤ 7, e2 ≤ 8, b < 120`.
+empirical claim in this file, checked by computer over `e1 ≤ 7, e2 ≤ 8, b < 120`.
 It is what turns Theorem 1 from a filter into a classification, and with it the
 admissibility question (Theorems 1-4) is settled in both directions.
 
@@ -5626,8 +5626,8 @@ theorem band_nonempty {b e1 e2 j1 j2 : Nat} (hb : 1 < b) (he1 : e1 ≠ 0) (he2 :
   exact ⟨n, hn⟩
 
 /-- **Theorem 1, both directions.**  Above the threshold, a base has a candidate if and
-only if it is outside the dead class — which is the sentence REPORT-provability §2 states
-and which, until now, only the forward half of was proved. -/
+only if it is outside the dead class — which is the classification the informal account states,
+and of which, until §11, only the forward half was proved. -/
 theorem band_nonempty_iff {b e1 e2 j1 j2 : Nat} (hb : 1 < b) (he1 : e1 ≠ 0) (he2 : e2 ≠ 0)
     (hj1 : (2 * (e1 * e2) + 1) ^ e1 < b ^ j1)
     (hj2 : (2 * (e1 * e2) + 1) ^ e2 < b ^ j2)
